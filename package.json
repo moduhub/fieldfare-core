@@ -1,0 +1,22 @@
+{
+  "name": "mhlib-js",
+  "version": "1.0.0",
+  "description": "Javascript functions to access the MH network",
+  "main": "index.js",
+  "scripts": {
+    "start": "node test/TestHost1.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/moduhub/mhlib-js/src/master"
+  },
+  "keywords": [
+    "mhlib"
+  ],
+  "author": "Adan Kvitschal",
+  "license": "ISC",
+  "dependencies": {
+    "websocket": "^1.0.34"
+  }
+}

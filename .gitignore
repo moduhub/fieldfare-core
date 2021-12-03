@@ -48,3 +48,5 @@ Thumbs.db
 *.mov
 *.wmv
 
+/mhlib-js/nbproject/private/
+/nbproject/private/
