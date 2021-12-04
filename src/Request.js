@@ -4,14 +4,13 @@
  * and open the template in the editor.
  */
 
+const Message = require('./Message.js');
 
-module.exports = class Request {
+module.exports = class Request extends Message {
 	
 	constructor(destination, service, timeout, data) {
 		
-		this.destination = destination;
-		this.service = service;
-		this.data = data;
+		super(destination, service, data);
 		
 		this.listeners = [];
 		

@@ -8,9 +8,6 @@ const { Buffer } = require('buffer');
 const crypto = require('crypto')
 //const openssl = require('openssl-nodejs');
 
-const SERVICE_ID_ANNOUNCE = 1;
-const SERVICE_ID_RESOURCE_REQUEST = 2;
-const SERVICE_ID_RESOURCE_RESPONSE = 3;
 
 module.exports = class HostManager {
 
@@ -54,6 +51,13 @@ module.exports = class HostManager {
 		this.envid = Buffer.from('44fefd3ec59498bff8fdf19750251e70ad2789f0acdcbcbc747de3b6b985c644', 'hex');
 		
 		this.channels = [];
+		this.resourcesManagers = [];
+	}
+	
+	addResourcesManager(manager) {
+		
+		this.resourcesManagers.push(manager);
+		
 	}
 	
 	addChannel(channel) {
@@ -64,66 +68,13 @@ module.exports = class HostManager {
 	
 	announce() {
 		
-		var message = Buffer.alloc(128);
-		
-		message.writeUInt8(SERVICE_ID_ANNOUNCE);
-		
-		this.id.copy(message, 1);
-		this.envid.copy(message, 33);
-		
-		//Announce contents
-		
+		var message = new Message(this.envid, 'announce', {
+			id: this.id
+		});
+				
 		this.dispatch(message);
 	}
-	
-	parse(message) {
-	
-		var serviceID = message.readInt8();
-	
-		var destAddress = message.slice(1,32);
-		var sourceAddress = message.slice(32,64);
-	
-		console.log("Destination: " + destAddress.toString('hex'));
-		console.log("Source: " + sourceAddress.toString('hex'));
-	
-		if(serviceID == SERVICE_ID_ANNOUNCE) {
-
-			//resource copy or provide
-			console.log("Service: Announce");
-			
-			var hostID = message.slice(1,32);
-			var envID = message.slice(33,64);
-			//var signature = message.slice(64,96);
-				
-			console.log("Host ID: " + hostID.toString('hex'));
-			console.log("Env ID: " + envID.toString('hex'));
-			//console.log("Signature: " + signature.toString('hex'));
-			
-			//ask for pubkey resource
-			resources.getResource(hostID)
-			.then({
-				//validate signature
-				//ask for env resource
-			});
-			
-
-		} else
-		if(serviceID == SERVICE_ID_RESOURCE_REQUEST) {
 		
-			//resource copy or provide
-			console.log("Service: Resource Request");
-			
-			var hash = message.slice(64,96);
-		
-			console.log("Hash: " + hash.toString('hex'));
-		
-		} else {
-		
-			console.log("Service: Invalid");
-		
-		}
-	}
-	
 	dispatch(message) {
 		
 		//send to all neighbors

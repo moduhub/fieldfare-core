@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-const { subtle } = require('crypto').webcrypto;
+//const { subtle } = require('crypto').webcrypto;
 //const crypto = require('crypto');
 
 const Request = require('./Request.js');
@@ -54,7 +54,7 @@ module.exports = class ResourcesManager {
 	
 	async store(data) {
 		
-		var hash = new Uint8Array(await subtle.digest('SHA-256', data));
+		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
 			
 		var base64data = btoa(String.fromCharCode.apply(null, data));
 		var base64hash = btoa(String.fromCharCode.apply(null, hash));
