@@ -4,7 +4,9 @@
  * and open the template in the editor.
  */
 
+const { subtle } = require('crypto').webcrypto;
 //const crypto = require('crypto');
+
 const Request = require('./Request.js');
 
 module.exports = class ResourcesManager {
@@ -16,11 +18,11 @@ module.exports = class ResourcesManager {
 		
 	}
 	
-	storeObject(object) {
+	async storeObject(object) {
 		
 		var binaryobject = new TextEncoder().encode(JSON.stringify(object));
 		
-		var hash = this.store(binaryobject);
+		var hash = await this.store(binaryobject);
 		
 		return hash;
 	}
@@ -52,7 +54,7 @@ module.exports = class ResourcesManager {
 	
 	async store(data) {
 		
-		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
+		var hash = new Uint8Array(await subtle.digest('SHA-256', data));
 			
 		var base64data = btoa(String.fromCharCode.apply(null, data));
 		var base64hash = btoa(String.fromCharCode.apply(null, hash));
@@ -71,17 +73,21 @@ module.exports = class ResourcesManager {
 	
 	fetch(hash, owner) {
 		
-		return new Promise((reject, resolve) => {
+		return new Promise((resolve, reject) => {
 			
 			var base64data = this.hashmap.get(hash);
 			
 			if(base64data
 			&& base64data !== 'null'
 			&& base64data !== 'undefined') {
-			
+		
+				//console.log("resolved case 1, nase64 data: " + base64data);
+				
 				resolve(base64data);
 				
 			} else {
+				
+				//console.log("Not found local");
 				
 				//not found locally, attemp to find on owner db
 				
@@ -113,6 +119,9 @@ module.exports = class ResourcesManager {
 						if(error
 						&& error !== 'null'
 						&& error !== 'undefined') {
+						
+							//console.log("get resource rejected: timeout");
+						
 							reject(error);
 						} else {
 							resolve(response.data);
@@ -121,6 +130,8 @@ module.exports = class ResourcesManager {
 					});
 
 				} else {
+					
+					//console.log("get resource: rejected no owner");
 					
 					//Owner not know, fail
 					reject("not found");

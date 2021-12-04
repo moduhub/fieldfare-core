@@ -17,6 +17,7 @@
   "author": "Adan Kvitschal",
   "license": "ISC",
   "dependencies": {
+    "crypto": "^1.0.1",
     "websocket": "^1.0.34"
   }
 }
