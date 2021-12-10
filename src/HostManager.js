@@ -4,29 +4,51 @@
  * and open the template in the editor.
  */
 
-const { Buffer } = require('buffer');
-const crypto = require('crypto')
-//const openssl = require('openssl-nodejs');
+//const { Buffer } = require('buffer');
+
+const Message = require('./Message.js');
+const Utils = require('./Utils.js');
+const RemoteHost = require('./RemoteHost.js');
 
 
 module.exports = class HostManager {
 
-	constructor(privateKey) {
-
-		let pubkey;
-
-		if(privateKey) {
+	constructor() {
 		
-			this.privateKey = crypto.createPrivateKey({
-				key:privateKey,
-				type:'sec1',
-				format:'der'});
-			
-			pubkey = crypto.createPublicKey({
-				key:privateKey,
-				type:'sec1',
-				format:'der'}).export({type:'spki',format:'der'});
-			
+		this.bootChannels = [];
+		this.resourcesManagers = [];
+		this.remoteHosts = [];
+		this.envAdmins = [];
+		
+	}
+	
+	async setupId(privateKeyData) {
+
+		let pubKeyData;
+		
+		if(privateKeyData) {
+		
+			this.privateKey = await crypto.subtle.importKey(
+				'jwk',
+				privateKeyData,
+				{
+					name:'ECDSA',
+					namedCurve: 'P-256'
+				},
+				false,
+				['sign']
+			);
+		
+			pubKeyData = JSON.stringify({
+				kty: "EC",
+				use: "sig",
+				crv: "P-256",
+				kid: privateKeyData.kid,
+				x: privateKeyData.x,
+				y: privateKeyData.y,
+				alg: "ES256"
+			});
+						
 		} else {
 			
 			const keypair = crypto.generateKeyPairSync('ec', {
@@ -34,24 +56,58 @@ module.exports = class HostManager {
 			});
 			
 			this.privateKey = keypair.privateKey;
-			pubkey = keypair.publicKey.export({type:'spki',format:'der'});
+			let pubkey = keypair.publicKey.export({type:'spki',format:'der'});
 		}
 		
-		console.log('host pubkey: ' + pubkey.toString('hex'));
+		console.log('host pubkey: ' + pubKeyData);
 		
 		//Calculate host ID from pubkey
-		let hash = crypto.createHash('sha256');
+		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', pubKeyData));
 		
-		hash.update(pubkey);
-		
-		this.id = hash.digest();
+		this.id = Utils.arrayBufferToBase64(hash);
 	
-		console.log('host id: ' + this.id.toString('hex'));
-	
-		this.envid = Buffer.from('44fefd3ec59498bff8fdf19750251e70ad2789f0acdcbcbc747de3b6b985c644', 'hex');
+		console.log('host id: ' + this.id);
 		
-		this.channels = [];
-		this.resourcesManagers = [];
+		setInterval(() => {
+			console.log("Host is announcing");
+			this.announce();
+		}, 10000);
+		
+	}
+	
+	async updateState(state) {
+		
+		console.log("Current state:" + JSON.stringify(state));
+		
+		//Store state as resource
+		var binaryobject = new TextEncoder().encode(JSON.stringify(state));
+		
+		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', binaryobject));
+		
+		this.stateHash = btoa(String.fromCharCode.apply(null, hash));
+		
+	}
+		
+	initEnvironment(env) {
+		
+		console.log("Init environment:" + JSON.stringify(env));
+		
+		//Get relevant remote hosts from env root
+		env.admins.forEach((hostid) => {
+			
+			if(hostid != this.id) {
+				
+				this.envAdmins.push(new RemoteHost(hostid));
+				
+			} else {
+				
+				console.log("heh, found meeself");
+				
+			}
+			
+		});
+		
+		//Update env from remote hosts data
 	}
 	
 	addResourcesManager(manager) {
@@ -60,34 +116,58 @@ module.exports = class HostManager {
 		
 	}
 	
-	addChannel(channel) {
+	bootChannel(channel) {
 		
-		this.channels.push(channel);
+		this.bootChannels.push(channel);
+		
+		var message = new Message('announce', {
+			id: this.id,
+			state: this.stateHash
+		});
+		
+		//no source nor destination address, direct message
+		channel.send(message);
 		
 	}
 	
 	announce() {
 		
-		var message = new Message(this.envid, 'announce', {
-			id: this.id
-		});
-				
-		this.dispatch(message);
-	}
+		console.log("Announce to env admins");
+		if(this.envAdmins.length > 0) {
 		
-	dispatch(message) {
-		
-		//send to all neighbors
-		this.channels.forEach((channel) => {
+			this.envAdmins.forEach(host => {
 			
-			console.log("Dispatching message to "
-				+ channel.info.address
-				+ ':'
-				+ channel.info.port);
+				var message = new Message('announce', {
+					id: this.id,
+					state: this.stateHash
+				});
+
+				message.setSourceAddress(this.id);
+
+				host.send(message);
+
+			});
 			
-			channel.send(message);
-		});
+		} else {
+			
+			console.log("No announces sent: envAdmins is empty");
+			
+		}
 		
+		console.log("Announce to boot channels");
+		if(this.bootChannels.length > 0) {
+			
+			this.bootChannels.forEach(channel => {
+			
+				var message = new Message('announce', {
+					id: this.id,
+					state: this.stateHash
+				});
+
+				channel.send(message);
+			});
+		}
 	}
+	
 };
 

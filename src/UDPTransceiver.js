@@ -6,6 +6,8 @@
 
 const dgram = require('dgram');
 const Transceiver = require('./Transceiver.js');
+const Utils = require('./Utils.js');
+
 
 module.exports = class UDPTransceiver extends Transceiver {
 	
@@ -66,10 +68,18 @@ module.exports = class UDPTransceiver extends Transceiver {
 	
 	send(message, channel) {
 		
-		console.log('UDPTrx.send ' + message.length + ' bytes to '
+		console.log("Message object: " + JSON.stringify(message));
+		
+		var messageBuffer = message.toBuffer();
+		
+		console.log('UDPTrx.send ' + messageBuffer.length + ' bytes to '
 			+ channel.info.address + ':'
 			+ channel.info.port);
 		
-		this.socket.send(message, channel.info.port, channel.info.address);
+		console.log("Message binary: " + Utils.ab2hex(messageBuffer));
+		
+		this.socket.send(messageBuffer,
+				channel.info.port,
+				channel.info.address);
 	}
 }
