@@ -30,6 +30,9 @@ module.exports = class WebServerTransceiver extends Transceiver {
 		});
 		
 		this.wsServer.on('request', (request) => {
+			
+			console.log("wsServer onRequest");
+			
 			this.treatWsRequest(request);
 		});
 	}
@@ -37,7 +40,7 @@ module.exports = class WebServerTransceiver extends Transceiver {
 	open() {
 		
 		this.server.listen(this.port, () => {
-			console.log((new Date()) + ' Server is listening on port ' + this.port);
+			console.log((new Date()) + ' WS Server is listening on port ' + this.port);
 		});
 		
 	}
@@ -56,6 +59,8 @@ module.exports = class WebServerTransceiver extends Transceiver {
 	
 	treatWsRequest(request) {
 	
+		console.log("Entered treatWsRequest");
+	
 		if (!this.originIsAllowed(request.origin)) {
 			// Make sure we only accept requests from an allowed origin
 			request.reject();
@@ -63,24 +68,69 @@ module.exports = class WebServerTransceiver extends Transceiver {
 			return;
 		}
     
-		var connection = request.accept('echo-protocol', request.origin);
+		//Create new channel for this destination
+		try {
 			
-		console.log((new Date()) + ' Connection accepted.');
+			var connection = request.accept('mhnet', request.origin);
+			console.log((new Date()) + ' Connection from ' + request.origin + 'accepted.');
 			
-		connection.on('message', function(message) {
+			var newChannel = {
+				type: 'wsServer',
+				send: (message) => {
+					var stringifiedMessage = JSON.stringify(message);
+					connection.send(stringifiedMessage);
+				},
+				info: {
+					origin: request.origin,
+					connection: connection
+				}
+			};
 			
-			if (message.type === 'utf8') {
-				console.log('Received Message: ' + message.utf8Data);
-				connection.sendUTF(message.utf8Data);
-			} else if (message.type === 'binary') {
-				console.log('Received Binary Message of ' + message.binaryData.length + ' bytes');
-				connection.sendBytes(message.binaryData);
+			newChannel.onMessageReceived = (message) => {
+				console.log("WS connection callback undefined. Message droped: " + message);
 			}
-		});
-		
-		connection.on('close', function(reasonCode, description) {
-			console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
-		});
-		
+			
+			connection.on('message', (message) => {
+
+				if (message.type === 'utf8') {
+					
+					if(newChannel.onMessageReceived) {
+
+						try {
+							console.log('WS: Message from client: ' + message.utf8Data);
+
+							var messageObject = JSON.parse(message.utf8Data);
+
+							newChannel.onMessageReceived(messageObject);	
+							
+						} catch (error) {
+							
+							console.log("Failed to treat WS message: " + error);
+							
+						}
+
+					}
+					
+				} else {
+					
+					throw 'invalide message format';
+					
+				}
+				
+			});
+
+			connection.on('close', function(reasonCode, description) {
+				console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
+			});
+			
+			if(this.onNewChannel) {
+				this.onNewChannel(newChannel);
+			}
+			
+		} catch (error) {
+			
+			console.log("Failed to accept connection: " + error);
+			
+		}
 	}
 };

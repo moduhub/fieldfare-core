@@ -39,7 +39,7 @@ module.exports = class ResourcesManager {
 		
 			//console.log("Fetch object base64: " + base64data);
 		
-			object = JSON.parse(atob(base64data))
+			object = JSON.parse(atob(base64data));
 
 			//console.log("Fetch object: " + JSON.stringify(object));
 			
@@ -78,8 +78,8 @@ module.exports = class ResourcesManager {
 			var base64data = this.hashmap.get(hash);
 			
 			if(base64data
-			&& base64data !== 'null'
-			&& base64data !== 'undefined') {
+			&& base64data !== null
+			&& base64data !== undefined) {
 		
 				//console.log("resolved case 1, nase64 data: " + base64data);
 				
@@ -87,26 +87,32 @@ module.exports = class ResourcesManager {
 				
 			} else {
 				
-				//console.log("Not found local");
+				console.log("res.fetch: Not found locally");
 				
 				//not found locally, attemp to find on owner db
 				
 				if(owner
-				&& owner !== 'null'
-				&& owner !== 'undefined') {
+				&& owner !== null
+				&& owner !== undefined) {
 				
 					//Check if there is already a request for
 					//this same hash
 					
+					console.log("res.fetch: looking for previous request");
+					
 					var request = this.requests.get(hash);
 				
-					if(request
-					&& request !== 'null'
-					&& request !== 'undefined') {
+					console.log("res.fetch: previous request = " + request);
+				
+					if(request == undefined) {
 						
-						request = new Request(owner, 'resource', 10000, {
+						console.log("res.fetch: new request");
+						
+						request = new Request('resource', 10000, {
 							hash: hash
 						});
+				
+						request.setDestinationAddress(owner);
 				
 						//send request
 						this.requests.set(hash, request);
@@ -117,8 +123,8 @@ module.exports = class ResourcesManager {
 					request.addListener((response, error) => {
 						
 						if(error
-						&& error !== 'null'
-						&& error !== 'undefined') {
+						&& error !== null
+						&& error !== undefined) {
 						
 							//console.log("get resource rejected: timeout");
 						
@@ -128,6 +134,11 @@ module.exports = class ResourcesManager {
 						}
 						
 					});
+					
+					//Notify that a new request was created
+					if(this.onNewRequest) {
+						this.onNewRequest(request);
+					}
 
 				} else {
 					

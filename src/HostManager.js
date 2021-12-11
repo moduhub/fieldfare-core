@@ -15,10 +15,10 @@ module.exports = class HostManager {
 
 	constructor() {
 		
-		this.bootChannels = [];
-		this.resourcesManagers = [];
-		this.remoteHosts = [];
-		this.envAdmins = [];
+		this.bootChannels = new Set();
+		this.resourcesManagers = new Set();
+		this.remoteHosts = new Map();
+		this.envAdmins = new Set();
 		
 	}
 	
@@ -39,7 +39,7 @@ module.exports = class HostManager {
 				['sign']
 			);
 		
-			pubKeyData = JSON.stringify({
+			pubKeyData = Utils.str2ab(JSON.stringify({
 				kty: "EC",
 				use: "sig",
 				crv: "P-256",
@@ -47,7 +47,7 @@ module.exports = class HostManager {
 				x: privateKeyData.x,
 				y: privateKeyData.y,
 				alg: "ES256"
-			});
+			}));
 						
 		} else {
 			
@@ -59,7 +59,7 @@ module.exports = class HostManager {
 			let pubkey = keypair.publicKey.export({type:'spki',format:'der'});
 		}
 		
-		console.log('host pubkey: ' + pubKeyData);
+		console.log('host pubkey data: ' + Utils.arrayBufferToBase64(pubKeyData));
 		
 		//Calculate host ID from pubkey
 		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', pubKeyData));
@@ -79,12 +79,24 @@ module.exports = class HostManager {
 		
 		console.log("Current state:" + JSON.stringify(state));
 		
-		//Store state as resource
-		var binaryobject = new TextEncoder().encode(JSON.stringify(state));
-		
-		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', binaryobject));
-		
-		this.stateHash = btoa(String.fromCharCode.apply(null, hash));
+		if(this.resourcesManagers.size > 0) {
+			
+			//Store state as resource, use just the first resources manager
+			var iterator = this.resourcesManagers.values();
+			var res = iterator.next().value;
+				
+			this.stateHash = await res.storeObject(state);
+			
+			console.log("State hash: " + this.stateHash);
+		} else {
+			throw 'cannot update state without a resoures manager';
+		}		
+
+//		var binaryobject = new TextEncoder().encode(JSON.stringify(state));
+//		
+//		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', binaryobject));
+//		
+//		this.stateHash = btoa(String.fromCharCode.apply(null, hash));
 		
 	}
 		
@@ -97,11 +109,14 @@ module.exports = class HostManager {
 			
 			if(hostid != this.id) {
 				
-				this.envAdmins.push(new RemoteHost(hostid));
+				var newHost = new RemoteHost(hostid);
+				
+				this.envAdmins.add(newHost);
+				this.remoteHosts.set(hostid, newHost);
 				
 			} else {
 				
-				console.log("heh, found meeself");
+				console.log("heh, found meeself in admin list");
 				
 			}
 			
@@ -112,28 +127,102 @@ module.exports = class HostManager {
 	
 	addResourcesManager(manager) {
 		
-		this.resourcesManagers.push(manager);
+		this.resourcesManagers.add(manager);
+		
+		manager.onNewRequest = (request) => {
+		
+			console.log("Forwarding request to request.destination")
+		
+			var destinationHost = this.remoteHosts.get(request.destination);
+			
+			if(destinationHost != undefined) {
+
+				request.source = this.id;
+				
+				destinationHost.send(request);
+				
+			} else {
+				console.log("Destination is unknown");
+			}
+			
+		};
 		
 	}
 	
 	bootChannel(channel) {
 		
-		this.bootChannels.push(channel);
+		this.bootChannels.add(channel);
 		
-		var message = new Message('announce', {
+		var announceMessage = new Message('announce', {
 			id: this.id,
 			state: this.stateHash
 		});
 		
+		channel.onMessageReceived = (message) => {
+			
+			console.log("Received message from boot channel: " + JSON.stringify(message));
+			
+			if(message.service == 'announce') {
+			
+//				console.log("message.source: " + message.source);
+//				console.log("message.destination: " + message.destination);
+			
+				if(!message.hasOwnProperty('source')
+				&& !message.hasOwnProperty('destination')) {
+				
+					var remoteId = message.data.id;
+				
+					console.log("Received direct announce from boot channel. Host ID: " + remoteId);
+					
+					var remoteHost = this.remoteHosts.get(remoteId);
+					
+					//register channel to remote host
+					if(remoteHost == undefined) {
+					
+						console.log("Host was not registered. Creating new... ");
+						
+						remoteHost = new RemoteHost(remoteId);
+						
+						this.remoteHosts.set(remoteId, remoteHost);
+						
+					}
+					
+					remoteHost.assignChannel(channel);
+					
+					channel.onMessageReceived(message);
+					
+					//remove this channel from boot list
+					this.bootChannels.clear(channel);
+					
+				} else {
+					
+					console.log("Message is not direct, reject from boot channel");
+				}
+				
+			} else {
+				console.log("Message service not announce! Service: " + message.service);
+			}
+			
+		};
+		
 		//no source nor destination address, direct message
-		channel.send(message);
+		try {
+			
+			channel.send(announceMessage);
+			
+		} catch (error) {
+			
+			console.log('Host.bootChannel.send() failed: ' + error);
+			
+		}
 		
 	}
 	
 	announce() {
 		
-		console.log("Announce to env admins");
-		if(this.envAdmins.length > 0) {
+		if(this.envAdmins.size > 0) {
+			
+			console.log("Announcing to " + this.envAdmins.size + " env admins");
 		
 			this.envAdmins.forEach(host => {
 			
@@ -150,12 +239,13 @@ module.exports = class HostManager {
 			
 		} else {
 			
-			console.log("No announces sent: envAdmins is empty");
+			console.log("No envAdmins to send announce");
 			
 		}
 		
-		console.log("Announce to boot channels");
-		if(this.bootChannels.length > 0) {
+		if(this.bootChannels.size > 0) {
+		
+			console.log("Announcing to " + this.bootChannels.size + " boot channels");
 			
 			this.bootChannels.forEach(channel => {
 			
@@ -166,6 +256,9 @@ module.exports = class HostManager {
 
 				channel.send(message);
 			});
+			
+		} else {
+			console.log("No bootChannels to send announce");
 		}
 	}
 	

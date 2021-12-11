@@ -57,7 +57,7 @@ module.exports = class UDPTransceiver extends Transceiver {
 				address: address,
 				port: port
 			}
-		};	
+		};
 		
 		return rNewChannel;
 	}

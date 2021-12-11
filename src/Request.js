@@ -8,15 +8,16 @@ const Message = require('./Message.js');
 
 module.exports = class Request extends Message {
 	
-	constructor(destination, service, timeout, data) {
+	constructor(service, timeout, data) {
 		
-		super(destination, service, data);
+		super(service, data);
 		
-		this.listeners = [];
+		this.listeners = new Set();
 		
 		this.state = 'pending';
 		
 		this.timeout = setTimeout(() => {
+			console.log('request timeout');
 			this.complete(null, 'timeout');
 		}, timeout);
 		
@@ -31,7 +32,7 @@ module.exports = class Request extends Message {
 		} else {
 			
 			//pending
-			this.listeners.push(listener);
+			this.listeners.add(callback);
 			
 		}
 		
