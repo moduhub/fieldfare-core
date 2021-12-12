@@ -9,6 +9,7 @@
 const Message = require('./Message.js');
 const Utils = require('./Utils.js');
 const RemoteHost = require('./RemoteHost.js');
+const Request = require('./Request.js');
 
 
 module.exports = class HostManager {
@@ -19,6 +20,7 @@ module.exports = class HostManager {
 		this.resourcesManagers = new Set();
 		this.remoteHosts = new Map();
 		this.envAdmins = new Set();
+		this.requests = new Map();
 		
 	}
 	
@@ -79,24 +81,9 @@ module.exports = class HostManager {
 		
 		console.log("Current state:" + JSON.stringify(state));
 		
-		if(this.resourcesManagers.size > 0) {
+		this.stateHash = await this.storeResourceObject(state);
 			
-			//Store state as resource, use just the first resources manager
-			var iterator = this.resourcesManagers.values();
-			var res = iterator.next().value;
-				
-			this.stateHash = await res.storeObject(state);
-			
-			console.log("State hash: " + this.stateHash);
-		} else {
-			throw 'cannot update state without a resoures manager';
-		}		
-
-//		var binaryobject = new TextEncoder().encode(JSON.stringify(state));
-//		
-//		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', binaryobject));
-//		
-//		this.stateHash = btoa(String.fromCharCode.apply(null, hash));
+		console.log("State hash: " + this.stateHash);
 		
 	}
 		
@@ -109,10 +96,9 @@ module.exports = class HostManager {
 			
 			if(hostid != this.id) {
 				
-				var newHost = new RemoteHost(hostid);
+				var newHost = this.registerRemoteHost(hostid);
 				
 				this.envAdmins.add(newHost);
-				this.remoteHosts.set(hostid, newHost);
 				
 			} else {
 				
@@ -125,28 +111,214 @@ module.exports = class HostManager {
 		//Update env from remote hosts data
 	}
 	
+	registerRemoteHost(hostid) {
+		
+		var remoteHost = this.remoteHosts.get(hostid);
+		
+		//Check if host existed
+		if(remoteHost === undefined) {
+			
+			remoteHost = new RemoteHost(hostid);
+			this.remoteHosts.set(hostid, remoteHost);
+			
+			//Assign callbacks
+			remoteHost.requestLocalResource = async (hash) => {
+				
+				//console.log("remoteHost.requestLocalResource(" + hash);
+				
+				var base64data = await this.getResource(hash);
+				
+				//console.log("rsource result: " + base64data);
+				
+				return base64data;
+			};
+			
+			remoteHost.onResponseReceived = (response) => {
+				
+				var assignedRequest = this.requests.get(response.data.hash);
+				
+				//console.log("remoteHost.onResponseReceived(" + JSON.stringify(response));
+				
+				if(assignedRequest) {
+					
+					//console.log("assignedRequest " + JSON.stringify(assignedRequest));
+					
+					assignedRequest.complete(response);
+				}
+			};
+		}
+		
+		return remoteHost;
+	}
+	
+	async storeResourceObject(object) {
+		
+		var binaryobject = new TextEncoder().encode(JSON.stringify(object));
+		
+		var hash = await this.storeResource(binaryobject);
+		
+		return hash;
+	}
+	
+	async getResourceObject(hash, owner) {
+		
+		var object;
+		
+		try {
+		
+			var base64data = await this.getResource(hash, owner);
+		
+			object = JSON.parse(atob(base64data));
+
+		} catch(error) {
+			
+			console.log("host.getResource error: " + error);
+			
+		}
+		
+		return object;
+	}
+	
+	async storeResource(data) {
+		
+		var base64hash;
+		
+		if(this.resourcesManagers.size > 0) {
+			
+			//Temp: storing all on first manager
+			var result = this.resourcesManagers.values().next();
+			if(!result.done) {
+
+				var manager = result.value;
+
+				base64hash = await manager.storeResource(data);
+			
+			}
+
+		} else {
+			throw 'No resources managers defined';
+		}		
+
+		return base64hash;		
+	}
+	
+	getResource(hash, owner) {
+		
+		return new Promise((resolve, reject) => {
+			
+			//Attemp to find rsource on all resources managers
+			var iterator = this.resourcesManagers.values();
+			
+			var result = iterator.next();
+			while(!result.done) {
+				
+				var iManager = result.value;
+				
+				var base64data = iManager.getResource(hash);
+				
+				if(base64data !== undefined) {
+					resolve(base64data);
+					break;
+				}
+				
+				var result = iterator.next();
+			}
+			
+			if(base64data == undefined) {			
+		
+				console.log("res.fetch: Not found locally. Owner: " + owner);
+				
+				//not found locally, attemp to find on remote host
+				
+				if(owner
+				&& owner !== null
+				&& owner !== undefined) {
+				
+					//Check if there is already a request for
+					//this same hash
+					
+					console.log("res.fetch: looking for previous request");
+					
+					var request = this.requests.get(hash);
+				
+					console.log("res.fetch: previous request = " + request);
+				
+					if(request == undefined) {
+						
+						console.log("res.fetch: new request");
+						
+						request = new Request('resource', 10000, {
+							hash: hash
+						});
+				
+						request.setDestinationAddress(owner);
+				
+						//send request
+						this.requests.set(hash, request);
+				
+					}
+					
+					//Listen for request completion
+					request.addListener((response, error) => {
+						
+						if(error
+						&& error !== null
+						&& error !== undefined) {
+						
+							//console.log("get resource rejected: timeout");
+						
+							reject(error);
+						} else {
+							
+							//console.log ("Received remote resource response:" + JSON.stringify(response.data.data));
+							
+							resolve(response.data.data);
+						}
+						
+					});
+					
+					//Notify that a new request was created
+					this.onNewRequest(request);
+
+				} else {
+					
+					//console.log("get resource: rejected no owner");
+					
+					//Owner not know, fail
+					reject("resource not found");
+					
+				}
+				
+			}
+		});
+		
+	}
+	
 	addResourcesManager(manager) {
 		
 		this.resourcesManagers.add(manager);
 		
-		manager.onNewRequest = (request) => {
+	}
+	
+	onNewRequest(request) {
 		
-			console.log("Forwarding request to request.destination")
-		
-			var destinationHost = this.remoteHosts.get(request.destination);
-			
-			if(destinationHost != undefined) {
+		console.log("Forwarding request to request.destination")
 
-				request.source = this.id;
-				
-				destinationHost.send(request);
-				
-			} else {
-				console.log("Destination is unknown");
-			}
+		var destinationHost = this.remoteHosts.get(request.destination);
+
+		if(destinationHost != undefined) {
+
+			request.source = this.id;
+
+			destinationHost.send(request);
+
+		} else {
 			
-		};
-		
+			console.log("Destination is unknown");
+			
+			//TODO: routing here
+		}
+
 	}
 	
 	bootChannel(channel) {
@@ -181,10 +353,8 @@ module.exports = class HostManager {
 					
 						console.log("Host was not registered. Creating new... ");
 						
-						remoteHost = new RemoteHost(remoteId);
-						
-						this.remoteHosts.set(remoteId, remoteHost);
-						
+						remoteHost = this.registerRemoteHost(remoteId);
+												
 					}
 					
 					remoteHost.assignChannel(channel);

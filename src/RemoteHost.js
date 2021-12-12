@@ -4,6 +4,8 @@
  * and open the template in the editor.
  */
 
+const Message = require('./Message.js');
+
 
 module.exports = class RemoteHost {
 
@@ -27,7 +29,7 @@ module.exports = class RemoteHost {
 				console.log("Dispatching message to "
 					+ channel.type
 					+ ' channel ('
-					+ JSON.stringify(channel.info)
+					+ '-'//JSON.stringify(channel.info)
 					+ ')');
 
 				channel.send(message);
@@ -64,22 +66,90 @@ module.exports = class RemoteHost {
 		
 		if(message.service == 'announce') {
 			
-			if('state' in message.data) {
-				
-				if(this.state !== message.data.state) {
-					
-					this.state = message.data.state;
-					
-					if(this.onStateUpdate) {
-						this.onStateUpdate(message.data.state);
-					}
-					
-				}
-				
-			} else {
-				throw 'malformed announce packet, missing state data';
-			}
+			this.treatAnnounce(message, channel)
+			
+		} else
+		if(message.service == 'resource') {
+			
+			console.log("treating resource request");
+			this.treatResourceMessage(message, channel);
+			
+		} else {
+		
+			throw 'unexpectd service id';
+		
 		}
 	}
 	
+	treatAnnounce(message, channel) {
+		
+		if('state' in message.data) {
+				
+			if(this.state !== message.data.state) {
+
+				this.state = message.data.state;
+
+				if(this.onStateUpdate) {
+					this.onStateUpdate(message.data.state);
+				}
+
+			}
+
+		} else {
+			throw 'malformed announce packet, missing state data';
+		}
+		
+	}
+	
+	async treatResourceMessage(message, channel) {
+	
+		if('hash' in message.data == false) {
+			throw 'malformed resouce message';
+		}
+
+		if('data' in message.data) {
+			
+			//this is a response to a previous request
+			if(this.onResponseReceived) {
+			
+				this.onResponseReceived(message, channel);
+				
+			} else {
+				throw 'treatResourceMessage: undefined response callback'
+			}
+			
+		} else {
+			
+			//this is a request for a resource that i have
+			if(this.requestLocalResource) {
+
+				var data = await this.requestLocalResource(message.data.hash);
+
+				var response;
+
+				if(data == undefined) {
+					
+					//not found, generate error response
+					response = new Message('resource', {
+						hash: message.data.hash,
+						error: 'not found'
+					});
+					
+				} else {
+
+					//generate positive response
+					response = new Message('resource', {
+						hash: message.data.hash,
+						data: data
+					});
+
+				}
+				
+				this.send(response);
+
+			} else {
+				throw 'treatResourceMessage: undefined callback';
+			}
+		}
+	}
 };
