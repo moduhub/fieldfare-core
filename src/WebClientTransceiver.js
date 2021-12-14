@@ -40,7 +40,7 @@ module.exports = class WebClientTransceiver extends Transceiver {
 
 				if(rNewChannel.onMessageReceived) {
 
-					console.log('WS: Message from server: ' + message);
+					//console.log('WS: Message from server: ' + message);
 
 					try {
 						//Convert to object

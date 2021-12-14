@@ -26,11 +26,11 @@ module.exports = class RemoteHost {
 			
 			this.channels.forEach((channel) => {
 
-				console.log("Dispatching message to "
-					+ channel.type
-					+ ' channel ('
-					+ '-'//JSON.stringify(channel.info)
-					+ ')');
+//				console.log("Dispatching message to "
+//					+ channel.type
+//					+ ' channel ('
+//					+ '-'//JSON.stringify(channel.info)
+//					+ ')');
 
 				channel.send(message);
 				
@@ -54,15 +54,15 @@ module.exports = class RemoteHost {
 		
 		console.log("Assigning channel to " + this.id
 			+ ". Now there are " + this.channels.size
-			+ " channels assigne to this remote host.");
+			+ " channels assigned to this remote host.");
 		
 	}
 	
 	treatMessage(message, channel) {
 		
-		console.log("Message redirected to "
-			+ this.id + ": "
-			+ JSON.stringify(message));
+//		console.log("Message redirected to "
+//			+ this.id + ": "
+//			+ JSON.stringify(message));
 		
 		if(message.service == 'announce') {
 			
@@ -71,7 +71,7 @@ module.exports = class RemoteHost {
 		} else
 		if(message.service == 'resource') {
 			
-			console.log("treating resource request");
+			//console.log("treating resource message (request/response)");
 			this.treatResourceMessage(message, channel);
 			
 		} else {

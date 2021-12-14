@@ -7,6 +7,9 @@
 //const { subtle } = require('crypto').webcrypto;
 //const crypto = require('crypto');
 
+const Utils = require('./Utils.js');
+	
+
 module.exports = class ResourcesManager {
 	
 	constructor() {
@@ -18,11 +21,12 @@ module.exports = class ResourcesManager {
 		}, 30000);
 	}
 	
-	async storeResource(data) {
+	async storeResource(base64data) {
+
+		var dataBuffer = Utils.base64ToArrayBuffer(base64data);
 		
-		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
-			
-		var base64data = btoa(String.fromCharCode.apply(null, data));
+		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', dataBuffer));
+
 		var base64hash = btoa(String.fromCharCode.apply(null, hash));
 
 		this.hashmap.set(base64hash, base64data);
@@ -37,9 +41,9 @@ module.exports = class ResourcesManager {
 		return base64hash;
 	}
 	
-	getResource(hash) {
+	getResource(base64hash) {
 		
-		var base64data = this.hashmap.get(hash);
+		var base64data = this.hashmap.get(base64hash);
 
 		return base64data;
 	}

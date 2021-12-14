@@ -71,7 +71,7 @@ module.exports = class HostManager {
 		console.log('host id: ' + this.id);
 		
 		setInterval(() => {
-			console.log("Host is announcing");
+			//console.log("Host is announcing");
 			this.announce();
 		}, 10000);
 		
@@ -153,11 +153,13 @@ module.exports = class HostManager {
 	
 	async storeResourceObject(object) {
 		
-		var binaryobject = new TextEncoder().encode(JSON.stringify(object));
+		var utf8ArrayBuffer = new TextEncoder().encode(JSON.stringify(object));
 		
-		var hash = await this.storeResource(binaryobject);
+		var base64data = Utils.arrayBufferToBase64(utf8ArrayBuffer);
+			
+		var base64hash = await this.storeResource(base64data);
 		
-		return hash;
+		return base64hash;
 	}
 	
 	async getResourceObject(hash, owner) {
@@ -226,7 +228,7 @@ module.exports = class HostManager {
 			
 			if(base64data == undefined) {			
 		
-				console.log("res.fetch: Not found locally. Owner: " + owner);
+				//console.log("res.fetch: Not found locally. Owner: " + owner);
 				
 				//not found locally, attemp to find on remote host
 				
@@ -237,15 +239,15 @@ module.exports = class HostManager {
 					//Check if there is already a request for
 					//this same hash
 					
-					console.log("res.fetch: looking for previous request");
+					//console.log("res.fetch: looking for previous request");
 					
 					var request = this.requests.get(hash);
 				
-					console.log("res.fetch: previous request = " + request);
+					//console.log("res.fetch: previous request = " + request);
 				
 					if(request == undefined) {
 						
-						console.log("res.fetch: new request");
+						//console.log("res.fetch: new request");
 						
 						request = new Request('resource', 10000, {
 							hash: hash
@@ -268,11 +270,30 @@ module.exports = class HostManager {
 							//console.log("get resource rejected: timeout");
 						
 							reject(error);
+							
 						} else {
 							
-							//console.log ("Received remote resource response:" + JSON.stringify(response.data.data));
+							var remoteBase64hash = response.data.hash;
+							var remoteBase64data = response.data.data;
 							
-							resolve(response.data.data);
+							//console.log ("Received remote resource response:" + JSON.stringify(response.data.data));
+							this.storeResource(remoteBase64data).then( (hash) => {
+								
+								if(hash == remoteBase64hash) {
+									
+									//console.log("[+RES] (" + hash + "):(" + response.data.data + ")");
+									
+									resolve(response.data.data);
+									
+								} else {
+									
+									reject('corrupted resource received from remote host');
+									
+								}
+									
+								
+							})
+							
 						}
 						
 					});
@@ -302,7 +323,7 @@ module.exports = class HostManager {
 	
 	onNewRequest(request) {
 		
-		console.log("Forwarding request to request.destination")
+		//console.log("Forwarding request to request.destination")
 
 		var destinationHost = this.remoteHosts.get(request.destination);
 
@@ -314,7 +335,7 @@ module.exports = class HostManager {
 
 		} else {
 			
-			console.log("Destination is unknown");
+			console.log("Error: Destination is unknown");
 			
 			//TODO: routing here
 		}
@@ -392,7 +413,7 @@ module.exports = class HostManager {
 		
 		if(this.envAdmins.size > 0) {
 			
-			console.log("Announcing to " + this.envAdmins.size + " env admins");
+			//console.log("Announcing to " + this.envAdmins.size + " env admins");
 		
 			this.envAdmins.forEach(host => {
 			
@@ -409,13 +430,13 @@ module.exports = class HostManager {
 			
 		} else {
 			
-			console.log("No envAdmins to send announce");
+			//console.log("No envAdmins to send announce");
 			
 		}
 		
 		if(this.bootChannels.size > 0) {
 		
-			console.log("Announcing to " + this.bootChannels.size + " boot channels");
+			//console.log("Announcing to " + this.bootChannels.size + " boot channels");
 			
 			this.bootChannels.forEach(channel => {
 			
@@ -428,7 +449,7 @@ module.exports = class HostManager {
 			});
 			
 		} else {
-			console.log("No bootChannels to send announce");
+			//console.log("No bootChannels to send announce");
 		}
 	}
 	

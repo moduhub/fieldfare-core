@@ -97,7 +97,7 @@ module.exports = class WebServerTransceiver extends Transceiver {
 					if(newChannel.onMessageReceived) {
 
 						try {
-							console.log('WS: Message from client: ' + message.utf8Data);
+							//console.log('WS: Message from client: ' + message.utf8Data);
 
 							var messageObject = JSON.parse(message.utf8Data);
 
