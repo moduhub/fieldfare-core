@@ -26,6 +26,10 @@ module.exports = class HostManager {
 	
 	async setupId(privateKeyData) {
 
+		if(this.resourcesManagers.size == 0) {
+			throw 'Cannot setup ID without a resources manager';
+		}
+		
 		let pubKeyData;
 		
 		if(privateKeyData) {
@@ -41,7 +45,7 @@ module.exports = class HostManager {
 				['sign']
 			);
 		
-			pubKeyData = Utils.str2ab(JSON.stringify({
+			pubKeyData = {
 				kty: "EC",
 				use: "sig",
 				crv: "P-256",
@@ -49,7 +53,7 @@ module.exports = class HostManager {
 				x: privateKeyData.x,
 				y: privateKeyData.y,
 				alg: "ES256"
-			}));
+			};
 						
 		} else {
 			
@@ -61,12 +65,12 @@ module.exports = class HostManager {
 			let pubkey = keypair.publicKey.export({type:'spki',format:'der'});
 		}
 		
-		console.log('host pubkey data: ' + Utils.arrayBufferToBase64(pubKeyData));
+		console.log('host pubkey data: ' + JSON.stringify(pubKeyData));
 		
 		//Calculate host ID from pubkey
-		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', pubKeyData));
+		//var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', pubKeyData));
 		
-		this.id = Utils.arrayBufferToBase64(hash);
+		this.id = await this.storeResourceObject(pubKeyData);
 	
 		console.log('host id: ' + this.id);
 		
@@ -226,7 +230,7 @@ module.exports = class HostManager {
 				var result = iterator.next();
 			}
 			
-			if(base64data == undefined) {			
+			if(base64data == undefined) {
 		
 				//console.log("res.fetch: Not found locally. Owner: " + owner);
 				
@@ -342,7 +346,7 @@ module.exports = class HostManager {
 
 	}
 	
-	bootChannel(channel) {
+	async bootChannel(channel) {
 		
 		this.bootChannels.add(channel);
 		
@@ -350,6 +354,8 @@ module.exports = class HostManager {
 			id: this.id,
 			state: this.stateHash
 		});
+		
+		await this.signMessage(announceMessage);
 		
 		channel.onMessageReceived = (message) => {
 			
@@ -360,8 +366,9 @@ module.exports = class HostManager {
 //				console.log("message.source: " + message.source);
 //				console.log("message.destination: " + message.destination);
 			
-				if(!message.hasOwnProperty('source')
-				&& !message.hasOwnProperty('destination')) {
+				// Reject indirect announce in boot channel
+//				if(!message.hasOwnProperty('source')
+//				&& !message.hasOwnProperty('destination')) {
 				
 					var remoteId = message.data.id;
 				
@@ -385,10 +392,10 @@ module.exports = class HostManager {
 					//remove this channel from boot list
 					this.bootChannels.clear(channel);
 					
-				} else {
-					
-					console.log("Message is not direct, reject from boot channel");
-				}
+//				} else {
+//					
+//					console.log("Message is not direct, reject from boot channel:" + JSON.stringify(message));
+//				}
 				
 			} else {
 				console.log("Message service not announce! Service: " + message.service);
@@ -409,19 +416,45 @@ module.exports = class HostManager {
 		
 	}
 	
+	async signMessage(message) {
+		
+		if(this.privateKey === undefined) {
+			throw 'failed to sign message, private key undefined';
+		}
+		
+		var utf8ArrayBuffer = new TextEncoder().encode(JSON.stringify(message.data));
+						
+		var signatureBuffer = await crypto.subtle.sign(
+			{
+				name: "ECDSA",
+				hash: {name: "SHA-256"}
+			},
+			this.privateKey,
+			utf8ArrayBuffer);
+		
+		console.log("signature array buffer: " +  signatureBuffer);
+		
+		message.signature = Utils.arrayBufferToBase64(signatureBuffer);
+		
+		console.log("Message signature added: " + message.signature);
+	}
+	
 	announce() {
 		
-		if(this.envAdmins.size > 0) {
+		//Announce to everybody I know!
+		if(this.remoteHosts.size > 0) {
 			
-			//console.log("Announcing to " + this.envAdmins.size + " env admins");
+			//console.log("Announcing to " + this.remoteHosts.size + " known hosts");
 		
-			this.envAdmins.forEach(host => {
+			this.remoteHosts.forEach(async host => {
 			
 				var message = new Message('announce', {
 					id: this.id,
 					state: this.stateHash
 				});
 
+				await this.signMessage(message);
+				
 				message.setSourceAddress(this.id);
 
 				host.send(message);
@@ -430,7 +463,7 @@ module.exports = class HostManager {
 			
 		} else {
 			
-			//console.log("No envAdmins to send announce");
+			//console.log("No active hosts to send announce");
 			
 		}
 		
@@ -438,13 +471,14 @@ module.exports = class HostManager {
 		
 			//console.log("Announcing to " + this.bootChannels.size + " boot channels");
 			
-			this.bootChannels.forEach(channel => {
+			this.bootChannels.forEach(async (channel) => {
 			
 				var message = new Message('announce', {
 					id: this.id,
 					state: this.stateHash
 				});
 
+				await this.signMessage(message);
 				channel.send(message);
 			});
 			

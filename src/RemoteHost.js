@@ -5,6 +5,7 @@
  */
 
 const Message = require('./Message.js');
+const Utils = require('./Utils.js');
 
 
 module.exports = class RemoteHost {
@@ -60,43 +61,102 @@ module.exports = class RemoteHost {
 	
 	treatMessage(message, channel) {
 		
+		try {
 //		console.log("Message redirected to "
 //			+ this.id + ": "
 //			+ JSON.stringify(message));
 		
-		if(message.service == 'announce') {
+			if(message.service == 'announce') {
+
+				this.treatAnnounce(message, channel)
+
+			} else
+			if(message.service == 'resource') {
+
+				//console.log("treating resource message (request/response)");
+				this.treatResourceMessage(message, channel);
+
+			} else {
+
+				throw 'unexpected service id';
+
+			}
 			
-			this.treatAnnounce(message, channel)
-			
-		} else
-		if(message.service == 'resource') {
-			
-			//console.log("treating resource message (request/response)");
-			this.treatResourceMessage(message, channel);
-			
-		} else {
-		
-			throw 'unexpectd service id';
-		
+		} catch(error) {
+			console.log("Message parse failed: " + error);
 		}
 	}
 	
-	treatAnnounce(message, channel) {
+	async treatAnnounce(message, channel) {
 		
-		if('state' in message.data) {
+		if('id' in message.data) {
+			
+			if(this.pubKey === undefined) { 
 				
-			if(this.state !== message.data.state) {
+				//Get host pubkey
+				var remotePubKeyData = await host.getResourceObject(message.data.id, message.data.id);
 
-				this.state = message.data.state;
+				if(remotePubKeyData !== undefined) {
+					
+					try {
+						this.pubKey = await crypto.subtle.importKey(
+							'jwk',
+							remotePubKeyData,
+							{
+								name:'ECDSA',
+								namedCurve: 'P-256'
+							},
+							false,
+							['verify']
+						);
+					
+					} catch (error) {
+						console.log("Failed to import remote pub key from resource: " + error);
+					}
 
-				if(this.onStateUpdate) {
-					this.onStateUpdate(message.data.state);
+					console.log("Remote host pubkey: " + JSON.stringify(remotePubKeyData));
+					
+				} else {
+					console.log("failed to get remote host pubkey, not a good signal");
 				}
 
 			}
-
+			
 		} else {
-			throw 'malformed announce packet, missing state data';
+			throw 'malformed announce, missing host id';
+		}
+		
+		
+		//Do not accept state before message is verified
+		
+		if(this.pubKey) {
+			
+			if(!this.verifyMessage(message)) {
+				
+				console.log("Message from "
+					+ this.id
+					+ " rejected due to invalid signature.");
+				
+			} else {
+			
+				//Get host state
+				if('state' in message.data) {
+
+					if(this.state !== message.data.state) {
+
+						this.state = message.data.state;
+
+						if(this.onStateUpdate) {
+							this.onStateUpdate(message.data.state);
+						}
+
+					}
+
+				} else {
+					throw 'malformed announce packet, missing state data';
+				}
+				
+			}
 		}
 		
 	}
@@ -152,4 +212,34 @@ module.exports = class RemoteHost {
 			}
 		}
 	}
+	
+	async verifyMessage(message) {
+		
+		var result = false;
+		
+		if(this.pubKey === undefined) {
+			throw 'signature verify failed: pubkey undefined';
+		}
+		
+		if('signature' in message) {
+			
+			var signatureBuffer = Utils.base64ToArrayBuffer(message.signature);
+			var dataBuffer = Utils.base64ToArrayBuffer(message.data);
+			
+			result = await crypto.subtle.verify(
+				{
+					name: "ECDSA",
+					hash: {name: "SHA-256"}
+				},
+				this.pubKey,
+				signatureBuffer,
+				dataBuffer);
+					
+		} else {
+			console.log('missing signature inside message: ' + JSON.stringify(message));
+		}
+		
+		return result;
+	}
+	
 };
