@@ -91,7 +91,7 @@ module.exports = class RemoteHost {
 		
 		if('id' in message.data) {
 			
-			if(this.pubKey === undefined) { 
+			if(this.pubKey === undefined) {
 				
 				//Get host pubkey
 				var remotePubKeyData = await host.getResourceObject(message.data.id, message.data.id);
@@ -128,16 +128,9 @@ module.exports = class RemoteHost {
 		
 		
 		//Do not accept state before message is verified
-		
 		if(this.pubKey) {
 			
-			if(!this.verifyMessage(message)) {
-				
-				console.log("Message from "
-					+ this.id
-					+ " rejected due to invalid signature.");
-				
-			} else {
+			if(await this.verifyMessage(message) == true) {
 			
 				//Get host state
 				if('state' in message.data) {
@@ -156,6 +149,11 @@ module.exports = class RemoteHost {
 					throw 'malformed announce packet, missing state data';
 				}
 				
+			} else {
+								
+				console.log("Announce from "
+					+ this.id
+					+ " rejected due to invalid signature.");
 			}
 		}
 		
@@ -224,7 +222,8 @@ module.exports = class RemoteHost {
 		if('signature' in message) {
 			
 			var signatureBuffer = Utils.base64ToArrayBuffer(message.signature);
-			var dataBuffer = Utils.base64ToArrayBuffer(message.data);
+			
+			var dataBuffer = new TextEncoder().encode(JSON.stringify(message.data));
 			
 			result = await crypto.subtle.verify(
 				{
@@ -234,6 +233,8 @@ module.exports = class RemoteHost {
 				this.pubKey,
 				signatureBuffer,
 				dataBuffer);
+				
+			console.log("Signature verify result: " + result);
 					
 		} else {
 			console.log('missing signature inside message: ' + JSON.stringify(message));

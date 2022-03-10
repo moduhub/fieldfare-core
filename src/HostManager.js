@@ -22,6 +22,10 @@ module.exports = class HostManager {
 		this.envAdmins = new Set();
 		this.requests = new Map();
 		
+		this.services = new Map();
+		
+		this.stateHash = '';
+		
 	}
 	
 	async setupId(privateKeyData) {
@@ -81,40 +85,31 @@ module.exports = class HostManager {
 		
 	}
 	
+	async recoverState(env) {
+	
+		//Search up my local resources for my latest copy of the env
+	
+		//Attemp to reach environment admins and get latest state from them
+	
+	}
+	
 	async updateState(state) {
 		
 		console.log("Current state:" + JSON.stringify(state));
 		
-		this.stateHash = await this.storeResourceObject(state);
+		if(this.state !== state) {
 			
-		console.log("State hash: " + this.stateHash);
+			state.prev = this.stateHash;
+			
+			this.state = state;
+		
+			this.stateHash = await this.storeResourceObject(state);
+			
+			console.log("State hash: " + this.stateHash);
+		}
 		
 	}
 		
-	initEnvironment(env) {
-		
-		console.log("Init environment:" + JSON.stringify(env));
-		
-		//Get relevant remote hosts from env root
-		env.admins.forEach((hostid) => {
-			
-			if(hostid != this.id) {
-				
-				var newHost = this.registerRemoteHost(hostid);
-				
-				this.envAdmins.add(newHost);
-				
-			} else {
-				
-				console.log("heh, found meeself in admin list");
-				
-			}
-			
-		});
-		
-		//Update env from remote hosts data
-	}
-	
 	registerRemoteHost(hostid) {
 		
 		var remoteHost = this.remoteHosts.get(hostid);
@@ -432,7 +427,10 @@ module.exports = class HostManager {
 			this.privateKey,
 			utf8ArrayBuffer);
 		
-		console.log("signature array buffer: " +  signatureBuffer);
+//		console.log("Correct Message signature: " + Utils.arrayBufferToBase64(signatureBuffer));
+//		
+//		var bufview = new Uint8Array(signatureBuffer);
+//		bufview[1] = 0;
 		
 		message.signature = Utils.arrayBufferToBase64(signatureBuffer);
 		
