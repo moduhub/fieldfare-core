@@ -165,18 +165,10 @@ module.exports = class HostManager {
 		
 		var object;
 		
-		try {
+		var base64data = await this.getResource(hash, owner);
 		
-			var base64data = await this.getResource(hash, owner);
-		
-			object = JSON.parse(atob(base64data));
+		object = JSON.parse(atob(base64data));
 
-		} catch(error) {
-			
-			console.log("host.getResource error: " + error);
-			
-		}
-		
 		return object;
 	}
 	
@@ -278,7 +270,7 @@ module.exports = class HostManager {
 							//console.log ("Received remote resource response:" + JSON.stringify(response.data.data));
 							this.storeResource(remoteBase64data).then( (hash) => {
 								
-								if(hash == remoteBase64hash) {
+								if(hash === remoteBase64hash) {
 									
 									//console.log("[+RES] (" + hash + "):(" + response.data.data + ")");
 									
