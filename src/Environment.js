@@ -45,44 +45,15 @@ module.exports = class Environment {
 		
 	sync(newEnvState) {
 		
-		//Check if this object is a valid continuation of the state chain
+		//env stat deppends on a group of versioned sets
 		
 	}
 		
 	updateProviderState(providerID, stateHash) {
 		
-		var newStateObject = host.getResource(stateHash, providerID);
-		
+		//provider state is a versioned state strucutre
 		var currentStateObjectHash = this.getCurrentHostState(providerID);
-		
-		if(currentStateObjectHash != null) {
-		
-			var iState = newStateObject;
-		
-			while(iState.prev != '') {
 
-				if(iState.prev == currentStateObjectHash) {
-					
-					//ok! new state is part of state chain, accept
-					
-					this.setCurrentHostState(providerID, stateHash);
-					
-					break;
-				}
-
-				//check if new state is older
-				iState = host.getResource(iState.prev, providerID);
-			}
-			
-			if(iState.prev == '') {
-				//state rejected, not part of the state chain
-			}
-			
-		} else {
-			//No previous information from this host, accept anything
-			this.setCurrentHostState(providerID, stateHash);
-		}
-		
 	}
 	
 	//Env alteration functions
