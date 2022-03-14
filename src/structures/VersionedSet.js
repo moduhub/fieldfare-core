@@ -16,7 +16,7 @@ module.exports = class VersionedSet {
 		
 	}
 	
-	verifyUpdateMessage(message) {
+	validateUpdateMessage(message) {
 		
 		if('signature' in message === false
 		|| 'source' in message === false
@@ -47,22 +47,53 @@ module.exports = class VersionedSet {
 			await this.validateUpdateMessage(message);
 			
 			while(iUpdateMessage.data.prev !== this.currentVersion) {
-				
-				var iUpdateMessage = await host.getResource(	iUpdateMessage.data.prev,
-										iUpdateMessage.source);
-										
-				await this.validateUpdateMessage(iUpdateMessage);
-				
+			
 				if(iUpdateMessage.prev === '') {
+					//Found chain origin without any match
 					throw 'version msg not in chain';
 				}
+				
+				var iUpdateMessage = null;
+				
+				try {
+					
+					iUpdateMessage = await host.getResource(iUpdateMessage.data.prev,
+										iUpdateMessage.source);
+				} catch(error) {
+					
+					for(let [adminID, admin] of this.admins) {
+						
+						try {
+							//Attemp all other set admins if owner is not available
+							iUpdateMessage = await host.getResource(iUpdateMessage.data.prev,
+												adminID);
+							
+							break;
+							
+						} catch(error) {
+							//Data not available in this admin, try next
+						}
+						
+					}
+
+				}
+				
+				//Searched all hosts with no success
+				if(iUpdateMessage == null
+				|| iUpdateMessage == undefined) {
+					throw 'Failed to fetch a update message inside chain';
+				}
+				
+				await this.validateUpdateMessage(iUpdateMessage);
 			}
 			
-			//
+			//If this point was reached, state chain is valid and is a continuation
+			// of the current local version.
+			this.currentVersion = message.data.version;
 			
 		} catch (error) {
 			
-			console.log("VersionedSet update error: " + error);
+			console.log("Versioned Set update error: " + error);
 			
 		}
 		
