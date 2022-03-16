@@ -9,36 +9,54 @@ const HashLinkedTree = require('../src/structures/HashLinkedTree.js');
 const HostManager = require('../src/HostManager.js');
 const ResourcesManager = require('../src/ResourcesManager.js');
 
-global.host = new HostManager();
+async function initHost() {
 
-//Note: On node it is necessary to provide the correct webcrypto implementation
-global.crypto = require('crypto').webcrypto;
+	global.host = new HostManager();
 
-host.addResourcesManager(new ResourcesManager());
+	//Note: On node it is necessary to provide the correct webcrypto implementation
+	global.crypto = require('crypto').webcrypto;
 
-var tree = new HashLinkedTree(4);
+	host.addResourcesManager(new ResourcesManager());
 
-var obj1 = {
-	name:'foo',
-	data:'test'
-};
-
-var obj2 = {
-	name:'bar',
-	data:'best'
-};
-
-var obj3 = {
-	name:'boo',
-	data:'task'
 }
 
-var obj4 = {
-	name:'far',
-	data:'mask'
+async function initTree() {
+
+	var tree = new HashLinkedTree(4);
+
+	var obj1 = {
+		name:'foo',
+		data:'test'
+	};
+
+	var obj2 = {
+		name:'bar',
+		data:'best'
+	};
+
+	var obj3 = {
+		name:'boo',
+		data:'task'
+	}
+
+	var obj4 = {
+		name:'far',
+		data:'mask'
+	}
+
+	var obj5 = {
+		name:'raf',
+		data:'fish'
+	}
+
+	await tree.add(obj1);
+	await tree.add(obj2);
+	await tree.add(obj3);
+	await tree.add(obj4);
+	await tree.add(obj5);
+
 }
 
-tree.add(obj1);
-tree.add(obj2);
-tree.add(obj3);
-tree.add(obj4);
+initHost();
+
+initTree();

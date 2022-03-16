@@ -70,11 +70,20 @@ module.exports = {
 	},
 	
 	isBase64(str) {
-		if (str ==='' || str.trim() ===''){ return false; }
-			try {
-				return btoa(atob(str)) == str;
-			} catch (err) {
-				return false;
+		
+		if (typeof str !== 'string'
+		&& str instanceof String === false) {
+			return false;
+		}
+	
+		if (str ==='' || str.trim() ==='') {
+			return false;
+		}
+		
+		try {
+			return btoa(atob(str)) == str;
+		} catch (err) {
+			return false;
 		}
 	}
 	
