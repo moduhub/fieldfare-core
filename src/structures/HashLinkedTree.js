@@ -66,17 +66,25 @@ class TreeContainer {
 			this.elements[0] = hash;
 			this.children[1] = rightChild;
 		} else {
-			if(this.elements[0] < hash) {
+			if(hash < this.elements[0]) {
+				
 				this.elements.unshift(hash);
 				this.children.splice(1, 0, rightChild);
+				
 			} else {
+				
+				var insertIndex = 1;
+				
 				for(var i=0; i<this.numElements; i++) {
-					if(this.elements[i] > hash) {
-						this.elements.splice(i, 0, hash);
-						this.children.splice(i+1, 0, rightChild);
+					if(hash > this.elements[i]) {
+						insertIndex = i+1;
+					} else {
 						break;
 					}
 				}
+				
+				this.elements.splice(insertIndex, 0, hash);
+				this.children.splice(insertIndex, 0, rightChild);
 			}
 		}
 		
@@ -343,6 +351,7 @@ module.exports = class HashLinkedTree {
 					branch[depth-1].updateChild(prevBranchHashes[i], currentContainerHash);
 
 					//Free previous resource?
+					
 				} else {
 					//this shoould never happen?
 					throw 'this was unexpected, check code';
