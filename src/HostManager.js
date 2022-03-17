@@ -150,6 +150,21 @@ module.exports = class HostManager {
 		return remoteHost;
 	}
 	
+	async generateResourceHash(object) {
+		
+		var utf8ArrayBuffer = new TextEncoder().encode(JSON.stringify(object));
+		
+		var base64data = Utils.arrayBufferToBase64(utf8ArrayBuffer);
+		
+		var dataBuffer = Utils.base64ToArrayBuffer(base64data);
+		
+		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', dataBuffer));
+
+		var base64hash = btoa(String.fromCharCode.apply(null, hash));
+		
+		return base64hash;
+	}
+	
 	async storeResourceObject(object) {
 		
 		var utf8ArrayBuffer = new TextEncoder().encode(JSON.stringify(object));
@@ -157,6 +172,11 @@ module.exports = class HostManager {
 		var base64data = Utils.arrayBufferToBase64(utf8ArrayBuffer);
 			
 		var base64hash = await this.storeResource(base64data);
+		
+		console.log("------------------------------\n"
+			+ "Storing: " + base64hash
+			+ "->" + JSON.stringify(object, null, 2)
+			+ "\n------------------------------\n");
 		
 		return base64hash;
 	}
