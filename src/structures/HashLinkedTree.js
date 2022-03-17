@@ -140,13 +140,12 @@ class TreeContainer {
 		
 		var nextChild = this.children[0];
 		
-		//search for hash in elements
 		for(var i=0; i<this.numElements; i++) {
-			if(this.elements[i] > hash) {
+			if(hash > this.elements[i]) {
 				nextChild = this.children[i+1];
 				break;
 			} else 
-			if(this.elements[i] < hash) {
+			if(hash < this.elements[i]) {
 				nextChild = this.children[i];
 			} else {
 				//Found exact same element
@@ -240,6 +239,8 @@ module.exports = class HashLinkedTree {
 			var branch = new Array();
 
 			var iContainer = await TreeContainer.fromResource(this.rootHash);
+			
+			console.log('root->' + JSON.stringify(iContainer, null, 2));
 
 			var depth = 0;
 			prevBranchHashes[0] = this.rootHash;//root hash
@@ -250,10 +251,12 @@ module.exports = class HashLinkedTree {
 			//Get to last container, storing the entire branch
 			while(nextContainerHash !== '') {
 
-				iContainer = await TreeContainer.fromResource(nextContainerHash);
-				depth++;			
+				console.log('follow->' + nextContainerHash);
 
-				console.log('iContainer: ' + JSON.stringify(iContainer));
+				iContainer = await TreeContainer.fromResource(nextContainerHash);
+				depth++;
+
+				console.log('depth[' + depth + ']->' + JSON.stringify(iContainer, null, 2));
 
 				if(iContainer == null
 				|| iContainer == undefined) {
@@ -264,8 +267,6 @@ module.exports = class HashLinkedTree {
 				branch.push(iContainer);
 
 				nextContainerHash = iContainer.follow(elementHash);
-
-				console.log('nextContainerHash: ' + nextContainerHash);
 
 			}
 
