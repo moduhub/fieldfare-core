@@ -66,11 +66,16 @@ class TreeContainer {
 			this.elements[0] = hash;
 			this.children[1] = rightChild;
 		} else {
-			for(var i=0; i<this.numElements; i++) {
-				if(this.elements[i] > hash) {
-					this.elements.splice(i, 0, hash);
-					this.children.splice(i, 0, rightChild);
-					break;
+			if(this.elements[0] < hash) {
+				this.elements.unshift(hash);
+				this.children.splice(1, 0, rightChild);
+			} else {
+				for(var i=0; i<this.numElements; i++) {
+					if(this.elements[i] > hash) {
+						this.elements.splice(i, 0, hash);
+						this.children.splice(i+1, 0, rightChild);
+						break;
+					}
 				}
 			}
 		}
@@ -247,8 +252,8 @@ module.exports = class HashLinkedTree {
 					throw 'iContainer object not found';
 				}
 
-				prevBranchHashes.unshift(nextContainerHash);
-				branch.unshift(iContainer);
+				prevBranchHashes.push(nextContainerHash);
+				branch.push(iContainer);
 
 				nextContainerHash = iContainer.follow(elementHash);
 
@@ -256,10 +261,13 @@ module.exports = class HashLinkedTree {
 
 			}
 
-			//Leaf add
-			iContainer.addElement(elementHash, '');
+			console.log("Destination container prev state: " + JSON.stringify(iContainer, null, 2));
 
-			console.log("Container updated at depth " + depth + " : "  + JSON.stringify(iContainer));
+			//Leaf add
+			iContainer.addElement(elementHash);
+
+			console.log("Inserted new at depth=" + depth 
+				+ " -> Container: "  + JSON.stringify(iContainer, null, 2));
 
 			//Perform split if numElements == degree
 			while(iContainer.numElements == this.degree) {
@@ -270,10 +278,13 @@ module.exports = class HashLinkedTree {
 
 				var meanElement = iContainer.split(rightContainer);
 
+				var leftContainer = iContainer;
+
+				var leftContainerHash = await host.storeResourceObject(leftContainer);
 				var rightContainerHash = await host.storeResourceObject(rightContainer);
 
 				console.log("Mean element: " + meanElement);
-				console.log("Left (" + 'leftHash' + "): "  + JSON.stringify(iContainer, null, 2));
+				console.log("Left (" + leftContainerHash + "): "  + JSON.stringify(leftContainer, null, 2));
 				console.log("Right (" + rightContainerHash + "): "  + JSON.stringify(rightContainer, null, 2));
 
 				// After split:
@@ -282,55 +293,71 @@ module.exports = class HashLinkedTree {
 
 				if(depth == 0) { //ROOT SPLIT
 
-					var iContainerHash = await host.storeResourceObject(iContainer);
-
-					//create new root
-					var newRoot = new TreeContainer(iContainerHash);
+					//create new root from scratch
+					var newRoot = new TreeContainer(leftContainerHash);
 
 					newRoot.addElement(meanElement, rightContainerHash);
 
-					this.rootHash = await host.storeResourceObject(newRoot);
+					branch.unshift(newRoot);
 
-					console.log("New tree root: " + JSON.stringify(newRoot, null , 2));
+					console.log("New tree root: " + JSON.stringify(newRoot, null , 2)
+						+ " -> " + branch[0]);
 
 					break;
+					
 				} else {
 
-					iContainer = branch[depth--];
+					//Add element to lower (closer to root) container and
+					// continue split check
+					iContainer = branch[depth-1];
 
+					iContainer.updateChild(prevBranchHashes[depth-1], leftContainerHash);
 					iContainer.addElement(meanElement, rightContainerHash);
+					
+					depth--;
 				}
 
 			}
 
-			console.log("Branch length: " + branch.length);
+			//Split may or may not have ocurred
+			// At this point, depth contains the lowest container that changed
+			// and branch must now update everything down to root
+			// with new hash linkage
+
+			console.log("Branch length: " + branch.length
+				+ " Starting branch update at depth="+depth);
+
+			//NOTE: This should only run if split did not happen
 
 			//Update branch down (up?) to root
-			for(var i=0; i<branch.length; i++) {
+			while(depth > 0) {
 
-				const currentContainerHash = await host.storeResourceObject(branch[i]);
+				const currentContainerHash = await host.storeResourceObject(branch[depth]);
 
-				console.log(	  "i: " + i
-						+ "current: " + currentContainerHash
-						+ " prev: " + prevBranchHashes[i]);
+				console.log(  "depth: " + depth
+					+ "current: " + currentContainerHash
+					+ " prev: " + prevBranchHashes[depth]);
 				
-				if(i == branch.length-1) {
-					
-					//root
-					this.rootHash = currentContainerHash;
-					
+				if(currentContainerHash !== prevBranchHashes[depth]) {
+
+					branch[depth-1].updateChild(prevBranchHashes[i], currentContainerHash);
+
+					//Free previous resource?
 				} else {
-					
-					if(currentContainerHash !== prevBranchHashes[i]) {
-
-						branch[i+1].updateChild(prevBranchHashes[i], currentContainerHash);
-
-						//Free previous resource?
-					}
-
+					//this shoould never happen?
+					throw 'this was unexpected, check code';
 				}
+				
+				depth--;
 
 			}
+			
+			//Update root
+			this.rootHash = await host.storeResourceObject(branch[0]);
+			
+			//Dump previous root?
+			
+			console.log(">>> Tree.add finished, new root is " + this.rootHash);
 		}
 	}
 	
