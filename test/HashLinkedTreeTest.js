@@ -9,6 +9,8 @@ const HashLinkedTree = require('../src/structures/HashLinkedTree.js');
 const HostManager = require('../src/HostManager.js');
 const ResourcesManager = require('../src/ResourcesManager.js');
 
+const gSalt = 'hlt';
+
 async function initHost() {
 
 	global.host = new HostManager();
@@ -20,48 +22,52 @@ async function initHost() {
 
 }
 
-async function initTree() {
+async function HLT_test(order, numElements, numChecks) {
 
-	var tree = new HashLinkedTree(4);
+	var tree = new HashLinkedTree(order);
 
-	var obj1 = {
-		index: 1,
-		name:'foo',
-		data:'test'
-	};
-
-	var obj2 = {
-		index: 2,
-		name:'bar',
-		data:'best'
-	};
-
-	var obj3 = {
-		index: 3,
-		name:'boo',
-		data:'task'
+	//Build tree
+	for(var i=0;i<numElements; i++) {
+		
+		var iObj = {
+			index: i,
+			salt: gSalt
+		};
+	
+		await tree.add(iObj);
+		
+		if(await tree.has(iObj) == false) {
+			throw 'has() after add() failed at index ' + i;
+		}
 	}
-
-	var obj4 = {
-		index: 4,
-		name:'far',
-		data:'mask'
+	
+	//Validate inserted elements
+	for(var i=0;i<numElements; i++) {
+		
+		var iObj = {
+			index: i,
+			salt: gSalt
+		};
+		
+		if(await tree.has(iObj) == false) {
+			throw 'has(valid) failed at index ' + i;
+		}		
 	}
-
-	var obj5 = {
-		index: 5,
-		name:'raf',
-		data:'fish'
+	
+	//Validate nonexistant elements
+	for(var i=0;i<numChecks; i++) {
+		
+		var iObj = {
+			index: i+numElements,
+			salt: gSalt
+		};
+		
+		if(await tree.has(iObj) == true) {
+			throw 'has(invalid) failed at index ' + i;
+		}
 	}
-
-	await tree.add(obj1);
-	await tree.add(obj2);
-	await tree.add(obj3);
-	await tree.add(obj4);
-	await tree.add(obj5);
-
 }
 
 initHost();
 
-initTree();
+HLT_test(4, 20, 5);
