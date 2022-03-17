@@ -96,7 +96,7 @@ class TreeContainer {
 		
 		var index = undefined;
 		
-		for(var i=0; i<this.numElements; i++) {
+		for(var i=0; i<this.numElements+1; i++) {
 			if(this.children[i] === prev) {
 				index = i;
 				this.children[i] = current;
@@ -138,22 +138,28 @@ class TreeContainer {
 	
 	follow(hash) {
 		
-		var nextChild = this.children[0];
+		var childIndex = 0;
 		
-		for(var i=0; i<this.numElements; i++) {
-			if(hash > this.elements[i]) {
-				nextChild = this.children[i+1];
-				break;
-			} else 
-			if(hash < this.elements[i]) {
-				nextChild = this.children[i];
-			} else {
-				//Found exact same element
-				throw 'element already in the tree';
+		if(hash > this.elements[0]) {
+			
+			for(var i=0; i<this.numElements; i++) {
+				if(hash > this.elements[i]) {
+					childIndex = i+1;
+				} else
+				if (hash == this.elements[i]) {
+					//Found exact same element
+					return true;
+				} else {
+					break;
+				}
 			}
+		} else
+		if(hash == this.elements[0]) {
+			//Found element on first position
+			return true;
 		}
 	
-		return nextChild;
+		return this.children[childIndex];
 	}
 };
 
@@ -173,7 +179,7 @@ module.exports = class HashLinkedTree {
 		if(rootHash == null
 		|| rootHash == undefined) {
 		
-			this.rootHash = null;	
+			this.rootHash = null;
 			
 		} else {
 			
@@ -206,14 +212,20 @@ module.exports = class HashLinkedTree {
 		
 	}
 	
-	async add(element) {
+	async validate(element, storeFlag) {
 		
 		var elementHash;
 		
 		//Treat objects or hashes deppending on param format
 		if(typeof element === 'object') {
 			
-			elementHash = await host.storeResourceObject(element);
+			if(storeFlag == null
+			|| storeFlag == undefined
+			|| storeFlag == false) {
+				elementHash = await host.generateResourceHash(element);
+			} else {
+				elementHash = await host.storeResourceObject(element);
+			}
 			
 			console.log("tree.add(" + JSON.stringify(element, null, 2) + ") -> " + elementHash);
 			
@@ -225,6 +237,13 @@ module.exports = class HashLinkedTree {
 		} else {
 			throw 'invalid element type';
 		}
+		
+		return elementHash;
+	}
+	
+	async add(element) {
+		
+		var elementHash = await this.validate(element);
 		
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
@@ -279,7 +298,7 @@ module.exports = class HashLinkedTree {
 				+ " -> Container: "  + JSON.stringify(iContainer, null, 2));
 
 			//Perform split if numElements == degree
-			while(iContainer.numElements == this.degree) {
+			while(iContainer.numElements === this.degree) {
 
 				console.log("SPLIT! Depth:" + depth);
 
@@ -300,7 +319,7 @@ module.exports = class HashLinkedTree {
 				// * Mean element is inserted in upper container
 				// * May split recursively down to root
 
-				if(depth == 0) { //ROOT SPLIT
+				if(depth === 0) { //ROOT SPLIT
 
 					//create new root from scratch
 					var newRoot = new TreeContainer(leftContainerHash);
@@ -320,7 +339,11 @@ module.exports = class HashLinkedTree {
 					// continue split check
 					iContainer = branch[depth-1];
 
-					iContainer.updateChild(prevBranchHashes[depth-1], leftContainerHash);
+					console.log("Updating branch at depth=" + depth
+						+ "\n>prevHash: " + prevBranchHashes[depth]
+						+ "\n>currentHash: " + leftContainerHash);
+
+					iContainer.updateChild(prevBranchHashes[depth], leftContainerHash);
 					iContainer.addElement(meanElement, rightContainerHash);
 					
 					depth--;
@@ -336,8 +359,6 @@ module.exports = class HashLinkedTree {
 			console.log("Branch length: " + branch.length
 				+ " Starting branch update at depth="+depth);
 
-			//NOTE: This should only run if split did not happen
-
 			//Update branch down (up?) to root
 			while(depth > 0) {
 
@@ -349,7 +370,7 @@ module.exports = class HashLinkedTree {
 				
 				if(currentContainerHash !== prevBranchHashes[depth]) {
 
-					branch[depth-1].updateChild(prevBranchHashes[i], currentContainerHash);
+					branch[depth-1].updateChild(prevBranchHashes[depth], currentContainerHash);
 
 					//Free previous resource?
 					
@@ -369,6 +390,49 @@ module.exports = class HashLinkedTree {
 			
 			console.log(">>> Tree.add finished, new root is " + this.rootHash);
 		}
+		
+		return this.rootHash;
+	}
+	
+	async has(element) {
+		
+		const elementHash = await this.validate(element, false);
+		
+		console.log("tree.has(" + elementHash + ")");
+		
+		if(this.rootHash == null
+		|| this.rootHash == undefined) {
+		
+			return false;
+			
+		} else {
+			
+			var iContainer;
+			var nextContainerHash = this.rootHash;
+			
+			do {
+				
+				iContainer = await TreeContainer.fromResource(nextContainerHash);
+				
+				console.log("Searching container: " + JSON.stringify(iContainer, null, 2));
+				
+				nextContainerHash = iContainer.follow(elementHash);
+				
+				console.log("Search result: " + nextContainerHash);
+				
+				if(nextContainerHash === true) {
+					console.log("Element found");
+					return true;
+				}
+			} while(nextContainerHash !== '');
+					
+			
+			console.log("Element NOT found")
+			
+			return false;
+
+		}
+		
 	}
 	
 	diff(other) {
