@@ -25,26 +25,31 @@ async function initTree() {
 	var tree = new HashLinkedTree(4);
 
 	var obj1 = {
+		index: 1,
 		name:'foo',
 		data:'test'
 	};
 
 	var obj2 = {
+		index: 2,
 		name:'bar',
 		data:'best'
 	};
 
 	var obj3 = {
+		index: 3,
 		name:'boo',
 		data:'task'
 	}
 
 	var obj4 = {
+		index: 4,
 		name:'far',
 		data:'mask'
 	}
 
 	var obj5 = {
+		index: 5,
 		name:'raf',
 		data:'fish'
 	}
