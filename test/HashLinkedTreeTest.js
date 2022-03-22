@@ -72,8 +72,12 @@ async function HLT_test(order, numElements, numChecks) {
 			console.log("check_unexistant(" + JSON.stringify(iObj) + ") -> passed!");
 		}
 	}
+	
+	//Print out all tree elements
+	console.log("All tree elements in order: ");
+	await tree.forEach(element => console.log(element));
 }
 
 initHost();
 
-HLT_test(4, 20, 5);
+HLT_test(5, 100, 20);
