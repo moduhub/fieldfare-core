@@ -163,6 +163,35 @@ class TreeContainer {
 	
 		return this.children[childIndex];
 	}
+	
+	//Runs the callback following hash order of the set
+	async forEach(callback) {
+
+		if(this.children[0] !== '') {
+		
+			const leftmostChild = await TreeContainer.fromResource(this.children[0]);
+		
+			//Descent on leftmost child
+			await leftmostChild.forEach(callback);
+				
+		}
+		
+		for(var i=0; i<this.numElements; i++) {
+		
+			//Intercalate children with branches
+			callback(this.elements[i]);
+
+			if(this.children[i+1] !== '') {
+				
+				var iChild = await TreeContainer.fromResource(this.children[i+1]);
+				
+				await iChild.forEach(callback);
+			}
+			
+		}
+		
+	}
+	
 };
 
 module.exports = class HashLinkedTree {
@@ -435,12 +464,24 @@ module.exports = class HashLinkedTree {
 				}
 				
 			} while(nextContainerHash !== '');
-					
 			
 //			console.log("Element NOT found");
 			
 			return false;
 
+		}
+		
+	}
+	
+	async forEach(callback) {
+		
+		if(this.rootHash != null
+		&& this.rootHash != undefined) {
+		
+			var rootContainer = await TreeContainer.fromResource(this.rootHash);
+				
+			rootContainer.forEach(callback);
+				
 		}
 		
 	}
