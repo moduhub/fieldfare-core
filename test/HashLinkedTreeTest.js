@@ -38,6 +38,8 @@ async function HLT_test(order, numElements, numChecks) {
 		
 		if(await tree.has(iObj) == false) {
 			throw 'has() after add() failed at index ' + i;
+		} else {
+			console.log("add_then_check(" + JSON.stringify(iObj) + ") -> passed!");
 		}
 	}
 	
@@ -51,7 +53,9 @@ async function HLT_test(order, numElements, numChecks) {
 		
 		if(await tree.has(iObj) == false) {
 			throw 'has(valid) failed at index ' + i;
-		}		
+		}else {
+			console.log("check_existant(" + JSON.stringify(iObj) + ") -> passed!");
+		}
 	}
 	
 	//Validate nonexistant elements
@@ -64,6 +68,8 @@ async function HLT_test(order, numElements, numChecks) {
 		
 		if(await tree.has(iObj) == true) {
 			throw 'has(invalid) failed at index ' + i;
+		} else {
+			console.log("check_unexistant(" + JSON.stringify(iObj) + ") -> passed!");
 		}
 	}
 }
