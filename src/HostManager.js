@@ -173,10 +173,10 @@ module.exports = class HostManager {
 			
 		var base64hash = await this.storeResource(base64data);
 		
-		console.log("------------------------------\n"
-			+ "Storing: " + base64hash
-			+ "->" + JSON.stringify(object, null, 2)
-			+ "\n------------------------------\n");
+//		console.log("------------------------------\n"
+//			+ "Storing: " + base64hash
+//			+ "->" + JSON.stringify(object, null, 2)
+//			+ "\n------------------------------\n");
 		
 		return base64hash;
 	}
