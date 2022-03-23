@@ -11,11 +11,11 @@ module.exports = class Environment {
 		
 		this.lastHash = '';
 		
-		this.admins = new Set();
+		this.admins = new VersionedSet();
 		
-		this.services = new Set();
+		//this.services = new VersionedSet();
 		
-		this.states = new Map();
+		//this.states = new Map();
 		
 	}
 	
