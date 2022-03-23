@@ -58,15 +58,22 @@ module.exports = class HostManager {
 				y: privateKeyData.y,
 				alg: "ES256"
 			};
-						
+
 		} else {
 			
-			const keypair = crypto.generateKeyPairSync('ec', {
-				namedCurve: 'secp256k1'
-			});
+			const keypair = await crypto.subtle.generateKey(
+				{
+					name: "ECDSA",
+					namedCurve: "P-256"
+				},
+				true,
+				["sign"]
+			);
 			
 			this.privateKey = keypair.privateKey;
-			let pubkey = keypair.publicKey.export({type:'spki',format:'der'});
+			
+			pubKeyData = await crypto.subtle.exportKey('jwk', keypair.publicKey);
+						
 		}
 		
 		console.log('host pubkey data: ' + JSON.stringify(pubKeyData));
