@@ -453,7 +453,7 @@ module.exports = class HostManager {
 		
 		message.signature = Utils.arrayBufferToBase64(signatureBuffer);
 		
-		console.log("Message signature added: " + message.signature);
+//		console.log("Message signature added: " + message.signature);
 	}
 	
 	announce() {
