@@ -114,11 +114,12 @@ class UpdateMessage {
 
 module.exports = class VersionedSet {
 	
-	constructor(currentVersion) {
+	constructor() {
 		
-		this.currentVersion = currentVersion;
+		this.adminsHLT = '';
+		this.elementsHLT = '';
 		
-		this.admins = new Map();
+		this.admins = new HashLinkedTree(5);
 		this.elements = new HashLinkedTree(5);
 			
 	}
@@ -157,15 +158,7 @@ module.exports = class VersionedSet {
 			
 	}
 	
-	//Perform local add
-	async add(newElement) {
-		
-		const prevVersion = this.elements.rootHash;
-		
-		const newElementHash = await host.generateResourceHash(newElement);
-		
-		//Perform local changes
-		this.currentVersion = await this.elements.add(newElement);
+	async commit(changes) {
 		
 		//Create update message
 		var updateMessage = new UpdateMessage();
@@ -173,18 +166,64 @@ module.exports = class VersionedSet {
 		updateMessage.source = host.id;
 		
 		updateMessage.data = {
-			prev: prevVersion,
-			version: this.currentVersion,
-			add: newElementHash
-		}
-		
-		console.log("Update: " + JSON.stringify(updateMessage, null, 2));
+			prev: this.latestUpdate,
+			admins: this.adminsHLT,
+			elements: this.elementsHLT,
+			changes: changes
+		};
 		
 		await host.signMessage(updateMessage);
 		
 		this.latestUpdate = await host.storeResourceObject(updateMessage);
 		
-		console.log("Update: " + JSON.stringify(this.latestUpdate, null, 2)
+		console.log("Update: " + JSON.stringify(updateMessage, null, 2)
 			+ "->" + this.latestUpdate);
+
+	}
+	
+	async addAdmin(newAdminID) {
+		
+		//newAdmin must be a valid host ID
+		console.log("Adding set amdin: ID="+newAdminID);
+
+		//Check if admin was not already present
+		if(await this.admins.has(newAdminID)) {
+			
+			console.log("addAdmin failed: id already in set");
+			
+		} else {
+			
+			//Perform local changes
+			this.adminsHLT = await this.admins.add(newAdminID);
+
+			await this.commit({
+				addAdmin: newAdminID
+			});
+		}
+		
+	}
+	
+	//Perform local add
+	async addElement(newElement) {
+
+		const newElementHash = await host.generateResourceHash(newElement);
+
+		console.log("Adding new element: " + newElementHash);
+		
+		//Check if element was not already present
+		if(await this.elements.has(newElementHash)) {
+			
+			console.log("addElement failed: hash already in set");
+			
+		} else {
+		
+			//Perform local changes
+			this.elementsHLT = await this.elements.add(newElement);
+
+			await this.commit({
+				addElement: newElementHash
+			});
+		}
+		
 	}
 };
