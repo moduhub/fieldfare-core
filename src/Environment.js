@@ -4,48 +4,33 @@
  * and open the template in the editor.
  */
 
+const VersionedData = require('./VersionedData.js');
 
-module.exports = class Environment {
+module.exports = class Environment extends VersionedData {
 
-	constructor() {
+	constructor(uuid) {
+		super();
 		
-		this.lastHash = '';
+		//this.uuid = uuid;
 		
-		this.admins = new VersionedSet();
+		this.services = '';
 		
-		//this.services = new VersionedSet();
-		
-		//this.states = new Map();
+		this.providers = '';
 		
 	}
 	
-	init(envRoot) {
+	init(uuid) {
 		
-		console.log("Init environment from root:" + JSON.stringify(envRoot));
+		const update = nvdata.load(uuid);
 		
-		//Store all admins
-		envRoot.admins.forEach((hostid) => {
-			
-			if(hostid != host.id) {
-				
-				var newHost = host.registerRemoteHost(hostid);
-				
-				this.admins.add(newHost);
-				
-			} else {
-				
-				console.log("heh, found meeself in admin list");
-				
-			}
-			
-		});
+		//UpdateMessage.validate(update);?
 		
-		//Update env from remote hosts data
-	}
+		const envRoot = {
+			uuid: uuid
+		};
 		
-	sync(newEnvState) {
-		
-		//env stat deppends on a group of versioned sets
+		//Build chain downto envRoot
+		const chain = update.buildChain(envRoot);
 		
 	}
 		
@@ -56,10 +41,18 @@ module.exports = class Environment {
 
 	}
 	
+	addService(definition) {
+		
+		//
+		
+	}
+	
 	//Env alteration functions
 	addServiceProvider(serviceName, providerID) {
 		
-		//
+		//check if service exists
+		
+		//add provider to list
 		
 	}
 	
