@@ -6,6 +6,9 @@
 
 const fs = require('fs');
 
+const path = './nvdata.json';
+
+
 module.exports = class NodeNVData {
 
 	constructor() {
@@ -16,17 +19,28 @@ module.exports = class NodeNVData {
 	
 	loadMap() {
 		
-		var serializedData = fs.readFileSync('./nvdata.json');
+		if(fs.existsSync(path)) {
+		
+			var serializedData = fs.readFileSync(path);
 
-		try {
+			try {
 
-			this.data = new Map(JSON.parse(serializedData));
+				this.data = new Map(JSON.parse(serializedData));
 
-		} catch (err) {
+			} catch (err) {
 
-			console.log('There has been an error parsing your JSON.')
-			console.log(err);
+				console.log('There has been an error parsing your JSON.')
+				console.log(err);
 
+				this.data = new Map();
+
+			}
+			
+		} else {
+			
+			//No nvdata stored, create new
+			this.data = new Map();
+			
 		}
 
 		this.loaded = true;
@@ -36,7 +50,7 @@ module.exports = class NodeNVData {
 
 		var serializedData = JSON.stringify(Array.from(this.data.entries()));
 		
-		fs.writeFile('./nvdata.json', serializedData, function (err) {
+		fs.writeFile(path, serializedData, function (err) {
 			if (err) {
 				console.log('There has been an error saving your configuration data.');
 				console.log(err.message);
@@ -50,7 +64,7 @@ module.exports = class NodeNVData {
 	
 	save(key, data) {
 		
-		if(!this.loaded) {
+		if(this.loaded === false) {
 			this.loadMap();
 		}
 		
@@ -61,11 +75,11 @@ module.exports = class NodeNVData {
 	
 	load(key) {
 		
-		if(this.loaded == false) {
+		if(this.loaded !== true) {
 			this.loadMap();
 		}
 		
-		return this.data.load(key, data);
+		return this.data.get(key);
 		
 	}
 	
