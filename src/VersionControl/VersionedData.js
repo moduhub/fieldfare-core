@@ -4,6 +4,8 @@
  * and open the template in the editor.
  */
 
+const HashLinkedTree = require('./HashLinkedTree.js');
+
 class UpdateMessage {
 
 	constructor() {
