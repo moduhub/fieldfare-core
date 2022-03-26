@@ -7,14 +7,18 @@
 
 const common = require('./EnvTestCommon.js');
 
+const Environment = require('../../src/Environment.js');
+
+
 async function test() {
 	
-	await common.init(common.privateKey[0]);
+	await common.init(common.privateKeys[0]);
 	
 	//Attemp to fetch latest version of environment
 	var env = new Environment('25b1d0c4-6f12-4a27-bd27-da1b297221d1');
 	
 	await env.init();
+	
 }
 
 test();

@@ -4,40 +4,44 @@
  * and open the template in the editor.
  */
 
-const NodeNVData = require('./NodeNVData.js');
+const HostManager = require('../../src/HostManager.js');
+
+const ResourcesManager = require('../../src/ResourcesManager.js');
+
+const NodeNVData = require('../../src/NodeNVData.js');
 
 module.exports = {
 	
 	//Service definition example
-	controllerService = {
+	controllerService: {
 		uuid: '8fe072fc-f211-400c-b540-c95aae700001',
 		name: 'mhcontrol',
 		methods: ['create', 'delete', 'link', 'set'],
 		props: ['modules', 'variables', 'links']
 	},
 
-	fieldLogService = {
+	fieldLogService: {
 		uuid: '8fe072fc-f211-400c-b540-c95aae700002',
 		name: 'fieldlog',
 		methods: ['get'],
 		props: ['sampleList']
 	},
 
-	labLogService = {
+	labLogService: {
 		uuid: '8fe072fc-f211-400c-b540-c95aae700003',
 		name: 'lablog',
 		methods: ['get'],
 		props: ['resultsList']
 	},
 
-	mapService = {
+	mapService: {
 		uuid: '8fe072fc-f211-400c-b540-c95aae700004',
 		name: 'mapfield',
 		methods: ['get'],
 		props: ['mapfield']
 	},
 	
-	privateKeys = [
+	privateKeys: [
 		{
 			kty: "EC",
 			d: "eEWiWMmT540u44M28QjU03uzzRLRQ0_ixtzc0ztQ3os",
