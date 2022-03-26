@@ -7,7 +7,11 @@
 module.exports = class VersionStatement {
 
 	constructor() {
-		
+		this.signature = '';
+		this.source = '';
+		this.data = {
+			prev: ''
+		};
 	}
 	
 	static validate(message) {
@@ -106,6 +110,18 @@ module.exports = class VersionStatement {
 		} while(iUpdateMessage.data.prev !== this.currentVersion);
 		
 		return chain;
+	}
+	
+	static createRoot(data) {
+		
+		var rootVersion = new VersionStatement();
+		
+		rootVersion.data = data;
+		
+		console.log("Root version: " + JSON.stringify(rootVersion, null, 2));
+		
+		return rootVersion;
+		
 	}
 	
 };
