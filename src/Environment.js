@@ -4,11 +4,14 @@
  * and open the template in the editor.
  */
 
-const VersionedData = require('./VersionedData.js');
+const VersionedData = require('./VersionControl/VersionedData.js');
+
+const VersionStatement = require('./VersionControl/VersionStatement.js');
+
 
 module.exports = class Environment extends VersionedData {
 
-	constructor(uuid) {
+	constructor() {
 		super();
 		
 		//this.uuid = uuid;
@@ -19,19 +22,36 @@ module.exports = class Environment extends VersionedData {
 		
 	}
 	
-	init(uuid) {
+	async init(uuid) {
+		
+		if(nvdata === undefined) {
+			throw 'nvdata was not initialized';
+		}
 		
 		const update = nvdata.load(uuid);
 		
-		//UpdateMessage.validate(update);?
-		
-		const envRoot = {
+		const rootVersion = VersionStatement.createRoot({
 			uuid: uuid
-		};
+		});
 		
-		//Build chain downto envRoot
-		const chain = update.buildChain(envRoot);
-		
+		if(update
+		&& update !== null
+		&& update !== undefined) {
+
+			//Build chain downto envRoot
+			const chain = update.buildChain(rootVersion);
+			
+		} else {
+			
+			//No data, start from scratch
+			this.version = await host.storeResourceObject(rootVersion);
+			
+			console.log("Root version: " + this.version);
+			
+		}
+		//UpdateMessage.validate(update);?
+				
+	
 	}
 		
 	updateProviderState(providerID, stateHash) {
