@@ -486,6 +486,23 @@ module.exports = class HashLinkedTree {
 		
 	}
 	
+	async isEmpty() {
+		
+		if(this.rootHash
+		&& this.rootHash !== null
+		&& this.rootHash !== undefined) {
+			
+			const rootElement = await host.getResourceObject(this.rootHash);
+			
+			if(rootElement.numElements > 0) {
+				return true;
+			}
+			
+		}
+		
+		return false;
+	}
+	
 	diff(other) {
 		
 		var newElements = new Set();
