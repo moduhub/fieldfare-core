@@ -15,6 +15,10 @@ const sServiceIdMap = new Map();
 sServiceIdMap.set('announce', SERVICE_ID_ANNOUNCE);
 sServiceIdMap.set('resource', SERVICE_ID_RESOURCE);
 
+const SERVICE_FIELD_ID_ANNOUNCE_ID = 1;
+const SERVICE_FIELD_ID_ANNOUNCE_STATE = 2;
+const SERVICE_FIELD_ID_ANNOUNCE_ENV = 3;
+
 module.exports = class Message {
 	
 	constructor(service, data) {
@@ -34,6 +38,14 @@ module.exports = class Message {
 		
 		this.source = address;
 		
+	}
+	
+	jsonReplacer(key, value) {
+		
+		//Add propertires to be ignored or transformed
+		// when stringifying the message for tansmission here
+
+		return value;
 	}
 	
 	toBuffer() {
@@ -88,8 +100,15 @@ module.exports = class Message {
 					buffer.set(new Uint8Array(stateBuffer), offset);
 					offset += 32;
 					
-				} else {
-					throw 'announce data.state missing';
+				}
+				
+				if(this.data.env) {
+					
+					var envBuffer = Utils.base64ToArrayBuffer(this.data.env);
+					
+					buffer.set(new Uint8Array(envBuffer), offset);
+					offset += 32;
+					
 				}
 				
 			} break;
