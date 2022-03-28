@@ -10,6 +10,9 @@ const ResourcesManager = require('../../src/ResourcesManager.js');
 
 const NodeNVData = require('../../src/NodeNVData.js');
 
+const UDPTransceiver = require('../../src/UDPTransceiver.js');
+
+
 module.exports = {
 	
 	//Service definition example
@@ -63,8 +66,13 @@ module.exports = {
 			alg: "ES256"
 		}
 	],
+	
+	testHostsIDs: [
+		"ZBtzCpE//A/HP1BZR4sL1n9bAkvUdRrWMfVfvPl/UGA=",
+		"P9q2XHwBvYvxaBNNol3PQPK1C/QCvsI1Wxwx4nsYTDo="
+	],
 
-	async init(privateKeyData) {
+	async init(privateKeyData, udpPort) {
 
 		global.host = new HostManager();
 
@@ -76,6 +84,16 @@ module.exports = {
 		host.addResourcesManager(new ResourcesManager());
 
 		await host.setupId(privateKeyData);
+
+		//Setup transceivers
+		this.udpTransceiver = new UDPTransceiver(udpPort);
+
+		this.udpTransceiver.onNewChannel = (newChannel) => {
+		
+			console.log("UDP transceiver onNewChannel");
+			host.bootChannel(newChannel);
+			
+		};
 
 	}
 	

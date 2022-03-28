@@ -12,20 +12,17 @@ const Environment = require('../../src/Environment.js');
 
 async function test() {
 	
-	await common.init(common.privateKeys[0], 15000);
+	await common.init(common.privateKeys[1], 15001);
 	
 	//Attemp to fetch latest version of environment
 	var env = new Environment();
 	
 	await env.init('25b1d0c4-6f12-4a27-bd27-da1b297221d1');
 	
-	await env.addAdmin(host.id);			//me
-	await env.addAdmin(common.testHostsIDs[1]);	//other
-	
-	await env.addProvider('resource', common.testHostsIDs[0]);
-	await env.addProvider('resource', common.testHostsIDs[1]);
-	
-	console.log("Current env version is " + env.version);
+	//Reach for host 2, attemp to sync the env with him
+	var forcedUDPChannel = common.udpTransceiver.newChannel('127.0.0.1', '15000');
+
+	host.bootChannel(forcedUDPChannel);
 	
 }
 
