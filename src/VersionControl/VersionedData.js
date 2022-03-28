@@ -14,7 +14,6 @@ module.exports = class VersionedData {
 	constructor() {
 		
 		this.adminsHLT = '';
-		this.latestUpdate = '';
 		
 		this.admins = new HashLinkedTree(5);
 		
@@ -51,23 +50,22 @@ module.exports = class VersionedData {
 	async commit(changes) {
 		
 		//Create update message
-		var updateMessage = new UpdateMessage();
+		var versionStatement = new VersionStatement();
 		
-		updateMessage.source = host.id;
+		versionStatement.source = host.id;
 		
-		updateMessage.data = {
-			prev: this.latestUpdate,
+		versionStatement.data = {
+			prev: this.version,
 			admins: this.adminsHLT,
-			version: this.version,
 			changes: changes
 		};
 		
-		await host.signMessage(updateMessage);
+		await host.signMessage(versionStatement);
 		
-		this.latestUpdate = await host.storeResourceObject(updateMessage);
+		this.version = await host.storeResourceObject(versionStatement);
 		
-		console.log("Update: " + JSON.stringify(updateMessage, null, 2)
-			+ "->" + this.latestUpdate);
+		console.log("Update: " + JSON.stringify(versionStatement, null, 2)
+			+ "->" + this.version);
 
 	}
 	
