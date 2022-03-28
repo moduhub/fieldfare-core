@@ -28,23 +28,25 @@ module.exports = class Environment extends VersionedData {
 			throw 'nvdata was not initialized';
 		}
 		
-		const update = nvdata.load(uuid);
+		const latestVersion = nvdata.load(uuid);
 		
-		const rootVersion = VersionStatement.createRoot({
+		const rootStatement = VersionStatement.createRoot({
 			uuid: uuid
 		});
 		
-		if(update
-		&& update !== null
-		&& update !== undefined) {
+		if(latestVersion
+		&& latestVersion !== null
+		&& latestVersion !== undefined) {
+
+			const latestStatement = host.getResourceObject(latestVersion);
 
 			//Build chain downto envRoot
-			const chain = update.buildChain(rootVersion);
+			const chain = latestStatement.buildChain(rootStatement);
 			
 		} else {
 			
 			//No data, start from scratch
-			this.version = await host.storeResourceObject(rootVersion);
+			this.version = await host.storeResourceObject(rootStatement);
 			
 			console.log("Root version: " + this.version);
 			
