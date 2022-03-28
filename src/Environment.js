@@ -70,7 +70,7 @@ module.exports = class Environment extends VersionedData {
 	}
 	
 	//Env alteration functions
-	addServiceProvider(serviceName, providerID) {
+	addProvider(serviceName, providerID) {
 		
 		//check if service exists
 		
@@ -78,7 +78,7 @@ module.exports = class Environment extends VersionedData {
 		
 	}
 	
-	removeServiceProvider(serviceName, providerID) {
+	removeProvider(serviceName, providerID) {
 		
 		//
 		
