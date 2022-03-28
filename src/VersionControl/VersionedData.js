@@ -72,22 +72,38 @@ module.exports = class VersionedData {
 	async addAdmin(newAdminID) {
 		
 		//newAdmin must be a valid host ID
-		console.log("Adding set amdin: ID="+newAdminID);
+		console.log("Adding set admin: ID="+newAdminID);
 
 		//Check if admin was not already present
 		if(await this.admins.has(newAdminID)) {
 			
-			console.log("addAdmin failed: id already in set");
+			throw 'addAdmin failed: id already in set';
+			
+		}
+		
+		//Check auth
+		if(await this.admins.isEmpty() !== false) {
+			
+			console.log("Checking if I am authorized");
+			
+			if(await this.admins.has(host.id) == false) {
+				throw 'addAdmin failed: not authorized';
+			} else {
+				console.log("Ok auth!!");
+			}
 			
 		} else {
 			
-			//Perform local changes
-			this.adminsHLT = await this.admins.add(newAdminID);
-
-			await this.commit({
-				addAdmin: newAdminID
-			});
+			console.log("Admin group is empty, auth ok");
+			
 		}
+		
+		//Perform local changes
+		this.adminsHLT = await this.admins.add(newAdminID);
+
+		await this.commit({
+			addAdmin: newAdminID
+		});
 		
 	}
 	
