@@ -23,6 +23,17 @@ module.exports = class Request extends Message {
 		
 	}
 	
+	jsonReplacer(key, value) {
+		
+		//Add propertires to be ignored or transformed
+		// when stringifying the message for tansmission here
+		if(key === 'listeners') return undefined;
+		if(key === 'state') return undefined;
+		if(key === 'timeout') return undefined;
+		
+		return super.jsonReplacer(key, value);
+	}
+	
 	addListener(callback) {
 	
 		if(this.state == 'done') {
