@@ -366,7 +366,8 @@ module.exports = class HostManager {
 		
 		var announceMessage = new Message('announce', {
 			id: this.id,
-			state: this.stateHash
+			state: this.stateHash,
+			env: this.envVersion
 		});
 		
 		await this.signMessage(announceMessage);
