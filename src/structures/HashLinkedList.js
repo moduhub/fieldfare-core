@@ -2,7 +2,10 @@
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
+
  */
+
+const Utils = require('../Utils.js');
 
 
 module.exports = class HashLinkedList {
@@ -13,6 +16,10 @@ module.exports = class HashLinkedList {
 		&& lastHash !== 'null'
 		&& lastHash !== 'undefined'
 		&& lastHash !== '') {
+
+			if(Utils.isBase64(lastHash) === false) {
+				throw 'invalid HLL initialization parameter';
+			}
 
 			this.lastHash = lastHash;
 
@@ -26,7 +33,13 @@ module.exports = class HashLinkedList {
 
 		}
 
+	}
 
+	getStateIdentifier() {
+
+		var stateId = this.lastHash;
+
+		return stateId;
 	}
 
 	async append(element) {
@@ -36,9 +49,13 @@ module.exports = class HashLinkedList {
 			obj: element
 		};
 
+		console.log("Hash Linked List append: " + JSON.stringify(newListElement));
+
 		this.lastHash = await host.storeResourceObject(newListElement);
 
 		this.numElements++;
+
+		console.log("hash after append: " + this.lastHash);
 
 	}
 

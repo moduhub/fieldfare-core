@@ -1,4 +1,4 @@
-/* 
+/*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -7,31 +7,31 @@
 const Utils = require('../Utils.js');
 
 class TreeContainer {
-	
+
 	constructor(leftChild) {
-		
+
 		this.elements = new Array();
 		this.children = new Array();
-		
+
 		if(leftChild == null
 		|| leftChild == undefined) {
-			
+
 			this.children[0] = '';
-			
+
 		} else {
 			if(leftChild !== ''
 			&& Utils.isBase64(leftChild) === false) {
 				throw 'invalid right child - not base64';
 			}
-			
+
 			this.children[0] = leftChild;
 		}
-		
+
 		this.numElements = 0;
 	}
-	
+
 	static async fromResource(hash) {
-		
+
 		var newContainer = new TreeContainer();
 
 		const resourceObject = await host.getResourceObject(hash);
@@ -40,41 +40,41 @@ class TreeContainer {
 		|| resourceObject === undefined) {
 			throw 'failed to fetch container resorce';
 		}
-		
+
 		Object.assign(newContainer, resourceObject);
-		
+
 		return newContainer;
 	}
-	
+
 	addElement(hash, rightChild) {
 
 		//Parameters validation
 		if(Utils.isBase64(hash) === false) {
 			throw 'invalid element hash';
 		}
-		
+
 		if(rightChild === null
 		|| rightChild === undefined) {
 			rightChild = '';
-		} else	
+		} else
 		if(rightChild !== ''
 		&& Utils.isBase64(rightChild) === false) {
 			throw 'invalid right child - not base64';
 		}
-		
+
 		if(this.numElements == 0) {
 			this.elements[0] = hash;
 			this.children[1] = rightChild;
 		} else {
 			if(hash < this.elements[0]) {
-				
+
 				this.elements.unshift(hash);
 				this.children.splice(1, 0, rightChild);
-				
+
 			} else {
-				
+
 				var insertIndex = 1;
-				
+
 				for(var i=0; i<this.numElements; i++) {
 					if(hash > this.elements[i]) {
 						insertIndex = i+1;
@@ -82,22 +82,22 @@ class TreeContainer {
 						break;
 					}
 				}
-				
+
 				this.elements.splice(insertIndex, 0, hash);
 				this.children.splice(insertIndex+1, 0, rightChild);
 			}
 		}
-		
+
 		this.numElements++;
-			
+
 	}
-	
+
 	updateChild(prev, current) {
-		
+
 		var index = undefined;
 
 //		console.log(">>> Updating child " + prev + "->" + current);
-		
+
 		for(var i=0; i<this.numElements+1; i++) {
 			if(this.children[i] === prev) {
 				index = i;
@@ -105,45 +105,45 @@ class TreeContainer {
 				break;
 			}
 		}
-		
+
 		if(index === undefined) {
 			throw 'child not found in container';
 		}
-		
+
 		return index;
 	}
-	
-	//Split: 
+
+	//Split:
 	// 1) Mean element is popped out
 	// 2) Left element stays
 	// 3) Right element is returned
 	split(rightContainer) {
-		
+
 		//find mean element
 		const meanIndex = Math.floor((this.numElements-1)/2);
-		
+
 		var meanElement = this.elements[meanIndex];
-		
+
 		const numRightElements = this.numElements - meanIndex - 1;
-		
+
 		rightContainer.elements = this.elements.splice(meanIndex, numRightElements+2);
 		rightContainer.children = this.children.splice(meanIndex+1, numRightElements+1);
-		
+
 		//fill first element
 		rightContainer.elements.splice(0,1);
-		
+
 		this.numElements -= numRightElements+1;
 		rightContainer.numElements = numRightElements;
-				
+
 		return meanElement;
 	}
-	
+
 	follow(hash) {
-		
+
 		var childIndex = 0;
-		
+
 		if(hash > this.elements[0]) {
-			
+
 			for(var i=0; i<this.numElements; i++) {
 				if(hash > this.elements[i]) {
 					childIndex = i+1;
@@ -160,96 +160,103 @@ class TreeContainer {
 			//Found element on first position
 			return true;
 		}
-	
+
 		return this.children[childIndex];
 	}
-	
+
 	//Runs the callback following hash order of the set
 	async forEach(callback) {
 
 		if(this.children[0] !== '') {
-		
+
 			const leftmostChild = await TreeContainer.fromResource(this.children[0]);
-		
+
 			//Descent on leftmost child
 			await leftmostChild.forEach(callback);
-				
+
 		}
-		
+
 		for(var i=0; i<this.numElements; i++) {
-		
+
 			//Intercalate children with branches
 			callback(this.elements[i]);
 
 			if(this.children[i+1] !== '') {
-				
+
 				var iChild = await TreeContainer.fromResource(this.children[i+1]);
-				
+
 				await iChild.forEach(callback);
 			}
-			
+
 		}
-		
+
 	}
-	
+
 };
 
 module.exports = class HashLinkedTree {
-	
+
 	constructor(degree, rootHash) {
-		
+
 		if(degree <= 0
 		|| degree > 10
 		|| degree === undefined
 		|| degree === null) {
 			throw 'invalid tree order value';
 		}
-		
+
 		this.degree = degree;
-		
+
 		if(rootHash == null
 		|| rootHash == undefined) {
-		
+
 			this.rootHash = null;
-			
+
 		} else {
-			
+
 			if(Utils.isBase64(rootHash) === false) {
 				throw 'root is not base64';
 			}
-			
+
 			//TODO: root element structure validation?
-			
+
 			this.rootHash = rootHash;
 		}
-		
+
 	}
-		
+
+	getStateIdentifier() {
+
+		var stateId = this.rootHash;
+
+		return stateId;
+	}
+
 	//Start a new tree with a given initial element
 	async init(firstElementHash) {
-		
+
 		var newRoot = new TreeContainer();
-		
+
 		if(firstElementHash !== null
 		&& firstElementHash !== undefined) {
-		
+
 			newRoot.addElement(firstElementHash);
-			
+
 		}
-		
+
 		this.rootHash = await host.storeResourceObject(newRoot);
 
 //		console.log("New tree root: \'" + this.rootHash + "\'");
-		
+
 	}
-	
+
 	async validate(element, storeFlag) {
-		
+
 		var elementHash;
-		
+
 		//Treat objects or hashes deppending on param format
 		if(typeof element === 'object') {
-			
+
 			if(storeFlag == null
 			|| storeFlag == undefined
 			|| storeFlag == false) {
@@ -257,39 +264,39 @@ module.exports = class HashLinkedTree {
 			} else {
 				elementHash = await host.storeResourceObject(element);
 			}
-						
+
 		} else
 		if(Utils.isBase64(element)) {
-			
+
 			elementHash = element;
-			
+
 		} else {
 			throw 'invalid element type';
 		}
-		
+
 		return elementHash;
 	}
-	
+
 	async add(element) {
-		
+
 		var elementHash = await this.validate(element);
 
 //		console.log("tree.add(" + JSON.stringify(element, null, 2) + ") -> " + elementHash);
-		
+
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
-		
+
 			//console.log("First insert, init root with \'" + elementHash + "\'");
-		
+
 			await this.init(elementHash);
-		
+
 		} else {
-			
+
 			var prevBranchHashes = new Array();
 			var branch = new Array();
 
 			var iContainer = await TreeContainer.fromResource(this.rootHash);
-			
+
 //			console.log('root->' + JSON.stringify(iContainer, null, 2));
 
 			var depth = 0;
@@ -325,7 +332,7 @@ module.exports = class HashLinkedTree {
 			//Leaf add
 			iContainer.addElement(elementHash);
 
-//			console.log("Inserted new at depth=" + depth 
+//			console.log("Inserted new at depth=" + depth
 //				+ " -> Container: "  + JSON.stringify(iContainer, null, 2));
 
 			//Perform split if numElements == degree
@@ -363,7 +370,7 @@ module.exports = class HashLinkedTree {
 //						+ " -> " + branch[0]);
 
 					break;
-					
+
 				} else {
 
 					//Add element to lower (closer to root) container and
@@ -379,9 +386,9 @@ module.exports = class HashLinkedTree {
 
 					iContainer.updateChild(prevBranchHashes[depth], leftContainerHash);
 					iContainer.addElement(meanElement, rightContainerHash);
-					
+
 //					console.log(">>> iContainer after state: " + JSON.stringify(iContainer, null, 2));
-					
+
 					depth--;
 				}
 
@@ -403,113 +410,113 @@ module.exports = class HashLinkedTree {
 //				console.log(  "depth: " + depth
 //					+ "current: " + currentContainerHash
 //					+ " prev: " + prevBranchHashes[depth]);
-				
+
 				if(currentContainerHash !== prevBranchHashes[depth]) {
 
 					branch[depth-1].updateChild(prevBranchHashes[depth], currentContainerHash);
 
 					//Free previous resource?
-					
+
 				} else {
 					//this shoould never happen?
 					throw 'this was unexpected, check code';
 				}
-				
+
 				depth--;
 
 			}
-			
+
 			//Update root
 			this.rootHash = await host.storeResourceObject(branch[0]);
-			
+
 			//Dump previous root?
-			
+
 //			console.log(">>> Tree.add finished, new root is " + this.rootHash);
 		}
-		
+
 		return this.rootHash;
 	}
-	
+
 	async has(element) {
-		
+
 		const elementHash = await this.validate(element, false);
-		
+
 //		console.log("tree.has(" + elementHash + ")");
-		
+
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
-		
+
 			return false;
-			
+
 		} else {
-			
+
 			var iContainer;
 			var nextContainerHash = this.rootHash;
 			var depth = 0;
-			
+
 			do {
-				
+
 				iContainer = await TreeContainer.fromResource(nextContainerHash);
-				
+
 //				console.log("search["+depth+"]: " + JSON.stringify(iContainer, null, 2));
-				
+
 				nextContainerHash = iContainer.follow(elementHash);
 				depth++;
-				
+
 //				console.log("follow->" + nextContainerHash);
-				
+
 				if(nextContainerHash === true) {
 //					console.log("Element found");
 					return true;
 				}
-				
+
 			} while(nextContainerHash !== '');
-			
+
 //			console.log("Element NOT found");
-			
+
 			return false;
 
 		}
-		
+
 	}
-	
+
 	async forEach(callback) {
-		
+
 		if(this.rootHash != null
 		&& this.rootHash != undefined) {
-		
+
 			var rootContainer = await TreeContainer.fromResource(this.rootHash);
-				
+
 			rootContainer.forEach(callback);
-				
+
 		}
-		
+
 	}
-	
+
 	async isEmpty() {
-		
+
 		if(this.rootHash
 		&& this.rootHash !== null
 		&& this.rootHash !== undefined) {
-			
+
 			const rootElement = await host.getResourceObject(this.rootHash);
-			
+
 			if(rootElement.numElements > 0) {
 				return true;
 			}
-			
+
 		}
-		
+
 		return false;
 	}
-	
+
 	diff(other) {
-		
+
 		var newElements = new Set();
-		
+
 		//experimental function, returns a set of element hashes
 		// that is present in the other tree but not on this one
-		
+
 		return newElements;
 	}
 };
