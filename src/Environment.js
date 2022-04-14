@@ -1,4 +1,4 @@
-/* 
+/*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -13,75 +13,78 @@ module.exports = class Environment extends VersionedData {
 
 	constructor() {
 		super();
-		
+
 		//this.uuid = uuid;
-		
+
 		this.services = '';
-		
+
 		this.providers = '';
-		
+
 	}
-	
+
 	async init(uuid) {
-		
+
 		if(nvdata === undefined) {
 			throw 'nvdata was not initialized';
 		}
-		
-		const latestVersion = nvdata.load(uuid);
-		
+
+		const latestVersion = await nvdata.load(uuid);
+
 		const rootStatement = VersionStatement.createRoot({
 			uuid: uuid
 		});
-		
+
+		const rootVersion = await host.storeResourceObject(rootStatement);
+
+		console.log("Latest Version: " + latestVersion);
+
 		if(latestVersion
 		&& latestVersion !== null
-		&& latestVersion !== undefined) {
+		&& latestVersion !== undefined
+		&& latestVersion !== rootVersion) {
 
-			const latestStatement = host.getResourceObject(latestVersion);
+			const latestStatement = await VersionStatement.fromResource(latestVersion);
 
-			//Build chain downto envRoot
-			const chain = latestStatement.buildChain(rootStatement);
-			
+			//Build chain downto env root
+			const chain = latestStatement.buildChain(rootVersion);
+
 		} else {
-			
+
 			//No data, start from scratch
-			this.version = await host.storeResourceObject(rootStatement);
-			
+			this.version = rootVersion;
+
 			console.log("Root version: " + this.version);
-			
+
 		}
-		//UpdateMessage.validate(update);?
-				
-	
+
 	}
-		
+
 	updateProviderState(providerID, stateHash) {
-		
+
 		//provider state is a versioned state strucutre
 		var currentStateObjectHash = this.getCurrentHostState(providerID);
 
 	}
-	
+
 	addService(definition) {
-		
+
 		//
-		
+
 	}
-	
+
 	//Env alteration functions
 	addProvider(serviceName, providerID) {
-		
+
 		//check if service exists
-		
+
 		//add provider to list
-		
+
 	}
-	
+
 	removeProvider(serviceName, providerID) {
-		
+
 		//
-		
+
 	}
-	
+
 };
