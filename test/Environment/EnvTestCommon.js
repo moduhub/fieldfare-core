@@ -1,4 +1,4 @@
-/* 
+/*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -6,7 +6,7 @@
 
 const HostManager = require('../../src/HostManager.js');
 
-const ResourcesManager = require('../../src/ResourcesManager.js');
+const VolatileResourcesManager = require('../../src/resources/VolatileResourcesManager.js');
 
 const NodeNVData = require('../../src/NodeNVData.js');
 
@@ -14,7 +14,7 @@ const UDPTransceiver = require('../../src/UDPTransceiver.js');
 
 
 module.exports = {
-	
+
 	//Service definition example
 	controllerService: {
 		uuid: '8fe072fc-f211-400c-b540-c95aae700001',
@@ -43,7 +43,7 @@ module.exports = {
 		methods: ['get'],
 		props: ['mapfield']
 	},
-	
+
 	privateKeys: [
 		{
 			kty: "EC",
@@ -66,7 +66,7 @@ module.exports = {
 			alg: "ES256"
 		}
 	],
-	
+
 	testHostsIDs: [
 		"ZBtzCpE//A/HP1BZR4sL1n9bAkvUdRrWMfVfvPl/UGA=",
 		"P9q2XHwBvYvxaBNNol3PQPK1C/QCvsI1Wxwx4nsYTDo="
@@ -81,7 +81,7 @@ module.exports = {
 
 		global.nvdata = new NodeNVData();
 
-		host.addResourcesManager(new ResourcesManager());
+		host.addResourcesManager(new VolatileResourcesManager());
 
 		await host.setupId(privateKeyData);
 
@@ -89,12 +89,12 @@ module.exports = {
 		this.udpTransceiver = new UDPTransceiver(udpPort);
 
 		this.udpTransceiver.onNewChannel = (newChannel) => {
-		
+
 			console.log("UDP transceiver onNewChannel");
 			host.bootChannel(newChannel);
-			
+
 		};
 
 	}
-	
+
 }

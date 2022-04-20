@@ -11,6 +11,8 @@ const Utils = require('./Utils.js');
 const RemoteHost = require('./RemoteHost.js');
 const Request = require('./Request.js');
 
+const ResourcesManager = require('./resources/ResourcesManager.js');
+
 const HashLinkedList = require('./structures/HashLinkedList.js');
 
 module.exports = class HostManager {
@@ -202,26 +204,9 @@ module.exports = class HostManager {
 		return remoteHost;
 	}
 
-	async generateResourceHash(object) {
-
-		var utf8ArrayBuffer = new TextEncoder().encode(JSON.stringify(object));
-
-		var base64data = Utils.arrayBufferToBase64(utf8ArrayBuffer);
-
-		var dataBuffer = Utils.base64ToArrayBuffer(base64data);
-
-		var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', dataBuffer));
-
-		var base64hash = btoa(String.fromCharCode.apply(null, hash));
-
-		return base64hash;
-	}
-
 	async storeResourceObject(object) {
 
-		var utf8ArrayBuffer = new TextEncoder().encode(JSON.stringify(object));
-
-		var base64data = Utils.arrayBufferToBase64(utf8ArrayBuffer);
+		const base64data = ResourcesManager.convertObjectToData(object);
 
 		var base64hash = await this.storeResource(base64data);
 
@@ -235,11 +220,9 @@ module.exports = class HostManager {
 
 	async getResourceObject(hash, owner) {
 
-		var object;
+		const base64data = await this.getResource(hash, owner);
 
-		var base64data = await this.getResource(hash, owner);
-
-		object = JSON.parse(atob(base64data));
+		var object = ResourcesManager.convertDataToObject(base64data);
 
 		return object;
 	}
@@ -250,11 +233,9 @@ module.exports = class HostManager {
 
 		if(this.resourcesManagers.size > 0) {
 
-			//Temp: storing all on first manager
-			var result = this.resourcesManagers.values().next();
-			if(!result.done) {
+			//Store in all defined managers
 
-				var manager = result.value;
+			for(const manager of this.resourcesManagers) {
 
 				base64hash = await manager.storeResource(data);
 
@@ -271,7 +252,7 @@ module.exports = class HostManager {
 
 		return new Promise((resolve, reject) => {
 
-			//Attemp to find rsource on all resources managers
+			//Attemp to find resource on all resources managers
 			var iterator = this.resourcesManagers.values();
 
 			var result = iterator.next();
@@ -369,7 +350,7 @@ module.exports = class HostManager {
 					//console.log("get resource: rejected no owner");
 
 					//Owner not know, fail
-					reject("resource not found");
+					reject("resource not found: " + hash);
 
 				}
 
