@@ -107,6 +107,10 @@ module.exports = class HostManager {
 		const stateKey = definition.uuid;
 		const serviceState = await nvdata.load(stateKey);
 
+		if(serviceState) {
+			console.log("Service state is null, this can be a first setup");
+		}
+
 		for(const entry of definition.data) {
 
 			console.log("Processing entry " + JSON.stringify(entry));
@@ -115,10 +119,15 @@ module.exports = class HostManager {
 
 				case 'list' : {
 
-					const entryState = serviceState[entry.name];
-					console.log("entry state: " + entryState);
+					var newList;
+					if(serviceState) {
+						const entryState = serviceState[entry.name];
+						console.log("entry state: " + entryState);
 
-					var newList = new HashLinkedList(entryState);
+						newList = new HashLinkedList(entryState);
+					} else {
+						newList = new HashLinkedList();
+					}
 
 					newList.name = entry.name; //is this a bad practice?
 
@@ -235,7 +244,7 @@ module.exports = class HostManager {
 
 			//Store in all defined managers
 
-			for(const manager of this.resourcesManagers) {
+			for await (const manager of this.resourcesManagers) {
 
 				base64hash = await manager.storeResource(data);
 

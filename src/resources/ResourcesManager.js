@@ -46,4 +46,4 @@ module.exports = class ResourcesManager {
 		return base64hash;
 	}
 
-}
+};
