@@ -16,17 +16,15 @@ module.exports = class VolatileResourcesManager extends ResourcesManager {
 
     async storeResource(base64data) {
 
-        const base64hash = ResourcesManager.generateKeyForData(base64data);
+        const base64hash = await ResourcesManager.generateKeyForData(base64data);
 
 		this.hashmap.set(base64hash, base64data);
 
-		/*
-		console.log("res.store("
-			+ base64hash
-			+ ", "
-			+ base64data
-			+ ") >hashmap size: " + this.hashmap.size);
-		*/
+		// console.log("res.store("
+		// 	+ base64hash
+		// 	+ ", "
+		// 	+ base64data
+		// 	+ ") >hashmap size: " + this.hashmap.size);
 
 		return base64hash;
 	}

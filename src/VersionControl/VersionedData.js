@@ -76,7 +76,7 @@ module.exports = class VersionedData {
 	async addAdmin(newAdminID) {
 
 		//newAdmin must be a valid host ID
-		console.log("Adding set admin: ID="+newAdminID);
+		console.log("VersionedData.addAdmin ID="+newAdminID);
 
 		//Check if admin was not already present
 		if(await this.admins.has(newAdminID)) {
