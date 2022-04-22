@@ -23,7 +23,7 @@ module.exports = class IndexedDBResourcesManager extends ResourcesManager {
 
     async getResource(base64hash) {
 
-        const base64data = this.db.get(base64hash);
+        const base64data = await this.db.get(base64hash);
 
         return base64data;
 
