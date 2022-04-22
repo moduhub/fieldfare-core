@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-const Utils = require('../Utils.js');
+const Utils = require('../basic/Utils.js');
 
 class TreeContainer {
 

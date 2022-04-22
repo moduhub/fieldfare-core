@@ -1,5 +1,5 @@
 
-const Utils = require('../Utils.js');
+const Utils = require('../basic/Utils.js');
 
 module.exports = class ResourcesManager {
 

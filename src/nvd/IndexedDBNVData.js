@@ -1,5 +1,5 @@
 
-const IndexedDBBase = require('../indexedDB/IndexedDBBase.js');
+const IndexedDBBase = require('../basic/IndexedDBBase.js');
 
 module.exports = class IndexedDBNVData {
 

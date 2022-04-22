@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-const HashLinkedTree = require('../Structures/HashLinkedTree.js');
+const HashLinkedTree = require('../structures/HashLinkedTree.js');
 
 const VersionStatement = require('./VersionStatement.js');
 

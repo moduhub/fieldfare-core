@@ -4,9 +4,9 @@
  * and open the template in the editor.
  */
 
-const VersionedData = require('./VersionControl/VersionedData.js');
+const VersionedData = require('./versioning/VersionedData.js');
 
-const VersionStatement = require('./VersionControl/VersionStatement.js');
+const VersionStatement = require('./versioning/VersionStatement.js');
 
 
 module.exports = class Environment extends VersionedData {

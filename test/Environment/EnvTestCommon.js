@@ -8,7 +8,7 @@ const HostManager = require('../../src/HostManager.js');
 
 const VolatileResourcesManager = require('../../src/resources/VolatileResourcesManager.js');
 
-const NodeNVData = require('../../src/NodeNVData.js');
+const NodeNVData = require('../../src/nvd/NodeNVData.js');
 
 const UDPTransceiver = require('../../src/UDPTransceiver.js');
 

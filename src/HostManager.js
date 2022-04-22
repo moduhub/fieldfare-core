@@ -4,10 +4,9 @@
  * and open the template in the editor.
  */
 
-//const { Buffer } = require('buffer');
+const Utils = require('./basic/Utils.js');
 
 const Message = require('./Message.js');
-const Utils = require('./Utils.js');
 const RemoteHost = require('./RemoteHost.js');
 const Request = require('./Request.js');
 

@@ -1,7 +1,7 @@
 
 const ResourcesManager = require('./ResourcesManager.js');
 
-const IndexedDBBase = require('../indexedDB/IndexedDBBase.js');
+const IndexedDBBase = require('../basic/IndexedDBBase.js');
 
 module.exports = class IndexedDBResourcesManager extends ResourcesManager {
 
