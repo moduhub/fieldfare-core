@@ -50,3 +50,6 @@ Thumbs.db
 
 /mhlib-js/nbproject/private/
 /nbproject/private/
+/nvd
+/resources
+/package-lock.json

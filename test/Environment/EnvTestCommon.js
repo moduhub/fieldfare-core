@@ -6,9 +6,9 @@
 
 const HostManager = require('../../src/HostManager.js');
 
-const VolatileResourcesManager = require('../../src/resources/VolatileResourcesManager.js');
+const LevelResourcesManager = require('../../src/resources/LevelResourcesManager.js');
 
-const NodeNVData = require('../../src/nvd/NodeNVData.js');
+const LevelNVData = require('../../src/nvd/LevelNVData.js');
 
 const UDPTransceiver = require('../../src/UDPTransceiver.js');
 
@@ -79,9 +79,9 @@ module.exports = {
 		//Note: On node it is necessary to provide the correct webcrypto implementation
 		global.crypto = require('crypto').webcrypto;
 
-		global.nvdata = new NodeNVData();
+		global.nvdata = new LevelNVData();
 
-		host.addResourcesManager(new VolatileResourcesManager());
+		host.addResourcesManager(new LevelResourcesManager());
 
 		await host.setupId(privateKeyData);
 
