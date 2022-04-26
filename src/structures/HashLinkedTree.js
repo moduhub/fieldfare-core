@@ -6,6 +6,8 @@
 
 const Utils = require('../basic/Utils.js');
 
+const ResourcesManager = require('../resources/ResourcesManager.js');
+
 class TreeContainer {
 
 	constructor(leftChild) {
@@ -164,6 +166,38 @@ class TreeContainer {
 		return this.children[childIndex];
 	}
 
+	async* [Symbol.asyncIterator]() {
+
+		if(this.children[0] !== '') {
+
+			const leftmostChild = await TreeContainer.fromResource(this.children[0]);
+
+			//Descent on leftmost child
+			for await (const element of leftmostChild) {
+				yield element;
+			}
+
+		}
+
+		for(var i=0; i<this.numElements; i++) {
+
+			//Intercalate children with branches
+			yield this.elements[i];
+
+			if(this.children[i+1] !== '') {
+
+				var iChild = await TreeContainer.fromResource(this.children[i+1]);
+
+				for await (const element of iChild) {
+					yield element;
+				}
+			}
+
+		}
+
+
+	}
+
 	//Runs the callback following hash order of the set
 	async forEach(callback) {
 
@@ -260,7 +294,7 @@ module.exports = class HashLinkedTree {
 			if(storeFlag == null
 			|| storeFlag == undefined
 			|| storeFlag == false) {
-				elementHash = await host.generateResourceHash(element);
+				elementHash = await ResourcesManager.generateKeyForObject(element);
 			} else {
 				elementHash = await host.storeResourceObject(element);
 			}
@@ -477,6 +511,28 @@ module.exports = class HashLinkedTree {
 			return false;
 
 		}
+
+	}
+
+	async* [Symbol.asyncIterator]() {
+
+		console.log("Entered HashLinkedTree.asyncIterator");
+
+		var branch = [];
+
+		if(this.rootHash != null
+		&& this.rootHash != undefined) {
+
+			var rootContainer = await TreeContainer.fromResource(this.rootHash);
+
+			for await(const element of rootContainer) {
+				yield element;
+			}
+
+		} else {
+			console.log("Entered HashLinkedTree.asyncIterator nullll");
+		}
+
 
 	}
 
