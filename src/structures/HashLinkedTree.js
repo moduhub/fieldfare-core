@@ -516,8 +516,6 @@ module.exports = class HashLinkedTree {
 
 	async* [Symbol.asyncIterator]() {
 
-		console.log("Entered HashLinkedTree.asyncIterator");
-
 		var branch = [];
 
 		if(this.rootHash != null
@@ -529,11 +527,7 @@ module.exports = class HashLinkedTree {
 				yield element;
 			}
 
-		} else {
-			console.log("Entered HashLinkedTree.asyncIterator nullll");
 		}
-
-
 	}
 
 	async forEach(callback) {
