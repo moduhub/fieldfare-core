@@ -35,7 +35,11 @@ module.exports = class HashLinkedList {
 
 	}
 
-	getStateIdentifier() {
+	setState(state) {
+		this.lastHash = state;
+	}
+
+	getState() {
 
 		var stateId = this.lastHash;
 
@@ -49,13 +53,13 @@ module.exports = class HashLinkedList {
 			obj: element
 		};
 
-		console.log("Hash Linked List append: " + JSON.stringify(newListElement));
+		// console.log("Hash Linked List append: " + JSON.stringify(newListElement));
 
 		this.lastHash = await host.storeResourceObject(newListElement);
 
 		this.numElements++;
 
-		console.log("hash after append: " + this.lastHash);
+		// console.log("hash after append: " + this.lastHash);
 
 	}
 

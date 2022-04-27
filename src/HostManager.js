@@ -9,10 +9,10 @@ const Utils = require('./basic/Utils.js');
 const Message = require('./Message.js');
 const RemoteHost = require('./RemoteHost.js');
 const Request = require('./Request.js');
+const Service = require('./env/Service.js');
 
 const ResourcesManager = require('./resources/ResourcesManager.js');
 
-const HashLinkedList = require('./structures/HashLinkedList.js');
 
 module.exports = class HostManager {
 
@@ -96,53 +96,20 @@ module.exports = class HostManager {
 
 	async setupService(definition) {
 
-		var newService = {
-			definition: definition,
-			methods: [],
-			data: new Object
-		};
-
-		//recover last service state
-		const stateKey = definition.uuid;
-		const serviceState = await nvdata.load(stateKey);
-
-		if(serviceState) {
-			console.log("Service state is null, this can be a first setup");
-		}
-
-		for(const entry of definition.data) {
-
-			console.log("Processing entry " + JSON.stringify(entry));
-
-			switch(entry.type) {
-
-				case 'list' : {
-
-					var newList;
-					if(serviceState) {
-						const entryState = serviceState[entry.name];
-						console.log("entry state: " + entryState);
-
-						newList = new HashLinkedList(entryState);
-					} else {
-						newList = new HashLinkedList();
-					}
-
-					newList.name = entry.name; //is this a bad practice?
-
-					newService.data[entry.name] = newList;
-
-				} break;
-
-				default: {
-					throw 'unknown service data type: ' + entry.type;
-				} break;
-			}
-
-		}
+		var newService = Service.fromDefinition(definition);
 
 		//Register service under host mapping
 		this.services.set(definition.uuid, newService);
+
+		//recover last service state
+        const stateKey = definition.uuid;
+        const serviceState = await nvdata.load(stateKey);
+
+		if(serviceState) {
+			newService.setState(serviceState);
+		} else {
+            console.log("Service state is null, this can be a first setup");
+        }
 
 		return newService;
 	}
@@ -153,15 +120,8 @@ module.exports = class HostManager {
 
 		for(const [uuid, service] of this.services) {
 
-			const serviceName = service.definition.name;
-			var serviceState = new Object;
-
-			for(const prop in service.data) {
-
-				console.log("data.name: " + prop);
-				console.log("stateId: " + service.data[prop].getStateIdentifier());
-			 	serviceState[prop] = service.data[prop].getStateIdentifier();
-			}
+			const serviceName = service.name;
+			const serviceState = service.getState();
 
 			hostState[serviceName] = serviceState;
 

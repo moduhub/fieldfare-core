@@ -76,7 +76,11 @@ module.exports = class Environment extends VersionedData {
 			throw 'service already defined';
 		}
 
-		await this.vdata.services.add(definition);
+		await this.auth();
+
+		const resource = await host.storeResourceObject(definition);
+
+		await this.vdata.services.add(resource);
 
 		this.vdata.providers[definition.uuid] = new HashLinkedTree(5);
 
@@ -87,11 +91,28 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
+	async getService(uuid) {
+
+		var definition;
+
+		for await(const resource of this.vdata.services) {
+
+			const service = await host.getResourceObject(resource);
+
+			console.log(JSON.stringify(service));
+
+			if(service.uuid === uuid) {
+				return service;
+			}
+		}
+
+		throw 'service definition not found in env';
+
+	}
+
 	async hasService(uuid) {
 
 		for await(const service of this.vdata.services) {
-
-			console.log();
 
 			if(service.uuid === uuid) {
 				return true;
@@ -101,8 +122,19 @@ module.exports = class Environment extends VersionedData {
 		return false;
 	}
 
+	getProviders(serviceUUID) {
+
+		const provider = this.vdata.providers[serviceUUID];
+
+		// console.log("provider: " + JSON.stringify(provider));
+
+		return provider;
+	}
+
 	//Env alteration functions
-	addProvider(serviceUUID, providerID) {
+	async addProvider(serviceUUID, providerID) {
+
+		await this.auth();
 
 		//check if service exists
 
@@ -110,7 +142,9 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
-	removeProvider(serviceUUID, providerID) {
+	async removeProvider(serviceUUID, providerID) {
+
+		await this.auth();
 
 		//
 

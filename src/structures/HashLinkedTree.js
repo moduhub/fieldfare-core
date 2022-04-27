@@ -240,26 +240,31 @@ module.exports = class HashLinkedTree {
 		}
 
 		this.degree = degree;
+		this.setState(rootHash);
 
-		if(rootHash == null
-		|| rootHash == undefined) {
+	}
 
-			this.rootHash = null;
+	setState(state) {
+
+		if(state == null
+		|| state == undefined) {
+
+			this.state = null;
 
 		} else {
 
-			if(Utils.isBase64(rootHash) === false) {
+			if(Utils.isBase64(state) === false) {
 				throw 'root is not base64';
 			}
 
 			//TODO: root element structure validation?
 
-			this.rootHash = rootHash;
+			this.rootHash = state;
 		}
 
 	}
 
-	getStateIdentifier() {
+	getState() {
 
 		var stateId = this.rootHash;
 

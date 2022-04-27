@@ -59,7 +59,7 @@ module.exports = class VersionedData {
 
 		if(value instanceof HashLinkedTree
 		|| value instanceof HashLinkedList) {
-			return value.getStateIdentifier();
+			return value.getState();
 		}
 
 		return value;
@@ -87,40 +87,48 @@ module.exports = class VersionedData {
 
 	}
 
+	async auth(strict=true) {
+
+		if(await this.vdata.admins.isEmpty() !== false) {
+
+			console.log("Checking if I am authorized");
+
+			if(await this.vdata.admins.has(host.id) == false) {
+				throw 'addAdmin failed: not authorized';
+			} else {
+				console.log(">>> Auth ok");
+			}
+
+		} else {
+			if(strict) {
+				throw 'strict auth failed, admin group empty';
+			} else {
+				console.log("Admin group is empty, strict=false, auth ok");
+			}
+		}
+	}
+
 	async addAdmin(newAdminID) {
 
 		//newAdmin must be a valid host ID
 		console.log("VersionedData.addAdmin ID="+newAdminID);
 
 		//Check if admin was not already present
-		if(await this.admins.has(newAdminID)) {
+		if(await this.vdata.admins.has(newAdminID)) {
 
 			throw 'addAdmin failed: id already in set';
 
 		}
 
-		//Check auth
-		if(await this.admins.isEmpty() !== false) {
-
-			console.log("Checking if I am authorized");
-
-			if(await this.admins.has(host.id) == false) {
-				throw 'addAdmin failed: not authorized';
-			} else {
-				console.log("Ok auth!!");
-			}
-
-		} else {
-
-			console.log("Admin group is empty, auth ok");
-
-		}
+		//Check auth, non strict
+		this.auth(false);
 
 		//Perform local changes
-		this.adminsHLT = await this.admins.add(newAdminID);
+		await this.vdata.admins.add(newAdminID);
 
 		await this.commit({
 			addAdmin: newAdminID
 		});
 	}
+
 };
