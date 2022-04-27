@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 
+const HashLinkedList = require('../structures/HashLinkedList.js');
 const HashLinkedTree = require('../structures/HashLinkedTree.js');
 
 const VersionStatement = require('./VersionStatement.js');
@@ -13,15 +14,18 @@ module.exports = class VersionedData {
 
 	constructor() {
 
-		this.adminsHLT = '';
-
-		this.admins = new HashLinkedTree(5);
+		this.vdata = {
+			admins: new HashLinkedTree(5)
+		}
 
 		this.version = '';
 
 	}
 
 	apply(changes) {
+
+		//handle addAdmin here
+
 		throw 'Versioned data apply() not defined';
 	}
 
@@ -51,6 +55,16 @@ module.exports = class VersionedData {
 
 	}
 
+	static jsonReplacer(key, value) {
+
+		if(value instanceof HashLinkedTree
+		|| value instanceof HashLinkedList) {
+			return value.getStateIdentifier();
+		}
+
+		return value;
+	}
+
 	async commit(changes) {
 
 		//Create update message
@@ -60,7 +74,7 @@ module.exports = class VersionedData {
 
 		versionStatement.data = {
 			prev: this.version,
-			admins: this.adminsHLT,
+			vdata: JSON.stringify(this.vdata, VersionedData.jsonReplacer),
 			changes: changes
 		};
 
@@ -68,7 +82,7 @@ module.exports = class VersionedData {
 
 		this.version = await host.storeResourceObject(versionStatement);
 
-		console.log("Update: " + JSON.stringify(versionStatement, null, 2)
+		console.log("Update: " + JSON.stringify(versionStatement, null, 2).replaceAll('\\', '')
 			+ "->" + this.version);
 
 	}

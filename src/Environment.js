@@ -8,17 +8,19 @@ const VersionedData = require('./versioning/VersionedData.js');
 
 const VersionStatement = require('./versioning/VersionStatement.js');
 
+const HashLinkedTree = require('./structures/HashLinkedTree.js');
+
+const Service = require('./env/Service.js');
+
 
 module.exports = class Environment extends VersionedData {
 
 	constructor() {
 		super();
 
-		//this.uuid = uuid;
+		this.vdata.services = new HashLinkedTree(5);
 
-		this.services = '';
-
-		this.providers = '';
+		this.vdata.providers = {};
 
 	}
 
@@ -66,14 +68,41 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
-	addService(definition) {
+	async addService(definition) {
 
-		//
+		Service.validate(definition);
+
+		if(await this.hasService(definition.uuid)) {
+			throw 'service already defined';
+		}
+
+		await this.vdata.services.add(definition);
+
+		this.vdata.providers[definition.uuid] = new HashLinkedTree(5);
+
+		//Create changes "replication instructions"
+		await this.commit({
+			addService: definition
+		});
 
 	}
 
+	async hasService(uuid) {
+
+		for await(const service of this.vdata.services) {
+
+			console.log();
+
+			if(service.uuid === uuid) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	//Env alteration functions
-	addProvider(serviceName, providerID) {
+	addProvider(serviceUUID, providerID) {
 
 		//check if service exists
 
@@ -81,7 +110,7 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
-	removeProvider(serviceName, providerID) {
+	removeProvider(serviceUUID, providerID) {
 
 		//
 
