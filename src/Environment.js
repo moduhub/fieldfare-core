@@ -20,6 +20,8 @@ module.exports = class Environment extends VersionedData {
 
 		this.vdata.services = new HashLinkedTree(5);
 
+		this.vdata.webports = new HashLinkedTree(5);
+
 		this.vdata.providers = {};
 
 	}
@@ -148,6 +150,54 @@ module.exports = class Environment extends VersionedData {
 
 		//
 
+	}
+
+	async getWebport(hostID) {
+
+		for await(const resource of this.vdata.webports) {
+
+			console.log('webport info: ' + JSON.stringfy(webport));
+
+			const webport = await host.getResourceObject(resource);
+
+			if(webport.hostid === hostID) {
+				return webport;
+			}
+
+		}
+
+		return null;
+	}
+
+	asycn setWebport(hostID, info) {
+
+		this.auth();
+
+		//validate info
+		if('protocol' in info === false) throw 'missing webport protocol';
+		if('ip' in info === false) throw 'missing webport IP address';
+		if('port' in info === false) throw 'missing webport number';
+
+		const webport = {
+			hostid: hostID,
+			protocol: info.protocol,
+			ip: info.ip,
+			port: info.port
+		}
+
+		const resourceKey = await host.storeResourceObject(webport);
+
+		if(await this.vdata.has(resourceKey) === false) {
+
+			//Exact same information already present
+			const resource = await this.vdata.add(webport);
+
+			await this.commit({
+				setWebport: resourceKey
+			});
+		}
+
+		return resource;
 	}
 
 };
