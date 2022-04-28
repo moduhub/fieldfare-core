@@ -169,19 +169,19 @@ module.exports = class Environment extends VersionedData {
 		return null;
 	}
 
-	asycn setWebport(hostID, info) {
+	async setWebport(hostID, info) {
 
 		this.auth();
 
 		//validate info
 		if('protocol' in info === false) throw 'missing webport protocol';
-		if('ip' in info === false) throw 'missing webport IP address';
+		if('address' in info === false) throw 'missing webport address';
 		if('port' in info === false) throw 'missing webport number';
 
 		const webport = {
 			hostid: hostID,
 			protocol: info.protocol,
-			ip: info.ip,
+			address: info.address,
 			port: info.port
 		}
 
