@@ -63,6 +63,19 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
+	async sync() {
+
+		//This function should check my state against some server
+		// and assure my data is not old
+
+		return new Promise((resolve, reject) => {
+			setTimeout(() => {
+				resolve()
+			}, 1000);
+		});
+
+	}
+
 	updateProviderState(providerID, stateHash) {
 
 		//provider state is a versioned state strucutre
@@ -126,21 +139,54 @@ module.exports = class Environment extends VersionedData {
 
 	getProviders(serviceUUID) {
 
-		const provider = this.vdata.providers[serviceUUID];
+		const providers = this.vdata.providers[serviceUUID];
 
 		// console.log("provider: " + JSON.stringify(provider));
 
-		return provider;
+		return providers;
 	}
 
-	//Env alteration functions
+	async isProvider(hostID, serviceUUID) {
+
+		const providers = this.getProviders(serviceUUID);
+
+		if(providers
+		&& providers !== undefined
+		&& providers !== null) {
+
+			return providers.has(hostID);
+
+		}
+
+		return false;
+	}
+
 	async addProvider(serviceUUID, providerID) {
 
 		await this.auth();
 
-		//check if service exists
+		if(serviceUUID in this.vdata.providers) {
 
-		//add provider to list
+			const providers = this.vdata.providers[serviceUUID];
+
+			if(await providers.has(providerID) == false) {
+
+				await providers.add(providerID);
+
+				await this.commit({
+					addProvider: await host.storeResourceObject({
+						service: serviceUUID,
+						host: providerID
+					})
+				});
+
+			} else {
+				throw 'provider already in list';
+			}
+
+		} else {
+			throw 'service not defined in environment';
+		}
 
 	}
 
@@ -187,17 +233,17 @@ module.exports = class Environment extends VersionedData {
 
 		const resourceKey = await host.storeResourceObject(webport);
 
-		if(await this.vdata.has(resourceKey) === false) {
+		if(await this.vdata.webports.has(resourceKey) === false) {
 
 			//Exact same information already present
-			const resource = await this.vdata.add(webport);
+			await this.vdata.webports.add(webport);
 
 			await this.commit({
 				setWebport: resourceKey
 			});
 		}
 
-		return resource;
+		return resourceKey;
 	}
 
 };
