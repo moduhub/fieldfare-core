@@ -164,7 +164,7 @@ module.exports = class HostManager {
 
 					//console.log("assignedRequest " + JSON.stringify(assignedRequest));
 
-					assignedRequest.complete(response);
+					assignedRequest.resolve(response);
 				}
 			};
 		}
@@ -216,114 +216,77 @@ module.exports = class HostManager {
 		return base64hash;
 	}
 
-	getResource(hash, owner) {
+	async getResource(hash, owner) {
 
-		return new Promise((resolve, reject) => {
+		var base64data;
 
-			//Attemp to find resource on all resources managers
-			var iterator = this.resourcesManagers.values();
+		//Attemp to find resource on all resources managers
+		for(const manager of this.resourcesManagers) {
 
-			var result = iterator.next();
-			while(!result.done) {
+			base64data = await manager.getResource(hash);
 
-				var iManager = result.value;
-
-				var base64data = iManager.getResource(hash);
-
-				if(base64data !== undefined) {
-					resolve(base64data);
-					break;
-				}
-
-				var result = iterator.next();
+			if(base64data !== undefined) {
+				return base64data;
 			}
 
-			if(base64data == undefined) {
+		}
 
-				//console.log("res.fetch: Not found locally. Owner: " + owner);
+		//console.log("res.fetch: Not found locally. Owner: " + owner);
 
-				//not found locally, attemp to find on remote host
+		//not found locally, attemp to find on remote host
 
-				if(owner
-				&& owner !== null
-				&& owner !== undefined) {
+		if(owner === null
+		|| owner === undefined) {
 
-					//Check if there is already a request for
-					//this same hash
+			//Owner not know, fail
+			throw ('resource not found: ' + hash);
 
-					//console.log("res.fetch: looking for previous request");
+		}
 
-					var request = this.requests.get(hash);
+		//Check if there is already a request for
+		//this same hash
 
-					//console.log("res.fetch: previous request = " + request);
+		//console.log("res.fetch: looking for previous request");
 
-					if(request == undefined) {
+		var request = this.requests.get(hash);
 
-						//console.log("res.fetch: new request");
+		//console.log("res.fetch: previous request = " + request);
 
-						request = new Request('resource', 10000, {
-							hash: hash
-						});
+		if(request === undefined) {
 
-						request.setDestinationAddress(owner);
+			//console.log("res.fetch: new request");
 
-						//send request
-						this.requests.set(hash, request);
+			request = new Request('resource', 10000, {
+				hash: hash
+			});
 
-					}
+			request.setDestinationAddress(owner);
 
-					//Listen for request completion
-					request.addListener((response, error) => {
+			//send request
+			this.requests.set(hash, request);
 
-						if(error
-						&& error !== null
-						&& error !== undefined) {
+			//Notify that a new request was created
+			this.onNewRequest(request);
 
-							//console.log("get resource rejected: timeout");
+		}
 
-							reject(error);
+		const response = await request.complete();
 
-						} else {
+		var remoteBase64hash = response.data.hash;
+		var remoteBase64data = response.data.data;
 
-							var remoteBase64hash = response.data.hash;
-							var remoteBase64data = response.data.data;
+		//console.log ("Received remote resource response:" + JSON.stringify(response.data.data));
+		const verifyHash = await this.storeResource(remoteBase64data);
 
-							//console.log ("Received remote resource response:" + JSON.stringify(response.data.data));
-							this.storeResource(remoteBase64data).then( (hash) => {
+		if(verifyHash === remoteBase64hash) {
 
-								if(hash === remoteBase64hash) {
+			//console.log("[+RES] (" + hash + "):(" + response.data.data + ")");
 
-									//console.log("[+RES] (" + hash + "):(" + response.data.data + ")");
+			return response.data.data;
 
-									resolve(response.data.data);
+		}
 
-								} else {
-
-									reject('corrupted resource received from remote host');
-
-								}
-
-
-							})
-
-						}
-
-					});
-
-					//Notify that a new request was created
-					this.onNewRequest(request);
-
-				} else {
-
-					//console.log("get resource: rejected no owner");
-
-					//Owner not know, fail
-					reject("resource not found: " + hash);
-
-				}
-
-			}
-		});
+		throw ('corrupted resource received from remote host');
 
 	}
 
