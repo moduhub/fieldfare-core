@@ -74,7 +74,7 @@ module.exports = class LevelResourcesManager extends ResourcesManager {
             base64data = await this.db.get(base64hash);
         } catch (error) {
 
-            console.log("LevelResourcesManager getResource: " + error);
+            console.log("LevelResourcesManager getResource(" + base64hash + "):" + error);
 
             if (error.notFound === true) {
                 base64data = undefined;
