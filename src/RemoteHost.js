@@ -89,74 +89,63 @@ module.exports = class RemoteHost {
 
 	async treatAnnounce(message, channel) {
 
-		if('id' in message.data) {
-
-			if(this.pubKey === undefined) {
-
-				//Get host pubkey
-				var remotePubKeyData = await host.getResourceObject(message.data.id, message.data.id);
-
-				if(remotePubKeyData !== undefined) {
-
-					try {
-						this.pubKey = await crypto.subtle.importKey(
-							'jwk',
-							remotePubKeyData,
-							{
-								name:'ECDSA',
-								namedCurve: 'P-256'
-							},
-							false,
-							['verify']
-						);
-
-					} catch (error) {
-						console.log("Failed to import remote pub key from resource: " + error);
-					}
-
-					console.log("Remote host pubkey: " + JSON.stringify(remotePubKeyData));
-
-				} else {
-					console.log("failed to get remote host pubkey, not a good signal");
-				}
-
-			}
-
-		} else {
+		if('id' in message.data === false) {
 			throw 'malformed announce, missing host id';
 		}
 
+		if(this.pubKey === undefined) {
 
-		//Do not accept state before message is verified
-		if(this.pubKey) {
+			//Get host pubkey
+			var remotePubKeyData = await host.getResourceObject(message.data.id, message.data.id);
 
-			if(await this.verifyMessage(message) == true) {
+			console.log("Remote host pubkey: " + JSON.stringify(remotePubKeyData));
 
-				//Get host state
-				if('state' in message.data) {
+			this.pubKey = await crypto.subtle.importKey(
+				'jwk',
+				remotePubKeyData,
+				{
+					name:'ECDSA',
+					namedCurve: 'P-256'
+				},
+				false,
+				['verify']
+			);
 
-					if(this.state !== message.data.state) {
-
-						this.state = message.data.state;
-
-						if(this.onStateUpdate) {
-							this.onStateUpdate(message.data.state);
-						}
-
-					}
-
-				} else {
-					throw 'malformed announce packet, missing state data';
-				}
-
-			} else {
-
-				console.log("Announce from "
-					+ this.id
-					+ " rejected due to invalid signature.");
-			}
 		}
 
+		if(await this.verifyMessage(message) !== true) {
+			throw 'invalid message signature';
+		}
+
+		//Get host state
+		if('state' in message.data === false) {
+
+			console.log("Announce from "
+				+ this.id
+				+ " rejected due to invalid signature.");
+
+			throw 'malformed announce packet, missing state data';
+		}
+
+		if(this.state !== message.data.state) {
+
+			this.state = message.data.state;
+
+			if(this.onStateUpdate) {
+				this.onStateUpdate(message.data.state);
+			}
+
+		}
+
+		if('env' in message.data) {
+			if(this.envVersion !== message.data.env) {
+				this.envVersion = message.data.env;
+				if(this.onEnvironmentUpdate) {
+					this.onEnvironmentUpdate(message.data.env);
+				}
+			}
+		}
+		
 	}
 
 	async treatResourceMessage(message, channel) {
@@ -241,6 +230,12 @@ module.exports = class RemoteHost {
 		}
 
 		return result;
+	}
+
+	async accessService(uuid) {
+
+		throw 'RemoteHost.accessService method still in development';
+
 	}
 
 };

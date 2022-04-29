@@ -34,9 +34,7 @@ module.exports = class Environment extends VersionedData {
 
 		const latestVersion = await nvdata.load(uuid);
 
-		const rootStatement = VersionStatement.createRoot({
-			uuid: uuid
-		});
+		const rootStatement = VersionStatement.createRoot(uuid);
 
 		const rootVersion = await host.storeResourceObject(rootStatement);
 
@@ -61,12 +59,13 @@ module.exports = class Environment extends VersionedData {
 
 		}
 
+		host.environment = this;
+
 	}
 
 	async sync() {
 
-		//This function should check my state against some server
-		// and assure my data is not old
+		//Collect a certain number of announces from environment members
 
 		return new Promise((resolve, reject) => {
 			setTimeout(() => {

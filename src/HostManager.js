@@ -167,6 +167,16 @@ module.exports = class HostManager {
 					assignedRequest.resolve(response);
 				}
 			};
+
+			remoteHost.onEnvironmentUpdate = (version) => {
+
+				console.log("remoteHost: " + remoteHost.id + " updated environment to version " + version);
+
+				if(this.environment) {
+					this.environment.update(version, remoteHost.id);
+				}
+
+			}
 		}
 
 		return remoteHost;
@@ -239,7 +249,7 @@ module.exports = class HostManager {
 		|| owner === undefined) {
 
 			//Owner not know, fail
-			throw ('resource not found: ' + hash);
+			throw ('resource not found locally, owner not known: ' + hash);
 
 		}
 
@@ -282,7 +292,7 @@ module.exports = class HostManager {
 
 			//console.log("[+RES] (" + hash + "):(" + response.data.data + ")");
 
-			return response.data.data;
+			return remoteBase64data;
 
 		}
 
