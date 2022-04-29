@@ -21,7 +21,6 @@ module.exports = class HostManager {
 		this.bootChannels = new Set();
 		this.resourcesManagers = new Set();
 		this.remoteHosts = new Map();
-		this.envAdmins = new Set();
 		this.requests = new Map();
 
 		this.services = new Map();
@@ -89,7 +88,8 @@ module.exports = class HostManager {
 
 		setInterval(() => {
 			//console.log("Host is announcing");
-			this.announce();
+			for (const [id,host] of this.remoteHosts) 		this.announce(host);
+			for (const channel of this.bootChannels) 	this.announce(channel);
 		}, 10000);
 
 	}
@@ -321,13 +321,7 @@ module.exports = class HostManager {
 
 		this.bootChannels.add(channel);
 
-		var announceMessage = new Message('announce', {
-			id: this.id,
-			state: this.stateHash,
-			env: this.envVersion
-		});
-
-		await this.signMessage(announceMessage);
+		this.announce(channel);
 
 		channel.onMessageReceived = (message) => {
 
@@ -414,52 +408,34 @@ module.exports = class HostManager {
 //		console.log("Message signature added: " + message.signature);
 	}
 
-	announce() {
+	async announce(destination) {
 
-		//Announce to everybody I know!
-		if(this.remoteHosts.size > 0) {
-
-			//console.log("Announcing to " + this.remoteHosts.size + " known hosts");
-
-			this.remoteHosts.forEach(async host => {
-
-				var message = new Message('announce', {
-					id: this.id,
-					state: this.updateState()
-				});
-
-				await this.signMessage(message);
-
-				message.setSourceAddress(this.id);
-
-				host.send(message);
-
-			});
-
-		} else {
-
-			//console.log("No active hosts to send announce");
-
+		if(!destination) {
+			throw 'destination not defined';
 		}
 
-		if(this.bootChannels.size > 0) {
+		var envVersion;
 
-			//console.log("Announcing to " + this.bootChannels.size + " boot channels");
-
-			this.bootChannels.forEach(async (channel) => {
-
-				var message = new Message('announce', {
-					id: this.id,
-					state: this.stateHash
-				});
-
-				await this.signMessage(message);
-				channel.send(message);
-			});
-
-		} else {
-			//console.log("No bootChannels to send announce");
+		if(this.environment) {
+			envVersion = this.environment.version;
 		}
+
+		var message = new Message('announce', {
+			id: this.id,
+			env: envVersion,
+			state: this.updateState()
+		});
+
+		await this.signMessage(message);
+
+		message.setSourceAddress(this.id);
+
+		if(typeof (destination.send) === 'function') {
+			return destination.send(message);
+		}
+
+		throw 'destination ' + JSON.stringify(destination) + ' not send-able';
+
 	}
 
 };
