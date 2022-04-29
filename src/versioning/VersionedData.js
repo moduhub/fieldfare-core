@@ -8,6 +8,7 @@ const HashLinkedList = require('../structures/HashLinkedList.js');
 const HashLinkedTree = require('../structures/HashLinkedTree.js');
 
 const VersionStatement = require('./VersionStatement.js');
+const VersionChain = require('./VersionChain.js');
 
 
 module.exports = class VersionedData {
@@ -29,29 +30,32 @@ module.exports = class VersionedData {
 		throw 'Versioned data apply() not defined';
 	}
 
-	async update(pMessage) {
+	async update(version, owner) {
 
-		await VersionStatement.validate(pMessage);
+		const receivedMessage = await VersionStatement.fromResource(version, owner);
 
-		try {
+		console.log("Received update " + JSON.stringify(receivedMessage));
 
-			var chain = await pMessage.buildChain(this.version, 50);
+		var localChain = new VersionChain(this.version, host.id, 50);
+		var remoteChain = new VersionChain(version, owner, 50);
 
-			//Perform changes sequentially
-			for await (const iMessage of chain) {
+		var commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
 
-				await VersionStatement.validate(iMessage);
+		console.log("Common version is " + commonVersion);
+		console.log("Local env is " + await localChain.length(commonVersion) + " commits ahead");
+		console.log("Remote env is " + await remoteChain.length(commonVersion) + " commits ahead");
 
-				if(await this.apply(iMessage.data.change, iMessage.data.version) == false) {
-					throw 'Update rejected due to invalid chain';
-				}
-			}
-
-		} catch (error) {
-
-			console.error("VersionedSet update failed: " + error);
-
-		}
+		// //Perform changes sequentially
+		// for await (const message of chain) {
+		//
+		// 	await VersionStatement.validate(message);
+		//
+		// 	console.log("Change: " + message.data.changes);
+		//
+		// 	// if(await this.apply(iMessage.data.change, iMessage.data.version) == false) {
+		// 	// 	throw 'Update rejected due to invalid chain';
+		// 	// }
+		// }
 
 	}
 
