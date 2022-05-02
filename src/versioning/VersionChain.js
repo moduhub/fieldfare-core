@@ -5,6 +5,7 @@ module.exports = class VersionChain {
 
     constructor(head, owner, maxDepth) {
 
+        this.base = '';
         this.head = head;
         this.owner = owner;
         this.maxDepth = maxDepth;
@@ -17,7 +18,14 @@ module.exports = class VersionChain {
             const iUpdateMessage = await VersionStatement.fromResource(iVersion, this.owner);
             yield [iVersion, iUpdateMessage];
             iVersion = iUpdateMessage.data.prev;
-        } while(iVersion != '');
+        } while(iVersion != this.base);
+
+        if(iVersion != '') {
+            //include base statement
+            const iUpdateMessage = await VersionStatement.fromResource(iVersion, this.owner);
+            yield [iVersion, iUpdateMessage];
+        }
+
     }
 
     static async findCommonVersion(chainA, chainB) {
@@ -33,11 +41,6 @@ module.exports = class VersionChain {
                 console.log("A("+depthA+"): " + versionA);
                 console.log("B("+depthB+"): " + versionB);
 
-                if(versionA === ''
-                || versionB === '') {
-                    throw 'chains not coincident';
-                }
-
                 if(versionA === versionB) {
                     return versionA;
                 }
@@ -48,17 +51,34 @@ module.exports = class VersionChain {
             if(++depthA > chainA.maxDepth) throw 'chain A depth exceeded';
         }
 
-        throw 'corrupted chain structure';
+        throw 'chains not coincident';
     }
 
-    async length(base) {
+    limit(base) {
+        this.base = base;
+        return this;
+    }
+
+    async length(prevVersion) {
         var count = 0;
-        if(this.head !== base) {
-            console.log("this.head: " + this.head + " base: " + base);
+
+        if(prevVersion === undefined) prevVersion = this.base;
+
+        if(this.head !== prevVersion) {
+
+            //console.log("this.head: " + this.head + " prevVersion: " + prevVersion);
+
             for await(const [version, statement] of this) {
+
+                //console.log("iversion: " + version);
+
                 if(++count>this.maxDepth) throw 'max depth exceeded';
-                if(version === base) break;
+
+                if(version == prevVersion) {
+                    return count;
+                }
             }
+            throw 'prev version not in chain';
         }
         return count;
     }
