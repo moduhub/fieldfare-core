@@ -23,11 +23,26 @@ module.exports = class VersionedData {
 
 	}
 
-	apply(changes) {
+	apply(method, params, finalVersion) {
 
 		//handle addAdmin here
+		switch(method) {
+			case 'addAdmin' : {
+				//this.addAdmin(params);
+				console.log("APPLY> addAdmin(" + JSON.stringify(params) + ")");
+				return true;
+			} break;
 
-		throw 'Versioned data apply() not defined';
+			default: {
+				throw 'apply failed: unknown change method ' + method;
+			} break;
+		}
+
+		if(this.version != finalVersion) {
+			throw 'invalid change, final version difference';
+		}
+
+		console.log("Change apply successful!");
 	}
 
 	async update(version, owner) {
@@ -41,21 +56,41 @@ module.exports = class VersionedData {
 
 		var commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
 
-		console.log("Common version is " + commonVersion);
-		console.log("Local env is " + await localChain.length(commonVersion) + " commits ahead");
-		console.log("Remote env is " + await remoteChain.length(commonVersion) + " commits ahead");
+		localChain.limit(commonVersion);
+		remoteChain.limit(commonVersion);
 
-		// //Perform changes sequentially
-		// for await (const message of chain) {
-		//
-		// 	await VersionStatement.validate(message);
-		//
-		// 	console.log("Change: " + message.data.changes);
-		//
-		// 	// if(await this.apply(iMessage.data.change, iMessage.data.version) == false) {
-		// 	// 	throw 'Update rejected due to invalid chain';
-		// 	// }
-		// }
+		console.log("Common version is " + commonVersion);
+
+		const localCommitsAhead = await localChain.length();
+		const remoteCommitsAhead = await remoteChain.length();
+
+		console.log("Local env is " + localCommitsAhead + " commits ahead");
+		console.log("Remote env is " + remoteCommitsAhead + " commits ahead");
+
+		// Merge!
+		if(localCommitsAhead > 0 && remoteCommitsAhead > 0) {
+			//I have concurrent changes, stash them and perform remote before
+			console.log("TODO: Stash changes!");
+		} else {
+
+			//just accept remote changes
+			for await (const [version, statement] of remoteChain) {
+
+				for(const prop in statement.data.change) {
+
+					const params = await host.getResourceObject(statement.data.change[prop]);
+
+					if(await this.apply(prop, params, statement.data.version) == false) {
+
+						//revert?
+
+						throw 'Update rejected due to invalid chain';
+					}
+
+				}
+			}
+
+		}
 
 	}
 

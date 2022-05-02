@@ -100,7 +100,7 @@ module.exports = class Environment extends VersionedData {
 
 		//Create changes "replication instructions"
 		await this.commit({
-			addService: definition
+			addService: await host.storeResourceObject(definition)
 		});
 
 	}
