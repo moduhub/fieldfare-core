@@ -13,19 +13,23 @@ module.exports = class VersionChain {
     }
 
 	async* [Symbol.asyncIterator]() {
-        var iVersion = this.head;
-        do {
-            const iUpdateMessage = await VersionStatement.fromResource(iVersion, this.owner);
-            yield [iVersion, iUpdateMessage];
-            iVersion = iUpdateMessage.data.prev;
-        } while(iVersion != this.base);
 
-        if(iVersion != '') {
-            //include base statement
-            const iUpdateMessage = await VersionStatement.fromResource(iVersion, this.owner);
-            yield [iVersion, iUpdateMessage];
+        if(this.head !== '') {
+
+            var iVersion = this.head;
+
+            while (iVersion !== this.base) {
+                const iUpdateMessage = await VersionStatement.fromResource(iVersion, this.owner);
+                yield [iVersion, iUpdateMessage];
+                iVersion = iUpdateMessage.data.prev;
+            }
+
+            if(this.base !== '') {
+                //include base statement
+                const iUpdateMessage = await VersionStatement.fromResource(this.base, this.owner);
+                yield [this.base, iUpdateMessage];
+            }
         }
-
     }
 
     static async findCommonVersion(chainA, chainB) {
