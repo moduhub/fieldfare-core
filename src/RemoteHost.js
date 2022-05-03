@@ -21,24 +21,21 @@ module.exports = class RemoteHost {
 			throw Error('undefined remote host address');
 		}
 
+		if(this.channels.size == 0) {
+			throw Error('no assigned channels');
+		}
+
 		message.setDestinationAddress(this.id);
 
-		if(this.channels.size > 0) {
+		for( const channel of this.channels) {
 
-			this.channels.forEach((channel) => {
+			// console.log("Dispatching message to "
+			// 	+ channel.type
+			// 	+ ' channel ('
+			// 	+ '-'//JSON.stringify(channel.info)
+			// 	+ ')');
 
-//				console.log("Dispatching message to "
-//					+ channel.type
-//					+ ' channel ('
-//					+ '-'//JSON.stringify(channel.info)
-//					+ ')');
-
-				channel.send(message);
-
-			});
-
-		} else {
-			console.log("Remote host send message failed: no assigned channels");
+			channel.send(message);
 		}
 
 	}
@@ -140,9 +137,9 @@ module.exports = class RemoteHost {
 
 		if('env' in message.data) {
 			if(this.envVersion !== message.data.env) {
-				this.envVersion = message.data.env;
 				if(this.onEnvironmentUpdate) {
 					this.onEnvironmentUpdate(message.data.env);
+					this.envVersion = message.data.env;
 				}
 			}
 		}

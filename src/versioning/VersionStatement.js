@@ -23,11 +23,14 @@ module.exports = class VersionStatement {
 		if('signature' in message === false
 		|| 'source' in message === false
 		|| 'data' in message === false) {
+
+			console.log("Update message validate failed: " + JSON.stringify(message));
+
 			throw 'malformed update message';
 		}
 
 		if('prev' in message.data === false
-		|| 'vdata' in message.data === false
+		|| 'state' in message.data === false
 		|| 'changes' in message.data === false) {
 			throw 'malformed update message data';
 		}
@@ -47,22 +50,17 @@ module.exports = class VersionStatement {
 		return newMessage;
 	}
 
-	static createRoot(uuid) {
+	static async createRoot(uuid) {
 
-		var rootVersion = new VersionStatement();
+		var rootStatement = new VersionStatement();
 
-		rootVersion.data = {
+		rootStatement.data = {
 			prev: '',
-			vdata: '',
-			changes: {
-				uuid: uuid
-			}
+			state: '',
+			changes: await host.storeResourceObject({uuid:uuid})
 		};
 
-		console.log("Root version: " + JSON.stringify(rootVersion, null, 2));
-
-		return rootVersion;
-
+		return rootStatement;
 	}
 
 };

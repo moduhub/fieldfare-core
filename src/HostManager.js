@@ -87,9 +87,14 @@ module.exports = class HostManager {
 		console.log('host id: ' + this.id);
 
 		setInterval(() => {
-			//console.log("Host is announcing");
+
+			console.log("Host is announcing to "
+				+ this.remoteHosts.size + " remote hosts and "
+				+ this.bootChannels.size + ' boot channels');
+
 			for (const [id,host] of this.remoteHosts) 		this.announce(host);
 			for (const channel of this.bootChannels) 	this.announce(channel);
+
 		}, 10000);
 
 	}
@@ -162,12 +167,28 @@ module.exports = class HostManager {
 				}
 			};
 
-			remoteHost.onEnvironmentUpdate = (version) => {
-
-				console.log("remoteHost: " + remoteHost.id + " updated environment to version " + version);
+			remoteHost.onEnvironmentUpdate = async (version) => {
 
 				if(this.environment) {
-					this.environment.update(version, remoteHost.id);
+
+					if(remoteHost.envVersion !== version) {
+
+						console.log("remoteHost: " + remoteHost.id + " updated environment to version " + version);
+
+						try {
+
+							await this.environment.update(version, remoteHost.id);
+
+							remoteHost.envVersion = version;
+						} catch (error) {
+							console.error("Failed to update environment to version " + version
+							+ ": " + error);
+						}
+
+					}
+
+				} else {
+					console.error("Environment is undefined!");
 				}
 
 			}
@@ -356,8 +377,6 @@ module.exports = class HostManager {
 
 		this.bootChannels.add(channel);
 
-		this.announce(channel);
-
 		channel.onMessageReceived = (message) => {
 
 			console.log("Received message from boot channel: " + JSON.stringify(message));
@@ -407,7 +426,7 @@ module.exports = class HostManager {
 		//no source nor destination address, direct message
 		try {
 
-			channel.send(announceMessage);
+			this.announce(channel);
 
 		} catch (error) {
 

@@ -28,17 +28,21 @@ module.exports = class Environment extends VersionedData {
 
 	async init(uuid) {
 
+		this.uuid = uuid;
+
 		if(nvdata === undefined) {
 			throw 'nvdata was not initialized';
 		}
 
 		const latestVersion = await nvdata.load(uuid);
+		console.log("Latest Version: " + latestVersion);
 
-		const rootStatement = VersionStatement.createRoot(uuid);
+		const rootStatement = await VersionStatement.createRoot(uuid);
 
 		const rootVersion = await host.storeResourceObject(rootStatement);
 
-		console.log("Latest Version: " + latestVersion);
+		console.log("Root version: " + JSON.stringify(rootStatement, null, 2)
+		+ '=>' + rootVersion);
 
 		if(latestVersion
 		&& latestVersion !== null
@@ -55,8 +59,6 @@ module.exports = class Environment extends VersionedData {
 			//No data, start from scratch
 			this.version = rootVersion;
 
-			console.log("Root version: " + this.version);
-
 		}
 
 		host.environment = this;
@@ -67,11 +69,11 @@ module.exports = class Environment extends VersionedData {
 
 		//Collect a certain number of announces from environment members
 
-		return new Promise((resolve, reject) => {
-			setTimeout(() => {
-				resolve()
-			}, 1000);
-		});
+		// return new Promise((resolve, reject) => {
+		// 	setTimeout(() => {
+		// 		resolve()
+		// 	}, 1000);
+		// });
 
 	}
 
@@ -82,6 +84,24 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
+	apply(issuer, method, params) {
+		switch (method) {
+			case 'uuid': {
+
+				console.log("apply check UUID: " + params
+				+ ' against my uuid: ' + this.uuid);
+
+				if(params !== this.uuid) {
+					throw Error('UUID mismatch');
+				}
+
+			} break;
+			default: {
+				super.apply(issuer, method, params);
+			}
+		}
+	}
+
 	async addService(definition) {
 
 		Service.validate(definition);
@@ -90,7 +110,7 @@ module.exports = class Environment extends VersionedData {
 			throw 'service already defined';
 		}
 
-		await this.auth();
+		await this.auth(host.id);
 
 		const resource = await host.storeResourceObject(definition);
 
@@ -100,7 +120,7 @@ module.exports = class Environment extends VersionedData {
 
 		//Create changes "replication instructions"
 		await this.commit({
-			addService: await host.storeResourceObject(definition)
+			addService: definition
 		});
 
 	}
@@ -162,7 +182,7 @@ module.exports = class Environment extends VersionedData {
 
 	async addProvider(serviceUUID, providerID) {
 
-		await this.auth();
+		await this.auth(host.id);
 
 		if(serviceUUID in this.vdata.providers) {
 
@@ -173,10 +193,10 @@ module.exports = class Environment extends VersionedData {
 				await providers.add(providerID);
 
 				await this.commit({
-					addProvider: await host.storeResourceObject({
+					addProvider: {
 						service: serviceUUID,
 						host: providerID
-					})
+					}
 				});
 
 			} else {
@@ -191,7 +211,7 @@ module.exports = class Environment extends VersionedData {
 
 	async removeProvider(serviceUUID, providerID) {
 
-		await this.auth();
+		await this.auth(host.id);
 
 		//
 
@@ -216,7 +236,7 @@ module.exports = class Environment extends VersionedData {
 
 	async setWebport(hostID, info) {
 
-		this.auth();
+		this.auth(host.id);
 
 		//validate info
 		if('protocol' in info === false) throw 'missing webport protocol';

@@ -10,6 +10,8 @@ const HashLinkedTree = require('../structures/HashLinkedTree.js');
 const VersionStatement = require('./VersionStatement.js');
 const VersionChain = require('./VersionChain.js');
 
+const Utils = require('../basic/Utils.js');
+
 
 module.exports = class VersionedData {
 
@@ -23,33 +25,33 @@ module.exports = class VersionedData {
 
 	}
 
-	apply(method, params, finalVersion) {
+	apply(issuer, method, params) {
 
 		//handle addAdmin here
 		switch(method) {
 			case 'addAdmin' : {
-				//this.addAdmin(params);
-				console.log("APPLY> addAdmin(" + JSON.stringify(params) + ")");
-				return true;
+				this.applyAddAdmin(issuer, params);
 			} break;
 
 			default: {
 				throw Error('apply failed: unknown change method ' + method);
 			} break;
 		}
+	}
 
-		if(this.version != finalVersion) {
-			throw Error('invalid change, final version difference');
-		}
+	async revertToVersion(version) {
 
-		console.log("Change apply successful!");
+		console.log("REVERTING TO VERSION: "  + version);
+
 	}
 
 	async update(version, owner) {
 
+		console.log("Received update version: " + version);
+
 		const receivedMessage = await VersionStatement.fromResource(version, owner);
 
-		console.log("Received update " + JSON.stringify(receivedMessage));
+		console.log("Received update statement " + JSON.stringify(receivedMessage));
 
 		var localChain = new VersionChain(this.version, host.id, 50);
 		var remoteChain = new VersionChain(version, owner, 50);
@@ -71,27 +73,29 @@ module.exports = class VersionedData {
 		if(localCommitsAhead > 0 && remoteCommitsAhead > 0) {
 			//I have concurrent changes, stash them and perform remote before
 			console.log("TODO: Stash changes!");
-		} else {
-
-			//just accept remote changes
-			for await (const [version, statement] of remoteChain) {
-
-				for(const prop in statement.data.change) {
-
-					const params = await host.getResourceObject(statement.data.change[prop]);
-
-					if(await this.apply(prop, params, statement.data.version) == false) {
-
-						//revert?
-
-						throw Error('Update rejected due to invalid chain');
-					}
-
-				}
-			}
-
 		}
 
+		//just accept remote changes
+		const changes = await remoteChain.getChanges();
+
+		for await (const [method, params] of changes) {
+
+			try {
+
+				await this.apply(statement.source, method, params);
+
+				if(statement.data.version) {
+					throw Error('version mismatch after changes applied');
+				}
+
+			} catch (error) {
+
+				this.revertToVersion();
+
+				throw Error('environment changes apply all failed: ', {cause: error});
+
+			}
+		}
 	}
 
 	static jsonReplacer(key, value) {
@@ -104,6 +108,16 @@ module.exports = class VersionedData {
 		return value;
 	}
 
+	getState() {
+
+		//Store transformed vdata
+		const transformedState = JSON.parse(JSON.stringify(this.vdata, VersionedData.jsonReplacer));
+
+		console.log("Transformed state: " + JSON.stringify(transformedState, null, 2));
+
+		return host.storeResourceObject(transformedState);
+	}
+
 	async commit(changes) {
 
 		//Create update message
@@ -113,26 +127,30 @@ module.exports = class VersionedData {
 
 		versionStatement.data = {
 			prev: this.version,
-			vdata: JSON.stringify(this.vdata, VersionedData.jsonReplacer),
-			changes: changes
+			state: await this.getState(),
+			changes: await host.storeResourceObject(changes)
 		};
 
 		await host.signMessage(versionStatement);
 
 		this.version = await host.storeResourceObject(versionStatement);
 
-		console.log("Update: " + JSON.stringify(versionStatement, null, 2).replaceAll('\\', '')
+		console.log("New version statement: " + JSON.stringify(versionStatement, null, 2)//.replaceAll('\\', '')
 			+ "->" + this.version);
 
 	}
 
-	async auth(strict=true) {
+	async auth(id, strict=true) {
+
+		if(Utils.isBase64(id) == false) {
+			throw Error('invalid id parameter');
+		}
 
 		if(await this.vdata.admins.isEmpty() !== false) {
 
 			console.log("Checking if I am authorized");
 
-			if(await this.vdata.admins.has(host.id) == false) {
+			if(await this.vdata.admins.has(id) == false) {
 				throw Error('addAdmin failed: not authorized');
 			} else {
 				console.log(">>> Auth ok");
@@ -147,27 +165,35 @@ module.exports = class VersionedData {
 		}
 	}
 
+	async applyAddAdmin(issuer, newAdminID) {
+
+		//newAdmin must be a valid host ID
+		console.log("APPLY >> VersionedData.applyAddAdmin ID=" + newAdminID + ' from ' + issuer);
+
+		//Check if admin was not already present
+		if(await this.vdata.admins.has(newAdminID)) {
+			throw Error('applyAddAdmin failed: id already in set');
+		}
+
+		//Check auth, non strict
+		this.auth(issuer, false);
+
+		//Perform local changes
+		await this.vdata.admins.add(newAdminID);
+
+	}
+
 	async addAdmin(newAdminID) {
 
 		//newAdmin must be a valid host ID
 		console.log("VersionedData.addAdmin ID="+newAdminID);
 
-		//Check if admin was not already present
-		if(await this.vdata.admins.has(newAdminID)) {
-
-			throw Error('addAdmin failed: id already in set');
-
-		}
-
-		//Check auth, non strict
-		this.auth(false);
-
-		//Perform local changes
-		await this.vdata.admins.add(newAdminID);
+		this.applyAddAdmin(host.id, newAdminID);
 
 		await this.commit({
 			addAdmin: newAdminID
 		});
+
 	}
 
 };
