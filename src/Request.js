@@ -17,7 +17,9 @@ module.exports = class Request extends Message {
 
 		this.timeout = setTimeout(() => {
 			console.log('request timeout');
-			this.reject('timeout');
+			const error = Error('Request ' + JSON.stringify(this.data) + ' timed out');
+			error.name = 'TIMEOUT_ERROR';
+			this.reject(error);
 		}, timeout);
 
 	}

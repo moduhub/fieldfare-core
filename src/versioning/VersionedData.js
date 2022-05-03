@@ -34,12 +34,12 @@ module.exports = class VersionedData {
 			} break;
 
 			default: {
-				throw 'apply failed: unknown change method ' + method;
+				throw Error('apply failed: unknown change method ' + method);
 			} break;
 		}
 
 		if(this.version != finalVersion) {
-			throw 'invalid change, final version difference';
+			throw Error('invalid change, final version difference');
 		}
 
 		console.log("Change apply successful!");
@@ -84,7 +84,7 @@ module.exports = class VersionedData {
 
 						//revert?
 
-						throw 'Update rejected due to invalid chain';
+						throw Error('Update rejected due to invalid chain');
 					}
 
 				}
@@ -133,14 +133,14 @@ module.exports = class VersionedData {
 			console.log("Checking if I am authorized");
 
 			if(await this.vdata.admins.has(host.id) == false) {
-				throw 'addAdmin failed: not authorized';
+				throw Error('addAdmin failed: not authorized');
 			} else {
 				console.log(">>> Auth ok");
 			}
 
 		} else {
 			if(strict) {
-				throw 'strict auth failed, admin group empty';
+				throw Error('strict auth failed, admin group empty');
 			} else {
 				console.log("Admin group is empty, strict=false, auth ok");
 			}
@@ -155,7 +155,7 @@ module.exports = class VersionedData {
 		//Check if admin was not already present
 		if(await this.vdata.admins.has(newAdminID)) {
 
-			throw 'addAdmin failed: id already in set';
+			throw Error('addAdmin failed: id already in set');
 
 		}
 

@@ -18,7 +18,7 @@ module.exports = class RemoteHost {
 	send(message) {
 
 		if(this.id == undefined) {
-			throw 'undefined remote host address';
+			throw Error('undefined remote host address');
 		}
 
 		message.setDestinationAddress(this.id);
@@ -59,7 +59,7 @@ module.exports = class RemoteHost {
 
 	}
 
-	treatMessage(message, channel) {
+	async treatMessage(message, channel) {
 
 		try {
 //		console.log("Message redirected to "
@@ -68,29 +68,30 @@ module.exports = class RemoteHost {
 
 			if(message.service == 'announce') {
 
-				this.treatAnnounce(message, channel)
+				await this.treatAnnounce(message, channel);
 
 			} else
 			if(message.service == 'resource') {
 
 				//console.log("treating resource message (request/response)");
-				this.treatResourceMessage(message, channel);
+				await this.treatResourceMessage(message, channel);
 
 			} else {
 
-				throw 'unexpected service id';
+				throw Error('unexpected service id');
 
 			}
 
 		} catch(error) {
 			console.log("Message parse failed: " + error);
+			console.error("Message parse failed: " + error.stack);
 		}
 	}
 
 	async treatAnnounce(message, channel) {
 
 		if('id' in message.data === false) {
-			throw 'malformed announce, missing host id';
+			throw Error('malformed announce, missing host id');
 		}
 
 		if(this.pubKey === undefined) {
@@ -114,7 +115,7 @@ module.exports = class RemoteHost {
 		}
 
 		if(await this.verifyMessage(message) !== true) {
-			throw 'invalid message signature';
+			throw Error('invalid message signature');
 		}
 
 		//Get host state
@@ -124,7 +125,7 @@ module.exports = class RemoteHost {
 				+ this.id
 				+ " rejected due to invalid signature.");
 
-			throw 'malformed announce packet, missing state data';
+			throw Error('malformed announce packet, missing state data');
 		}
 
 		if(this.state !== message.data.state) {
@@ -145,13 +146,13 @@ module.exports = class RemoteHost {
 				}
 			}
 		}
-		
+
 	}
 
 	async treatResourceMessage(message, channel) {
 
 		if('hash' in message.data == false) {
-			throw 'malformed resouce message';
+			throw Error('malformed resouce message');
 		}
 
 		if('data' in message.data) {
@@ -203,7 +204,7 @@ module.exports = class RemoteHost {
 		var result = false;
 
 		if(this.pubKey === undefined) {
-			throw 'signature verify failed: pubkey undefined';
+			throw Error('signature verify failed: pubkey undefined');
 		}
 
 		if('signature' in message) {
@@ -232,7 +233,7 @@ module.exports = class RemoteHost {
 
 	async accessService(uuid) {
 
-		throw 'RemoteHost.accessService method still in development';
+		throw Error('RemoteHost.accessService method still in development');
 
 	}
 

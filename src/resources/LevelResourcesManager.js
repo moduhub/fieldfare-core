@@ -74,11 +74,14 @@ module.exports = class LevelResourcesManager extends ResourcesManager {
             base64data = await this.db.get(base64hash);
         } catch (error) {
 
-            console.log("LevelResourcesManager getResource(" + base64hash + "):" + error);
+            var error = Error('Resource fetch failed: ' + {cause: error});
 
             if (error.notFound === true) {
+                error.name = 'NOT_FOUND_ERROR';
                 base64data = undefined;
             }
+
+            throw error;
         }
 
         return base64data;

@@ -32,7 +32,7 @@ module.exports = class HostManager {
 	async setupId(privateKeyData) {
 
 		if(this.resourcesManagers.size == 0) {
-			throw 'Cannot setup ID without a resources manager';
+			throw Error('Cannot setup ID without a resources manager');
 		}
 
 		let pubKeyData;
@@ -214,7 +214,7 @@ module.exports = class HostManager {
 			}
 
 		} else {
-			throw 'No resources managers defined';
+			throw Error('No resources managers defined');
 		}
 
 		return base64hash;
@@ -420,7 +420,7 @@ module.exports = class HostManager {
 	async signMessage(message) {
 
 		if(this.privateKey === undefined) {
-			throw 'failed to sign message, private key undefined';
+			throw Error('failed to sign message, private key undefined');
 		}
 
 		var utf8ArrayBuffer = new TextEncoder().encode(JSON.stringify(message.data));
