@@ -1,6 +1,37 @@
 
 const VersionStatement = require('./VersionStatement.js');
 
+class ChangesIterator {
+
+    constructor() {
+        this.keys = []
+    }
+
+    static async from(chain) {
+        var iterator = new ChangesIterator;
+        iterator.chain = chain;
+        for await(const [version, statement] of chain) {
+            iterator.keys.push(statement.data.changes);
+        }
+        iterator.keys.reverse();
+        return iterator;
+    }
+
+    async* [Symbol.asyncIterator]() {
+
+        for(const key of this.keys) {
+            const changes = await host.getResourceObject(key, this.chain.owner);
+            console.log("Changes contents: " + JSON.stringify(changes));
+			for(const prop in changes) {
+				const value = changes[prop];
+				console.log("Apply method: " + prop
+                + ' with params: ' + JSON.stringify(value));
+                yield [prop, value]; //method:params format
+            }
+        }
+    }
+}
+
 module.exports = class VersionChain {
 
     constructor(head, owner, maxDepth) {
@@ -11,6 +42,10 @@ module.exports = class VersionChain {
         this.maxDepth = maxDepth;
 
     }
+
+	getChanges() {
+		return ChangesIterator.from(this);
+	}
 
 	async* [Symbol.asyncIterator]() {
 
