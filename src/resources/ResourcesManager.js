@@ -9,6 +9,12 @@ module.exports = class ResourcesManager {
 
     }
 
+    static validateKey(key) {
+        if(Utils.isBase64(key) == false) {
+            throw Error('Invalid resource key: ' + JSON.stringify(key));
+        }
+    }
+
     static convertObjectToData(object) {
 
         var utf8ArrayBuffer = new TextEncoder().encode(JSON.stringify(object));

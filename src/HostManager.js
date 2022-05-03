@@ -143,17 +143,6 @@ module.exports = class HostManager {
 			this.remoteHosts.set(hostid, remoteHost);
 
 			//Assign callbacks
-			remoteHost.requestLocalResource = async (hash) => {
-
-				//console.log("remoteHost.requestLocalResource(" + hash);
-
-				var base64data = await this.getResource(hash);
-
-				//console.log("rsource result: " + base64data);
-
-				return base64data;
-			};
-
 			remoteHost.onResponseReceived = (response) => {
 
 				var assignedRequest = this.requests.get(response.data.hash);
@@ -164,7 +153,12 @@ module.exports = class HostManager {
 
 					//console.log("assignedRequest " + JSON.stringify(assignedRequest));
 
-					assignedRequest.resolve(response);
+					if(response.data.error) {
+						assignedRequest.reject(response.data.error);
+					} else {
+						assignedRequest.resolve(response);
+					}
+
 				}
 			};
 
@@ -228,15 +222,29 @@ module.exports = class HostManager {
 
 	async getResource(hash, owner) {
 
+        ResourcesManager.validateKey(hash);
+
 		var base64data;
 
 		//Attemp to find resource on all resources managers
 		for(const manager of this.resourcesManagers) {
 
-			base64data = await manager.getResource(hash);
+			try {
 
-			if(base64data !== undefined) {
-				return base64data;
+				base64data = await manager.getResource(hash);
+
+				if(base64data !== undefined) {
+					return base64data;
+				}
+
+			} catch (error) {
+
+				if(error.name === 'NOT_FOUND_ERROR') {
+					console.log('Manager ' + manager + ' does not have ' + hash);
+				} else {
+					throw Error('getResource failed: ', {cause: error});
+				}
+
 			}
 
 		}
@@ -249,54 +257,71 @@ module.exports = class HostManager {
 		|| owner === undefined) {
 
 			//Owner not know, fail
-			throw ('resource not found locally, owner not known: ' + hash);
+			var error = Error('resource not found locally, owner not known: ' + hash);
+			error.name = 'NOT_FOUND_ERROR';
+			throw error;
 
 		}
 
-		//Check if there is already a request for
-		//this same hash
+		const retryCount = 3;
 
-		//console.log("res.fetch: looking for previous request");
+		for(var attempts = 0; attempts<retryCount; attempts++) {
 
-		var request = this.requests.get(hash);
+			//Check if there is already a request for
+			//this same hash
+			var request = this.requests.get(hash);
 
-		//console.log("res.fetch: previous request = " + request);
+			if(request === undefined) {
 
-		if(request === undefined) {
+				if(attempts > 0) {
+					console.log('get resource request retry ' + attempts + ' of ' + retryCount-1);
+				}
 
-			//console.log("res.fetch: new request");
+				request = new Request('resource', 10000, {
+					hash: hash
+				});
 
-			request = new Request('resource', 10000, {
-				hash: hash
-			});
+				request.setDestinationAddress(owner);
 
-			request.setDestinationAddress(owner);
+				//send request
+				this.requests.set(hash, request);
 
-			//send request
-			this.requests.set(hash, request);
+				//Notify that a new request was created
+				this.onNewRequest(request);
 
-			//Notify that a new request was created
-			this.onNewRequest(request);
+			}
 
+			try {
+
+				const response = await request.complete();
+
+				var remoteBase64hash = response.data.hash;
+				var remoteBase64data = response.data.data;
+
+				//console.log ("Received remote resource response:" + JSON.stringify(response.data.data));
+				const verifyHash = await this.storeResource(remoteBase64data);
+
+				if(verifyHash !== remoteBase64hash) {
+
+					//console.log("[+RES] (" + hash + "):(" + response.data.data + ")");
+					throw Error('corrupted resource received from remote host');
+
+				}
+
+				return remoteBase64data;
+
+			} catch (error) {
+
+				console.error('Get resource request failed: ' + error.stack);
+
+			} finally {
+
+				this.requests.clear(hash);
+
+			}
 		}
 
-		const response = await request.complete();
-
-		var remoteBase64hash = response.data.hash;
-		var remoteBase64data = response.data.data;
-
-		//console.log ("Received remote resource response:" + JSON.stringify(response.data.data));
-		const verifyHash = await this.storeResource(remoteBase64data);
-
-		if(verifyHash === remoteBase64hash) {
-
-			//console.log("[+RES] (" + hash + "):(" + response.data.data + ")");
-
-			return remoteBase64data;
-
-		}
-
-		throw ('corrupted resource received from remote host');
+		throw Error('Resource not found remotely: ' + hash).name = 'NOT_FOUND_ERROR';
 
 	}
 
@@ -421,7 +446,7 @@ module.exports = class HostManager {
 	async announce(destination) {
 
 		if(!destination) {
-			throw 'destination not defined';
+			throw Error('destination not defined');
 		}
 
 		var envVersion;
@@ -444,7 +469,7 @@ module.exports = class HostManager {
 			return destination.send(message);
 		}
 
-		throw 'destination ' + JSON.stringify(destination) + ' not send-able';
+		throw Error('destination ' + JSON.stringify(destination) + ' not send-able');
 
 	}
 

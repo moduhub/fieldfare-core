@@ -162,19 +162,25 @@ module.exports = class RemoteHost {
 				this.onResponseReceived(message, channel);
 
 			} else {
-				throw 'treatResourceMessage: undefined response callback'
+				throw Error('treatResourceMessage: undefined response callback');
 			}
 
 		} else {
 
-			//this is a request for a resource that i have
-			if(this.requestLocalResource) {
+			var response;
 
-				var data = await this.requestLocalResource(message.data.hash);
+			try {
 
-				var response;
+				var base64data = await host.getResource(message.data.hash);
 
-				if(data == undefined) {
+				response = new Message('resource', {
+					hash: message.data.hash,
+					data: base64data
+				});
+
+			} catch (error) {
+
+				if(error.name === 'NOT_FOUND_ERROR') {
 
 					//not found, generate error response
 					response = new Message('resource', {
@@ -183,20 +189,12 @@ module.exports = class RemoteHost {
 					});
 
 				} else {
-
-					//generate positive response
-					response = new Message('resource', {
-						hash: message.data.hash,
-						data: data
-					});
-
+					throw Error('treat resource message failed', {cause: error});
 				}
-
-				this.send(response);
-
-			} else {
-				throw 'treatResourceMessage: undefined callback';
 			}
+
+			this.send(response);
+
 		}
 	}
 
