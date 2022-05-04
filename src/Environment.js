@@ -18,11 +18,10 @@ module.exports = class Environment extends VersionedData {
 	constructor() {
 		super();
 
-		this.vdata.services = new HashLinkedTree(5);
+		this.elements.addSet('services');
+		this.elements.addSet('webports');
 
-		this.vdata.webports = new HashLinkedTree(5);
-
-		this.vdata.providers = {};
+		this.elements.providers = {};
 
 	}
 
@@ -114,11 +113,12 @@ module.exports = class Environment extends VersionedData {
 
 		const resource = await host.storeResourceObject(definition);
 
-		await this.vdata.services.add(resource);
+		const services = this.elements.get('services');
 
-		this.vdata.providers[definition.uuid] = new HashLinkedTree(5);
+		await services.add(resource);
 
-		//Create changes "replication instructions"
+		this.elements.addSet('providers.' + definition.uuid);
+
 		await this.commit({
 			addService: definition
 		});
@@ -129,7 +129,9 @@ module.exports = class Environment extends VersionedData {
 
 		var definition;
 
-		for await(const resource of this.vdata.services) {
+		const services = this.elements.get('services');
+
+		for await(const resource of services) {
 
 			const service = await host.getResourceObject(resource);
 
@@ -146,7 +148,9 @@ module.exports = class Environment extends VersionedData {
 
 	async hasService(uuid) {
 
-		for await(const service of this.vdata.services) {
+		const service = this.elements.get('services');
+
+		for await(const service of services) {
 
 			if(service.uuid === uuid) {
 				return true;
@@ -158,7 +162,7 @@ module.exports = class Environment extends VersionedData {
 
 	getProviders(serviceUUID) {
 
-		const providers = this.vdata.providers[serviceUUID];
+		const providers = this.elements.get('providers.' + serviceUUID);
 
 		// console.log("provider: " + JSON.stringify(provider));
 
@@ -184,28 +188,20 @@ module.exports = class Environment extends VersionedData {
 
 		await this.auth(host.id);
 
-		if(serviceUUID in this.vdata.providers) {
+		const providers = this.elements.get('providers.'+serviceUUID);
 
-			const providers = this.vdata.providers[serviceUUID];
-
-			if(await providers.has(providerID) == false) {
-
-				await providers.add(providerID);
-
-				await this.commit({
-					addProvider: {
-						service: serviceUUID,
-						host: providerID
-					}
-				});
-
-			} else {
-				throw 'provider already in list';
-			}
-
-		} else {
-			throw 'service not defined in environment';
+		if(await providers.has(providerID)) {
+			throw 'provider already in list';
 		}
+
+		await providers.add(providerID);
+
+		await this.commit({
+			addProvider: {
+				service: serviceUUID,
+				host: providerID
+			}
+		});
 
 	}
 
@@ -219,7 +215,9 @@ module.exports = class Environment extends VersionedData {
 
 	async getWebport(hostID) {
 
-		for await(const resource of this.vdata.webports) {
+		const webports = this.elements.get('webports');
+
+		for await(const resource of webports) {
 
 			console.log('webport info: ' + JSON.stringfy(webport));
 
@@ -252,10 +250,12 @@ module.exports = class Environment extends VersionedData {
 
 		const resourceKey = await host.storeResourceObject(webport);
 
-		if(await this.vdata.webports.has(resourceKey) === false) {
+		const webports = this.elements.get('webports');
+
+		if(await webports.has(resourceKey) === false) {
 
 			//Exact same information already present
-			await this.vdata.webports.add(webport);
+			await webports.add(webport);
 
 			await this.commit({
 				setWebport: resourceKey

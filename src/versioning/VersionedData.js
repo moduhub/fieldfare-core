@@ -12,14 +12,126 @@ const VersionChain = require('./VersionChain.js');
 
 const Utils = require('../basic/Utils.js');
 
+class VersionedElements {
+
+	constructor(contents) {
+
+		if(contents) {
+			this.contents = contents;
+		} else {
+			this.contents = {};
+		}
+
+	}
+
+	addSet(name) {
+		this.elements[name] = new HashLinkedTree(5);
+	}
+
+	addList(name) {
+		this.elements[name] = new HashLinkedList();
+	}
+
+	getObjectProperty (object, path) {
+	  	if (object == null) { // null or undefined
+	    	return object;
+	    }
+	  	const parts = path.split('.');
+		for (let i = 0; i < parts.length; ++i) {
+	      	if (object == null) { // null or undefined
+	        	return undefined;
+	        }
+	      	const key = parts[i];
+	    	object = object[key];
+	    }
+	  	return object;
+	}
+
+	forEachObjectProperty(object, callback, path) {
+
+		if(!path) {
+			path = '';
+		}
+
+		for(const prop in object) {
+
+			const value = object[prop];
+
+			if(callback(path + key, value) === false) {
+				if(value instanceof Object) {
+					this.forEachObjectProperty(value, callback, path.push[prop]);
+				} else {
+					throw Error('invalid object passed to iterator');
+				}
+			}
+		}
+	}
+
+	resetState() {
+
+		this.forEachObjectProperty(this.elements, (path, value) => {
+
+			if(value instanceof HashLinkedList
+			|| value instanceof HashLinkedTree) {
+
+				console.log('resetState of ' + path);
+				const value = this.getObjectProperty(this.elements, path);
+
+				value.setState('');
+				return true;
+			}
+
+			return false;
+		});
+	}
+
+	setState(state) {
+
+		this.forEachObjectProperty(this.elements, (path, value) => {
+
+			if(Utils.isBase64(value)) {
+				console.log('setState of ' + path + ' to ' + value);
+
+				const correspondingObject = this.getObjectProperty(this.elements, path);
+				correspondingObject.setState(value);
+
+				return true;
+			}
+
+			return false;
+		});
+
+	}
+
+	static jsonReplacer(key, value) {
+
+		if(value instanceof HashLinkedTree
+		|| value instanceof HashLinkedList) {
+			return value.getState();
+		}
+
+		return value;
+	}
+
+	getState() {
+
+		//Store transformed
+		const transformedState = JSON.parse(JSON.stringify(this.elements, VersionedElements.jsonReplacer));
+
+		console.log("Transformed state: " + JSON.stringify(transformedState, null, 2));
+
+		return transformedState;
+	}
+
+}
 
 module.exports = class VersionedData {
 
 	constructor() {
 
-		this.vdata = {
-			admins: new HashLinkedTree(5)
-		}
+		this.elements = new VersionedElements();
+
+		this.elements.addSet('admins');
 
 		this.version = '';
 
@@ -43,6 +155,31 @@ module.exports = class VersionedData {
 
 		console.log("REVERTING TO VERSION: "  + version);
 
+		const statement = await host.getResourceObject(version);
+
+		const stateKey = statement.data.state;
+
+		console.log("State key: \'" + stateKey + '\'');
+
+		if(stateKey !== '') {
+
+			const state = await host.getResourceObject(statement.data.state);
+
+			console.log("Revert to state object: " + JSON.stringify(state));
+
+			this.setState(state);
+
+		} else {
+
+			console.log('Reset state')
+			console.log('state before reset: ' + JSON.stringify(await this.getState()));
+			this.resetState(null);
+			console.log('state after reset: ' + JSON.stringify(await this.getState()));
+
+		}
+
+		this.version = version;
+
 	}
 
 	async update(version, owner) {
@@ -58,8 +195,9 @@ module.exports = class VersionedData {
 
 		var commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
 
-		localChain.limit(commonVersion);
-		remoteChain.limit(commonVersion);
+		//Limit to commonVersion, not including
+		localChain.limit(commonVersion, false);
+		remoteChain.limit(commonVersion, false);
 
 		console.log("Common version is " + commonVersion);
 
@@ -76,7 +214,7 @@ module.exports = class VersionedData {
 
 			if(localCommitsAhead > 0) {
 				console.log("Stashing local changes");
-				this.revertToVersion(commonVersion);
+				await this.revertToVersion(commonVersion);
 			}
 
 			try {
@@ -89,6 +227,10 @@ module.exports = class VersionedData {
 				for await (const [issuer, method, params] of remoteChanges) {
 					console.log('await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
 					await this.apply(issuer, method, params);
+
+					const stateKey = await host.storeResourceObject(await this.getState());
+					console.log("state after apply: " + stateKey);
+
 				}
 
 				const stateKey = await host.storeResourceObject(await this.getState());
@@ -113,7 +255,7 @@ module.exports = class VersionedData {
 			} catch (error) {
 
 				// Recover previous state
-				this.revertToVersion(localChain.head);
+				await this.revertToVersion(localChain.head);
 
 				throw Error('environment changes apply all failed: ', {cause: error});
 
@@ -129,26 +271,6 @@ module.exports = class VersionedData {
 
 	}
 
-	static jsonReplacer(key, value) {
-
-		if(value instanceof HashLinkedTree
-		|| value instanceof HashLinkedList) {
-			return value.getState();
-		}
-
-		return value;
-	}
-
-	getState() {
-
-		//Store transformed vdata
-		const transformedState = JSON.parse(JSON.stringify(this.vdata, VersionedData.jsonReplacer));
-
-		console.log("Transformed state: " + JSON.stringify(transformedState, null, 2));
-
-		return host.storeResourceObject(transformedState);
-	}
-
 	async commit(changes) {
 
 		//Create update message
@@ -156,9 +278,11 @@ module.exports = class VersionedData {
 
 		versionStatement.source = host.id;
 
+		const stateResource = await host.storeResourceObject(await this.getState());
+
 		versionStatement.data = {
 			prev: this.version,
-			state: await this.getState(),
+			state: stateResource,
 			changes: await host.storeResourceObject(changes)
 		};
 
@@ -177,11 +301,13 @@ module.exports = class VersionedData {
 			throw Error('invalid id parameter');
 		}
 
-		if(await this.vdata.admins.isEmpty() !== false) {
+		const admins = this.elements.get('admins');
+
+		if(await admins.isEmpty() !== false) {
 
 			console.log("Checking if I am authorized");
 
-			if(await this.vdata.admins.has(id) == false) {
+			if(await admins.has(id) == false) {
 				throw Error('addAdmin failed: not authorized');
 			} else {
 				console.log(">>> Auth ok");
@@ -199,15 +325,18 @@ module.exports = class VersionedData {
 	async applyAddAdmin(issuer, newAdminID) {
 
 		//newAdmin must be a valid host ID
-		console.log("APPLY >> VersionedData.applyAddAdmin ID=" + newAdminID + ' from ' + issuer);
+		console.log("APPLY >> VersionedData.applyAddAdmin ID=" + newAdminID
+		 	+ ' from ' + issuer);
+
+		const admins = this.elements.get('admins');
 
 		console.log("Current admins: ")
-		for await (const admin of this.vdata.admins) {
+		for await (const admin of admins) {
 			console.log('> ' + admin);
 		}
 
 		//Check if admin was not already present
-		if(await this.vdata.admins.has(newAdminID)) {
+		if(await this.admins.has(newAdminID)) {
 			throw Error('applyAddAdmin failed: id already in set');
 		}
 
@@ -215,7 +344,7 @@ module.exports = class VersionedData {
 		await this.auth(issuer, false);
 
 		//Perform local changes
-		await this.vdata.admins.add(newAdminID);
+		await admins.add(newAdminID);
 
 	}
 

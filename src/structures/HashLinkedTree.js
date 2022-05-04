@@ -246,8 +246,9 @@ module.exports = class HashLinkedTree {
 
 	setState(state) {
 
-		if(state == null
-		|| state == undefined) {
+		if(state === null
+		|| state === undefined
+		|| state === '') {
 
 			this.state = null;
 

@@ -36,7 +36,23 @@ module.exports = class HashLinkedList {
 	}
 
 	setState(state) {
-		this.lastHash = state;
+
+		if(state === null
+		|| state === undefined
+		|| state === '') {
+
+			this.lastHash = '';
+
+		} else {
+
+			if(Utils.isBase64(state) === false) {
+				throw Error('lastHash is not base64');
+			}
+
+			this.lastHash = state;
+
+		}
+
 	}
 
 	getState() {
