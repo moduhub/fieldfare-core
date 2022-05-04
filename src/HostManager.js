@@ -183,6 +183,11 @@ module.exports = class HostManager {
 						} catch (error) {
 							console.error("Failed to update environment to version " + version
 							+ ": " + error);
+							var iError = error.cause;
+							while(iError) {
+								console.error("Cause: " + iError.stack);
+								iError = iError.cause;
+							}
 						}
 
 					}

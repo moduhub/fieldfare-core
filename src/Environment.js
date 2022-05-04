@@ -84,7 +84,7 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
-	apply(issuer, method, params) {
+	async apply(issuer, method, params) {
 		switch (method) {
 			case 'uuid': {
 
@@ -97,7 +97,7 @@ module.exports = class Environment extends VersionedData {
 
 			} break;
 			default: {
-				super.apply(issuer, method, params);
+				await super.apply(issuer, method, params);
 			}
 		}
 	}

@@ -25,12 +25,12 @@ module.exports = class VersionedData {
 
 	}
 
-	apply(issuer, method, params) {
+	async apply(issuer, method, params) {
 
 		//handle addAdmin here
 		switch(method) {
 			case 'addAdmin' : {
-				this.applyAddAdmin(issuer, params);
+				await this.applyAddAdmin(issuer, params);
 			} break;
 
 			default: {
@@ -69,33 +69,64 @@ module.exports = class VersionedData {
 		console.log("Local env is " + localCommitsAhead + " commits ahead");
 		console.log("Remote env is " + remoteCommitsAhead + " commits ahead");
 
-		// Merge!
-		if(localCommitsAhead > 0 && remoteCommitsAhead > 0) {
-			//I have concurrent changes, stash them and perform remote before
-			console.log("TODO: Stash changes!");
-		}
+		// 		1) I have concurrent changes
+		// && 	2) remote chain is LoggerManager
+		// 			so... stash localChanges and perform remote before
+		if(remoteCommitsAhead > localCommitsAhead) {
 
-		//just accept remote changes
-		const changes = await remoteChain.getChanges();
-
-		for await (const [method, params] of changes) {
+			if(localCommitsAhead > 0) {
+				console.log("Stashing local changes");
+				this.revertToVersion(commonVersion);
+			}
 
 			try {
 
-				await this.apply(statement.source, method, params);
+				//just accept remote changes
+				const remoteChanges = await remoteChain.getChanges();
 
-				if(statement.data.version) {
+				console.log("remoteChanges:" + JSON.stringify(remoteChanges));
+
+				for await (const [issuer, method, params] of remoteChanges) {
+					console.log('await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
+					await this.apply(issuer, method, params);
+				}
+
+				const stateKey = await host.storeResourceObject(await this.getState());
+				const expectedState = await remoteChain.getHeadState();
+
+				console.log("state after apply: " + stateKey);
+				console.log("expected state: " + expectedState);
+
+				if(stateKey !== expectedState) {
 					throw Error('version mismatch after changes applied');
+				}
+
+				this.version = remoteChain.version;
+
+				const localChanges = await localChain.getChanges();
+
+				//now merge local changes at end of remote chain
+				for await (const [method, params] of localChanges) {
+					console.log('await this.change(' + method + ',' + JSON.stringify(params) + ')');
 				}
 
 			} catch (error) {
 
-				this.revertToVersion();
+				// Recover previous state
+				this.revertToVersion(localChain.head);
 
 				throw Error('environment changes apply all failed: ', {cause: error});
 
 			}
+
+		} else {
+
+			console.log("Local chain is ahead of remote chain, nothing to do");
+
+			//Local chain is ahead of remote, wait for remote to merge
+			// Todo: notify him?
 		}
+
 	}
 
 	static jsonReplacer(key, value) {
@@ -170,13 +201,18 @@ module.exports = class VersionedData {
 		//newAdmin must be a valid host ID
 		console.log("APPLY >> VersionedData.applyAddAdmin ID=" + newAdminID + ' from ' + issuer);
 
+		console.log("Current admins: ")
+		for await (const admin of this.vdata.admins) {
+			console.log('> ' + admin);
+		}
+
 		//Check if admin was not already present
 		if(await this.vdata.admins.has(newAdminID)) {
 			throw Error('applyAddAdmin failed: id already in set');
 		}
 
 		//Check auth, non strict
-		this.auth(issuer, false);
+		await this.auth(issuer, false);
 
 		//Perform local changes
 		await this.vdata.admins.add(newAdminID);
@@ -188,7 +224,7 @@ module.exports = class VersionedData {
 		//newAdmin must be a valid host ID
 		console.log("VersionedData.addAdmin ID="+newAdminID);
 
-		this.applyAddAdmin(host.id, newAdminID);
+		await this.applyAddAdmin(host.id, newAdminID);
 
 		await this.commit({
 			addAdmin: newAdminID

@@ -74,7 +74,7 @@ module.exports = class Request extends Message {
 
 	complete() {
 
-		if(this.error) return this.error;
+		if(this.error) throw this.error;
 		if(this.response) return this.result;
 
 		return new Promise((resolve, reject) => {

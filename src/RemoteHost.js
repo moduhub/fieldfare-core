@@ -136,11 +136,8 @@ module.exports = class RemoteHost {
 		}
 
 		if('env' in message.data) {
-			if(this.envVersion !== message.data.env) {
-				if(this.onEnvironmentUpdate) {
-					this.onEnvironmentUpdate(message.data.env);
-					this.envVersion = message.data.env;
-				}
+			if(this.onEnvironmentUpdate) {
+				this.onEnvironmentUpdate(message.data.env);
 			}
 		}
 

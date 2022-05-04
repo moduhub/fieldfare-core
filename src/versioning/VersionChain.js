@@ -4,6 +4,7 @@ const VersionStatement = require('./VersionStatement.js');
 class ChangesIterator {
 
     constructor() {
+        this.issuers = [];
         this.keys = []
     }
 
@@ -12,21 +13,36 @@ class ChangesIterator {
         iterator.chain = chain;
         for await(const [version, statement] of chain) {
             iterator.keys.push(statement.data.changes);
+            iterator.issuers.push(statement.source);
         }
         iterator.keys.reverse();
+        iterator.issuers.reverse();
         return iterator;
     }
 
     async* [Symbol.asyncIterator]() {
 
-        for(const key of this.keys) {
+        const numKeys = this.keys.length;
+
+        //console.log('ChangesIterator enter, num keys: ' + numKeys);
+
+        for(var i=0; i<numKeys; i++) {
+
+            const key = this.keys[i];
+            const issuer = this.issuers[i];
+
+            //console.log('Iteration ' + i + '>  key:' + key + ' issuer: ' + issuer);
+
             const changes = await host.getResourceObject(key, this.chain.owner);
-            console.log("Changes contents: " + JSON.stringify(changes));
+
 			for(const prop in changes) {
 				const value = changes[prop];
-				console.log("Apply method: " + prop
-                + ' with params: ' + JSON.stringify(value));
-                yield [prop, value]; //method:params format
+
+                console.log("Apply method: " + prop
+                + ' from issuer: ' + issuer);
+                + ' with params: ' + JSON.stringify(value)
+
+                yield [issuer, prop, value]; //issuer:method:params format
             }
         }
     }
@@ -46,6 +62,23 @@ module.exports = class VersionChain {
 	getChanges() {
 		return ChangesIterator.from(this);
 	}
+
+    async getHeadState() {
+
+        if(this.headState === undefined) {
+
+            if(this.head === '') {
+                return '';
+            }
+
+            const headStatement = await VersionStatement.fromResource(this.head, this.owner);
+            this.headState = headStatement.data.state;
+            return this.headState;
+
+        }
+
+        return this.headState;
+    }
 
 	async* [Symbol.asyncIterator]() {
 
