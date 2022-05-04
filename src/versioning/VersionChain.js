@@ -56,6 +56,7 @@ module.exports = class VersionChain {
         this.head = head;
         this.owner = owner;
         this.maxDepth = maxDepth;
+        this.includeBase = true;
 
     }
 
@@ -92,7 +93,8 @@ module.exports = class VersionChain {
                 iVersion = iUpdateMessage.data.prev;
             }
 
-            if(this.base !== '') {
+            if(this.includeBase === true
+            && this.base !== '') {
                 //include base statement
                 const iUpdateMessage = await VersionStatement.fromResource(this.base, this.owner);
                 yield [this.base, iUpdateMessage];
@@ -116,18 +118,22 @@ module.exports = class VersionChain {
                 if(versionA === versionB) {
                     return versionA;
                 }
-                if(++depthB > chainB.maxDepth) throw 'chain B depth exceeded';
+                if(++depthB > chainB.maxDepth) throw Error('chain B depth exceeded');
 
             }
 
-            if(++depthA > chainA.maxDepth) throw 'chain A depth exceeded';
+            if(++depthA > chainA.maxDepth) throw Error('chain A depth exceeded');
         }
 
-        throw 'chains not coincident';
+        throw Error('chains not coincident');
     }
 
-    limit(base) {
+    limit(base, include) {
         this.base = base;
+        if(include === true
+        || include === false)  {
+            this.includeBase = include;
+        }
         return this;
     }
 
@@ -144,13 +150,20 @@ module.exports = class VersionChain {
 
                 //console.log("iversion: " + version);
 
-                if(++count>this.maxDepth) throw 'max depth exceeded';
+                if(++count>this.maxDepth) throw Error('max depth exceeded');
 
                 if(version == prevVersion) {
                     return count;
                 }
+
+                if(this.includeBase === false
+                && statement.data.prev === prevVersion) {
+                    return count;
+                }
+
             }
-            throw 'prev version not in chain';
+
+            throw Error('prev version not in chain');
         }
         return count;
     }
