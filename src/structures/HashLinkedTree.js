@@ -348,6 +348,10 @@ module.exports = class HashLinkedTree {
 			//Get to last container, storing the entire branch
 			while(nextContainerHash !== '') {
 
+				if(nextContainerHash === true) {
+					throw Error('element already in set');
+				}
+
 //				console.log('follow->' + nextContainerHash);
 
 				iContainer = await TreeContainer.fromResource(nextContainerHash);
