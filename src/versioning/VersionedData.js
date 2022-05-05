@@ -69,6 +69,21 @@ module.exports = class VersionedData {
 		}
 	}
 
+	static validateParameters(params, expectedNames) {
+
+		for(const prop in params) {
+			if(expectedNames.includes(prop) === false) {
+				throw Error('unxpected parameter: ' + prop);
+			}
+		}
+
+		for(const name of expectedNames) {
+			if(name in params === false) {
+				throw Error('missing parameter: ' + name);
+			}
+		}
+	}
+
 	async apply(issuer, methodName, params) {
 
 		const methodCallback = this.methods.get(methodName);
@@ -238,22 +253,16 @@ module.exports = class VersionedData {
 		const admins = this.elements.get('admins');
 
 		if(await admins.isEmpty() !== false) {
-
-			console.log("Checking if I am authorized");
-
 			if(await admins.has(id) == false) {
 				throw Error('addAdmin failed: not authorized');
-			} else {
-				console.log(">>> Auth ok");
 			}
-
 		} else {
 			if(strict) {
 				throw Error('strict auth failed, admin group empty');
-			} else {
-				console.log("Admin group is empty, strict=false, auth ok");
 			}
 		}
+
+		console.log('>> ' + id + ' auth OK');
 	}
 
 	async applyAddAdmin(issuer, newAdminID) {
