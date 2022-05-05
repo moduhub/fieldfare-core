@@ -18,10 +18,8 @@ module.exports = class Environment extends VersionedData {
 	constructor() {
 		super();
 
-		this.elements.addSet('services');
-		this.elements.addSet('webports');
-
-		this.elements.providers = {};
+		this.addSet('services');
+		this.addSet('webports');
 
 	}
 
@@ -117,7 +115,7 @@ module.exports = class Environment extends VersionedData {
 
 		await services.add(resource);
 
-		this.elements.addSet('providers.' + definition.uuid);
+		this.addSet(definition.uuid + '.providers');
 
 		await this.commit({
 			addService: definition
@@ -148,7 +146,7 @@ module.exports = class Environment extends VersionedData {
 
 	async hasService(uuid) {
 
-		const service = this.elements.get('services');
+		const services = this.elements.get('services');
 
 		for await(const service of services) {
 
@@ -162,7 +160,7 @@ module.exports = class Environment extends VersionedData {
 
 	getProviders(serviceUUID) {
 
-		const providers = this.elements.get('providers.' + serviceUUID);
+		const providers = this.elements.get(serviceUUID + '.providers');
 
 		// console.log("provider: " + JSON.stringify(provider));
 
@@ -188,7 +186,7 @@ module.exports = class Environment extends VersionedData {
 
 		await this.auth(host.id);
 
-		const providers = this.elements.get('providers.'+serviceUUID);
+		const providers = this.getProviders(serviceUUID);
 
 		if(await providers.has(providerID)) {
 			throw 'provider already in list';

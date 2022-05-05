@@ -250,7 +250,7 @@ module.exports = class HashLinkedTree {
 		|| state === undefined
 		|| state === '') {
 
-			this.state = null;
+			this.rootHash = null;
 
 		} else {
 

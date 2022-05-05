@@ -12,129 +12,52 @@ const VersionChain = require('./VersionChain.js');
 
 const Utils = require('../basic/Utils.js');
 
-class VersionedElements {
-
-	constructor(contents) {
-
-		if(contents) {
-			this.contents = contents;
-		} else {
-			this.contents = {};
-		}
-
-	}
-
-	addSet(name) {
-		this.elements[name] = new HashLinkedTree(5);
-	}
-
-	addList(name) {
-		this.elements[name] = new HashLinkedList();
-	}
-
-	getObjectProperty (object, path) {
-	  	if (object == null) { // null or undefined
-	    	return object;
-	    }
-	  	const parts = path.split('.');
-		for (let i = 0; i < parts.length; ++i) {
-	      	if (object == null) { // null or undefined
-	        	return undefined;
-	        }
-	      	const key = parts[i];
-	    	object = object[key];
-	    }
-	  	return object;
-	}
-
-	forEachObjectProperty(object, callback, path) {
-
-		if(!path) {
-			path = '';
-		}
-
-		for(const prop in object) {
-
-			const value = object[prop];
-
-			if(callback(path + key, value) === false) {
-				if(value instanceof Object) {
-					this.forEachObjectProperty(value, callback, path.push[prop]);
-				} else {
-					throw Error('invalid object passed to iterator');
-				}
-			}
-		}
-	}
-
-	resetState() {
-
-		this.forEachObjectProperty(this.elements, (path, value) => {
-
-			if(value instanceof HashLinkedList
-			|| value instanceof HashLinkedTree) {
-
-				console.log('resetState of ' + path);
-				const value = this.getObjectProperty(this.elements, path);
-
-				value.setState('');
-				return true;
-			}
-
-			return false;
-		});
-	}
-
-	setState(state) {
-
-		this.forEachObjectProperty(this.elements, (path, value) => {
-
-			if(Utils.isBase64(value)) {
-				console.log('setState of ' + path + ' to ' + value);
-
-				const correspondingObject = this.getObjectProperty(this.elements, path);
-				correspondingObject.setState(value);
-
-				return true;
-			}
-
-			return false;
-		});
-
-	}
-
-	static jsonReplacer(key, value) {
-
-		if(value instanceof HashLinkedTree
-		|| value instanceof HashLinkedList) {
-			return value.getState();
-		}
-
-		return value;
-	}
-
-	getState() {
-
-		//Store transformed
-		const transformedState = JSON.parse(JSON.stringify(this.elements, VersionedElements.jsonReplacer));
-
-		console.log("Transformed state: " + JSON.stringify(transformedState, null, 2));
-
-		return transformedState;
-	}
-
-}
-
 module.exports = class VersionedData {
 
 	constructor() {
 
-		this.elements = new VersionedElements();
+		this.elements = new Map();
 
-		this.elements.addSet('admins');
+		this.addSet('admins');
 
 		this.version = '';
 
+	}
+
+	addSet(name) {
+		this.elements.set(name, new HashLinkedTree(5));
+	}
+
+	addList(name) {
+		this.elements.set(name, new HashLinkedList());
+	}
+
+	getState() {
+
+		var state = {};
+
+		for(const [name, element] of this.elements) {
+			const elementState = element.getState();
+			state[name] = elementState;
+		}
+
+		return state;
+	}
+
+	setState(state) {
+
+		for(const prop in state) {
+			const value = state[prop];
+			const element = this.elements.get(prop);
+			element.setState(value);
+		}
+
+	}
+
+	resetState() {
+		for(const [name, element] of this.elements) {
+			element.setState('');
+		}
 	}
 
 	async apply(issuer, method, params) {
@@ -171,11 +94,9 @@ module.exports = class VersionedData {
 
 		} else {
 
-			console.log('Reset state')
-			console.log('state before reset: ' + JSON.stringify(await this.getState()));
-			this.resetState(null);
-			console.log('state after reset: ' + JSON.stringify(await this.getState()));
+			console.log('Revert to NULL state');
 
+			this.resetState();
 		}
 
 		this.version = version;
@@ -336,7 +257,7 @@ module.exports = class VersionedData {
 		}
 
 		//Check if admin was not already present
-		if(await this.admins.has(newAdminID)) {
+		if(await admins.has(newAdminID)) {
 			throw Error('applyAddAdmin failed: id already in set');
 		}
 
