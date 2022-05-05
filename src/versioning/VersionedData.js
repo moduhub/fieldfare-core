@@ -17,8 +17,11 @@ module.exports = class VersionedData {
 	constructor() {
 
 		this.elements = new Map();
+		this.methods = new Map();
 
 		this.addSet('admins');
+
+		this.methods.set('addAdmin', this.applyAddAdmin.bind(this));
 
 		this.version = '';
 
@@ -55,23 +58,27 @@ module.exports = class VersionedData {
 	}
 
 	resetState() {
+
 		for(const [name, element] of this.elements) {
 			element.setState('');
+
+			//remove references to all service provider lists
+			if(name.search('.providers') != -1) {
+				this.elements.delete(name);
+			}
 		}
 	}
 
-	async apply(issuer, method, params) {
+	async apply(issuer, methodName, params) {
 
-		//handle addAdmin here
-		switch(method) {
-			case 'addAdmin' : {
-				await this.applyAddAdmin(issuer, params);
-			} break;
+		const methodCallback = this.methods.get(methodName);
 
-			default: {
-				throw Error('apply failed: unknown change method ' + method);
-			} break;
+		if(!methodCallback) {
+			throw Error('apply failed: unknown change method ' + methodName);
 		}
+
+		await methodCallback(issuer, params);
+
 	}
 
 	async revertToVersion(version) {
@@ -146,11 +153,17 @@ module.exports = class VersionedData {
 				console.log("remoteChanges:" + JSON.stringify(remoteChanges));
 
 				for await (const [issuer, method, params] of remoteChanges) {
+
+					const stateBefore = await host.storeResourceObject(await this.getState());
+					console.log("State before apply: " + JSON.stringify(this.getState(), null, 2)
+						+ ' => ' + stateBefore);
+
 					console.log('await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
 					await this.apply(issuer, method, params);
 
-					const stateKey = await host.storeResourceObject(await this.getState());
-					console.log("state after apply: " + stateKey);
+					const stateAfter = await host.storeResourceObject(await this.getState());
+					console.log("State after apply: " + JSON.stringify(this.getState(), null, 2)
+						+ ' => ' + stateAfter);
 
 				}
 

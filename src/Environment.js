@@ -21,6 +21,8 @@ module.exports = class Environment extends VersionedData {
 		this.addSet('services');
 		this.addSet('webports');
 
+		this.methods.set('addService', this.applyAddService.bind(this));
+
 	}
 
 	async init(uuid) {
@@ -81,25 +83,9 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
-	async apply(issuer, method, params) {
-		switch (method) {
-			case 'uuid': {
+	async applyAddService(issuer, params) {
 
-				console.log("apply check UUID: " + params
-				+ ' against my uuid: ' + this.uuid);
-
-				if(params !== this.uuid) {
-					throw Error('UUID mismatch');
-				}
-
-			} break;
-			default: {
-				await super.apply(issuer, method, params);
-			}
-		}
-	}
-
-	async addService(definition) {
+		const definition = params;
 
 		Service.validate(definition);
 
@@ -107,7 +93,7 @@ module.exports = class Environment extends VersionedData {
 			throw 'service already defined';
 		}
 
-		await this.auth(host.id);
+		await this.auth(issuer);
 
 		const resource = await host.storeResourceObject(definition);
 
@@ -116,6 +102,12 @@ module.exports = class Environment extends VersionedData {
 		await services.add(resource);
 
 		this.addSet(definition.uuid + '.providers');
+
+	}
+
+	async addService(definition) {
+
+		await this.applyAddService(host.id, definition);
 
 		await this.commit({
 			addService: definition
@@ -133,7 +125,7 @@ module.exports = class Environment extends VersionedData {
 
 			const service = await host.getResourceObject(resource);
 
-			console.log(JSON.stringify(service));
+			//console.log(JSON.stringify(service));
 
 			if(service.uuid === uuid) {
 				return service;
