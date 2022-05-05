@@ -22,6 +22,8 @@ module.exports = class Environment extends VersionedData {
 		this.addSet('webports');
 
 		this.methods.set('addService', this.applyAddService.bind(this));
+		this.methods.set('addWebport', this.applyAddWebport.bind(this));
+		this.methods.set('addProvider', this.applyAddProvider.bind(this));
 
 	}
 
@@ -174,23 +176,34 @@ module.exports = class Environment extends VersionedData {
 		return false;
 	}
 
-	async addProvider(serviceUUID, providerID) {
+	async applyAddProvider(issuer, params) {
 
-		await this.auth(host.id);
+		VersionedData.validateParameters(params,
+			['uuid', 'host']);
 
-		const providers = this.getProviders(serviceUUID);
+		await this.auth(issuer);
 
-		if(await providers.has(providerID)) {
-			throw 'provider already in list';
+		const providers = this.getProviders(params.uuid);
+
+		if(await providers.has(params.host)) {
+			throw Error('provider already in list');
 		}
 
-		await providers.add(providerID);
+		await providers.add(params.host);
+
+	}
+
+	async addProvider(serviceUUID, providerID) {
+
+		const params = {
+			uuid: serviceUUID,
+			host: providerID
+		}
+
+		await this.applyAddProvider(host.id, params);
 
 		await this.commit({
-			addProvider: {
-				service: serviceUUID,
-				host: providerID
-			}
+			addProvider: params
 		});
 
 	}
@@ -222,37 +235,37 @@ module.exports = class Environment extends VersionedData {
 		return null;
 	}
 
-	async setWebport(hostID, info) {
+	async applyAddWebport(issuer, params) {
 
-		this.auth(host.id);
+		await this.auth(issuer);
 
-		//validate info
-		if('protocol' in info === false) throw 'missing webport protocol';
-		if('address' in info === false) throw 'missing webport address';
-		if('port' in info === false) throw 'missing webport number';
-
-		const webport = {
-			hostid: hostID,
-			protocol: info.protocol,
-			address: info.address,
-			port: info.port
-		}
-
-		const resourceKey = await host.storeResourceObject(webport);
+		//validate params
+		if('hostid' in params === false) throw 'missing webport hostid';
+		if('protocol' in params === false) throw 'missing webport protocol';
+		if('address' in params === false) throw 'missing webport address';
+		if('port' in params === false) throw 'missing webport number';
 
 		const webports = this.elements.get('webports');
 
-		if(await webports.has(resourceKey) === false) {
+		const resourceKey = await host.storeResourceObject(params);
 
+		if(await webports.has(resourceKey)) {
 			//Exact same information already present
-			await webports.add(webport);
-
-			await this.commit({
-				setWebport: resourceKey
-			});
+			throw Error('webport already defined');
 		}
 
-		return resourceKey;
+		await webports.add(resourceKey);
+
+	}
+
+	async addWebport(info) {
+
+		await this.applyAddWebport(host.id, info);
+
+		await this.commit({
+			addWebport: info
+		});
+
 	}
 
 };
