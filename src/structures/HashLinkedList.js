@@ -79,34 +79,24 @@ module.exports = class HashLinkedList {
 
 	}
 
-	async forEach(callback) {
+	async* [Symbol.asyncIterator]() {
 
-		if(callback) {
+		var prevHash = this.lastHash;
 
-			var prevHash = this.lastHash;
+		while(prevHash !== '') {
 
-			while(prevHash !== '') {
+			var listElement = await host.getResourceObject(prevHash);
 
-				var listElement = await host.getResourceObject(prevHash);
-
-				//console.log("forEachResult hash ("+prevHash+"):" + JSON.stringify(object));
-
-				if(listElement
-				&& listElement !== 'null'
-				&& listElement !== 'undefined') {
-
-					callback(listElement.obj);
-
-					var prevHash = listElement.prev;
-
-				} else {
-
-					console.log("HashLinkedList: resource fetch failed");
-					break;
-				}
-
+			if(listElement === null
+			|| listElement === undefined) {
+				throw Error('HashLinkedList: resource is null or undefined');
 			}
+
+			yield listElement.obj;
+
+			var prevHash = listElement.prev;
 		}
+
 	}
 
 };
