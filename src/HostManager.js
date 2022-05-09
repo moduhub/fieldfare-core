@@ -25,6 +25,8 @@ module.exports = class HostManager {
 
 		this.services = new Map();
 
+		this.environments = new Set();
+
 		this.stateHash = '';
 
 	}
@@ -99,6 +101,18 @@ module.exports = class HostManager {
 
 	}
 
+	addEnvironment(env) {
+
+		this.environments.add(env);
+
+		console.log("Registered enviroments: ");
+
+		for(const env of this.environments) {
+			console.log(env.uuid);
+		}
+
+	}
+
 	async setupService(definition) {
 
 		var newService = Service.fromDefinition(definition);
@@ -125,13 +139,11 @@ module.exports = class HostManager {
 
 		for(const [uuid, service] of this.services) {
 
-			const serviceName = service.name;
-			const serviceState = service.getState();
+			// const serviceName = service.definition.name;
+			const serviceState = service.updateState();
 
-			hostState[serviceName] = serviceState;
+			hostState[uuid] = serviceState;
 
-			console.log("Storing service state " + uuid + '->' + JSON.stringify(serviceState));
-			nvdata.save(uuid, serviceState);
 		}
 
 		return hostState;
@@ -141,7 +153,7 @@ module.exports = class HostManager {
 
 		var remoteHost = this.remoteHosts.get(hostid);
 
-		//Check if host existed
+		//Check if host exists
 		if(remoteHost === undefined) {
 
 			remoteHost = new RemoteHost(hostid);
@@ -167,35 +179,34 @@ module.exports = class HostManager {
 				}
 			};
 
-			remoteHost.onEnvironmentUpdate = async (version) => {
+			remoteHost.onEnvironmentUpdate = async (uuid, version) => {
 
-				if(this.environment) {
+				for(const env of this.environments) {
 
-					if(remoteHost.envVersion !== version) {
+					if(env.uuid === uuid) {
 
-						console.log("remoteHost: " + remoteHost.id + " updated environment to version " + version);
+						env.updateActiveHost(remoteHost, version);
 
-						try {
+						if(env.version !== version) {
 
-							await this.environment.update(version, remoteHost.id);
+							console.log("remoteHost: " + remoteHost.id + " updated environment to version " + version);
 
-							remoteHost.envVersion = version;
-						} catch (error) {
-							console.error("Failed to update environment to version " + version
-							+ ": " + error);
-							var iError = error.cause;
-							while(iError) {
-								console.error("Cause: " + iError.stack);
-								iError = iError.cause;
+							try {
+
+								await env.update(version, remoteHost.id);
+
+							} catch (error) {
+								console.error("Failed to update environment to version " + version
+								+ ": " + error);
+								var iError = error.cause;
+								while(iError) {
+									console.error("Cause: " + iError.stack);
+									iError = iError.cause;
+								}
 							}
 						}
-
 					}
-
-				} else {
-					console.error("Environment is undefined!");
 				}
-
 			}
 		}
 
@@ -473,15 +484,18 @@ module.exports = class HostManager {
 			throw Error('destination not defined');
 		}
 
-		var envVersion;
+		var envVersionGroup;
 
-		if(this.environment) {
-			envVersion = this.environment.version;
+		if(this.environments.size > 0) {
+			envVersionGroup = {};
+			for(const env of this.environments) {
+				envVersionGroup[env.uuid] = env.version;
+			}
 		}
 
 		var message = new Message('announce', {
 			id: this.id,
-			env: envVersion,
+			env: envVersionGroup,
 			state: this.updateState()
 		});
 

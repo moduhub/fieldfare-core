@@ -87,6 +87,8 @@ module.exports = class RemoteHost {
 
 	async treatAnnounce(message, channel) {
 
+		console.log("Received announce message: " + JSON.stringify(message, null, 2));
+
 		if('id' in message.data === false) {
 			throw Error('malformed announce, missing host id');
 		}
@@ -136,8 +138,22 @@ module.exports = class RemoteHost {
 		}
 
 		if('env' in message.data) {
-			if(this.onEnvironmentUpdate) {
-				this.onEnvironmentUpdate(message.data.env);
+
+			for(const uuid in message.data.env) {
+
+				if(Utils.isUUID(uuid) === false) {
+					throw Error('Invalid env uuid inside announce');
+				}
+
+				const version = message.data.env[uuid];
+
+				if(Utils.isBase64(version) === false) {
+					throw Error('Invalid env version inside announce');
+				}
+
+				if(this.onEnvironmentUpdate) {
+					this.onEnvironmentUpdate(uuid, version);
+				}
 			}
 		}
 
