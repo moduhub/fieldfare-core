@@ -169,16 +169,16 @@ module.exports = class VersionedData {
 
 				for await (const [issuer, method, params] of remoteChanges) {
 
-					const stateBefore = await host.storeResourceObject(await this.getState());
-					console.log("State before apply: " + JSON.stringify(this.getState(), null, 2)
-						+ ' => ' + stateBefore);
-
-					console.log('await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
+					// const stateBefore = await host.storeResourceObject(await this.getState());
+					// console.log("State before apply: " + JSON.stringify(this.getState(), null, 2)
+					// 	+ ' => ' + stateBefore);
+					//
+					// console.log('await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
 					await this.apply(issuer, method, params);
-
-					const stateAfter = await host.storeResourceObject(await this.getState());
-					console.log("State after apply: " + JSON.stringify(this.getState(), null, 2)
-						+ ' => ' + stateAfter);
+					//
+					// const stateAfter = await host.storeResourceObject(await this.getState());
+					// console.log("State after apply: " + JSON.stringify(this.getState(), null, 2)
+					// 	+ ' => ' + stateAfter);
 
 				}
 
@@ -192,7 +192,7 @@ module.exports = class VersionedData {
 					throw Error('version mismatch after changes applied');
 				}
 
-				this.version = remoteChain.version;
+				this.version = remoteChain.head;
 
 				const localChanges = await localChain.getChanges();
 
