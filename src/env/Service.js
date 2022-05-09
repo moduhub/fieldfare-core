@@ -1,4 +1,6 @@
 
+const Utils = require('../basic/Utils.js');
+
 const dataTypes = {
     'list': require('../structures/HashLinkedList.js'),
     'set': require('../structures/HashLinkedTree.js'),
@@ -14,14 +16,6 @@ module.exports = class Service {
 
     }
 
-    static isUUID(uuid) {
-
-        var pattern = new RegExp('^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$', 'i');
-
-        return pattern.test(uuid);
-
-    }
-
     static validate(definition) {
 
         // console.log("validate:" + JSON.stringify(definition));
@@ -30,7 +24,7 @@ module.exports = class Service {
             throw 'missing uuid in service definition';
         }
 
-        if(Service.isUUID(definition.uuid) == false) {
+        if(Utils.isUUID(definition.uuid) == false) {
             throw 'service definition uuid invalid';
         }
 
@@ -85,18 +79,25 @@ module.exports = class Service {
         return newService;
     }
 
-    getState() {
+    updateState() {
 
-        var serviceState = new Object;
+        var newState = new Object;
 
         for(const prop in this.data) {
 
             console.log("data.name: " + prop);
             console.log("stateId: " + this.data[prop].getState());
-            serviceState[prop] = this.data[prop].getState();
+            newState[prop] = this.data[prop].getState();
         }
 
-        return serviceState;
+        if(this.prevState !== newState) {
+            const uuid = this.definition.uuid;
+            console.log("Storing service state " + uuid + '->' + JSON.stringify(newState, null, 2));
+            nvdata.save(uuid, newState);
+            this.prevState = newState;
+        }
+
+        return newState;
     }
 
     setState(state) {
