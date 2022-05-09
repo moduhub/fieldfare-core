@@ -18,12 +18,25 @@ module.exports = class Environment extends VersionedData {
 	constructor() {
 		super();
 
+		this.activeHosts = new Map();
+
 		this.addSet('services');
 		this.addSet('webports');
 
 		this.methods.set('addService', this.applyAddService.bind(this));
 		this.methods.set('addWebport', this.applyAddWebport.bind(this));
 		this.methods.set('addProvider', this.applyAddProvider.bind(this));
+
+		//report periodically
+		setInterval(() => {
+			console.log("REPORT: Active hosts of env " + this.uuid + ": " + this.activeHosts.size);
+			for(const [id, info] of this.activeHosts) {
+				const timeDiff = Date.now() - info.lastEnvUpdate;
+				console.log("HOST: " + id
+					+ 'at version ' + info.latestVersion
+					+ ' updated ' + timeDiff + 'ms ago.');
+			}
+		}, 10000);
 
 	}
 
@@ -62,7 +75,39 @@ module.exports = class Environment extends VersionedData {
 
 		}
 
-		host.environment = this;
+	}
+
+	removeActiveHost(hostid) {
+		if(this.activeHosts.has(hostid)) {
+			const oldInfo = this.activeHosts.get(hostid);
+			clearTimeout(oldInfo.timeout);
+			this.activeHosts.clear(hostid);
+		}
+	}
+
+	updateActiveHost(remoteHost, version) {
+
+		if(remoteHost.id) {
+
+			this.removeActiveHost(remoteHost.id);
+
+			const newInfo = {
+				remoteHostObj: remoteHost,
+				timeout: setTimeout(() => {
+					console.log("Host went inactive: " + remoteHost.id);
+					this.removeActiveHost(remoteHost.id)
+				}, 10000),
+				lastEnvUpdate: Date.now(),
+				latestVersion: version
+			}
+
+			console.log("hostInfo: " + newInfo.remoteHostObj.id
+				+ ' date: ' + newInfo.lastEnvUpdate
+				+ 'at version: ' + newInfo.latestVersion);
+
+			this.activeHosts.set(remoteHost.id, newInfo);
+
+		}
 
 	}
 
