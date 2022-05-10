@@ -86,7 +86,7 @@ module.exports = {
 			return false;
 		}
 	},
-	
+
 	isUUID(uuid) {
 
         var pattern = new RegExp('^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$', 'i');
@@ -94,6 +94,13 @@ module.exports = {
         return pattern.test(uuid);
 
     },
+
+	isIPV4(string) {
+		// Regular expression to check if string is a IP address
+		const regexExp = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/gi;
+
+		return regexExp.test(string); // true
+	},
 
 	isIterable(obj) {
   		// checks for null and undefined
