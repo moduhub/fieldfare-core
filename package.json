@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Javascript functions to access the MH network",
   "main": "index.js",
+  "bin": {
+    "mhenv": "bin/mhenv"
+  },
   "scripts": {
     "start": "node test/Environment/EnvTestHost1.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,7 +20,9 @@
   "author": "Adan Kvitschal",
   "license": "ISC",
   "dependencies": {
+    "arg": "^5.0.1",
     "crypto": "^1.0.1",
+    "esm": "^3.2.25",
     "level": "^8.0.0",
     "protobufjs": "^6.11.2",
     "websocket": "^1.0.34"

@@ -53,3 +53,5 @@ Thumbs.db
 /nvd
 /resources
 /package-lock.json
+/test/cli/host1/nvd
+/test/cli/host1/resources
