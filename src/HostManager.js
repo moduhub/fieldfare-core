@@ -79,14 +79,14 @@ module.exports = class HostManager {
 
 		}
 
-		console.log('host pubkey data: ' + JSON.stringify(pubKeyData));
+		// console.log('host pubkey data: ' + JSON.stringify(pubKeyData));
 
 		//Calculate host ID from pubkey
 		//var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', pubKeyData));
 
 		this.id = await this.storeResourceObject(pubKeyData);
 
-		console.log('host id: ' + this.id);
+		console.log('HOST ID: ' + this.id);
 
 		setInterval(() => {
 

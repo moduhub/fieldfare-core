@@ -59,7 +59,7 @@ module.exports = class UDPTransceiver extends Transceiver {
 
 				} else {
 
-					console.error("UDPtrx: onNewChannelCallbck not defined");
+					console.error("UDPtrx: onNewChannelCallback not defined");
 
 				}
 			}
