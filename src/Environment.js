@@ -111,16 +111,48 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
+	getSyncedHosts() {
+		var numSyncedHosts = 0;
+		for(const [id, info] of this.activeHosts) {
+			// console.log("this.version: " + this.version
+			// 	+ ' - their.version: ' + info.latestVersion);
+			if(info.latestVersion === this.version) {
+				numSyncedHosts++;
+			}
+		}
+		return numSyncedHosts;
+	}
+
 	async sync() {
 
-		//Collect a certain number of announces from environment members
+		const preSyncedHosts = this.getSyncedHosts();
+		if(preSyncedHosts > 0) {
+			return preSyncedHosts;
+		}
 
-		// return new Promise((resolve, reject) => {
-		// 	setTimeout(() => {
-		// 		resolve()
-		// 	}, 1000);
-		// });
+		return new Promise((resolve, reject) => {
 
+			var attempts = 0;
+			const interval = setInterval(() => {
+				const syncedHosts = this.getSyncedHosts();
+				if(syncedHosts > 0) {
+					clearInterval(interval);
+					resolve(syncedHosts);
+				} else {
+					if(this.activeHosts.size === 0) {
+						console.log("env.sync waiting for active host");
+					} else {
+						console.log('env.sync waiting for any of ' + this.activeHosts.size
+							+ ' active hosts to sync');
+					}
+					if(++attempts > 10) {
+						clearInterval(interval);
+						reject(Error('sync timeout'));
+					}
+				}
+			}, 1000);
+
+		});
 	}
 
 	updateProviderState(providerID, stateHash) {
