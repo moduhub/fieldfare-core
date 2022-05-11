@@ -38,9 +38,9 @@ class ChangesIterator {
 			for(const prop in changes) {
 				const value = changes[prop];
 
-                console.log("Apply method: " + prop
-                + ' from issuer: ' + issuer);
-                + ' with params: ' + JSON.stringify(value)
+                // console.log("Apply method: " + prop
+                // + ' from issuer: ' + issuer);
+                // + ' with params: ' + JSON.stringify(value)
 
                 yield [issuer, prop, value]; //issuer:method:params format
             }
@@ -112,8 +112,8 @@ module.exports = class VersionChain {
 
             for await (const [versionB, statementB] of chainB) {
 
-                console.log("A("+depthA+"): " + versionA);
-                console.log("B("+depthB+"): " + versionB);
+                // console.log("A("+depthA+"): " + versionA);
+                // console.log("B("+depthB+"): " + versionB);
 
                 if(versionA === versionB) {
                     return versionA;
