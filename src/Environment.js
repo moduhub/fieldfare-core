@@ -63,10 +63,7 @@ module.exports = class Environment extends VersionedData {
 		&& latestVersion !== undefined
 		&& latestVersion !== rootVersion) {
 
-			const latestStatement = await VersionStatement.fromResource(latestVersion);
-
-			//Build chain downto env root
-			const chain = latestStatement.buildChain(rootVersion);
+			await this.revertToVersion(latestVersion);
 
 		} else {
 
@@ -162,21 +159,35 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
-	async applyAddService(issuer, params) {
+	async applyAddService(issuer, params, merge=false) {
 
-		const definition = params;
+		VersionedData.validateParameters(params, ['definition']);
+
+		console.log('applyAddService params: ' + JSON.stringify(params));
+
+		const definition = params.definition;
 
 		Service.validate(definition);
 
+		const services = this.elements.get('services');
+
 		if(await this.hasService(definition.uuid)) {
-			throw 'service already defined';
+			if(merge) {
+				const resouceKey = await ResourcesManager.generateKeyForObject(definition);
+				if(await services.has(resourceKey)) {
+					console.log('applyAddService succesfuly MERGED');
+					return;
+				} else {
+					throw Error('applyAddService MERGE FAILED: different service defined with same UUID');
+				}
+			} else {
+				throw Error('service already defined');
+			}
 		}
 
 		await this.auth(issuer);
 
 		const resource = await host.storeResourceObject(definition);
-
-		const services = this.elements.get('services');
 
 		await services.add(resource);
 
@@ -186,11 +197,15 @@ module.exports = class Environment extends VersionedData {
 
 	async addService(definition) {
 
-		await this.applyAddService(host.id, definition);
+		const params = {definition: definition};
+
+		await this.applyAddService(host.id, params);
 
 		await this.commit({
-			addService: definition
+			addService: params
 		});
+
+		nvdata.save(this.uuid, this.version);
 
 	}
 
@@ -219,7 +234,11 @@ module.exports = class Environment extends VersionedData {
 
 		const services = this.elements.get('services');
 
-		for await(const service of services) {
+		for await(const resourceKey of services) {
+
+			const service = await host.getResourceObject(resourceKey);
+
+			console.log('hasService ' + uuid + ' compare with ' + service.uuid);
 
 			if(service.uuid === uuid) {
 				return true;
@@ -238,7 +257,7 @@ module.exports = class Environment extends VersionedData {
 		return providers;
 	}
 
-	async isProvider(hostID, serviceUUID) {
+	async isProvider(serviceUUID, hostID) {
 
 		const providers = this.getProviders(serviceUUID);
 
@@ -253,7 +272,7 @@ module.exports = class Environment extends VersionedData {
 		return false;
 	}
 
-	async applyAddProvider(issuer, params) {
+	async applyAddProvider(issuer, params, merge=false) {
 
 		VersionedData.validateParameters(params,
 			['uuid', 'host']);
@@ -263,7 +282,11 @@ module.exports = class Environment extends VersionedData {
 		const providers = this.getProviders(params.uuid);
 
 		if(await providers.has(params.host)) {
-			throw Error('provider already in list');
+			if(merge) {
+				console.log('addProvider successfully MERGED');
+			} else {
+				throw Error('provider already in list');
+			}
 		}
 
 		await providers.add(params.host);
@@ -283,6 +306,8 @@ module.exports = class Environment extends VersionedData {
 			addProvider: params
 		});
 
+		nvdata.save(this.uuid, this.version);
+
 	}
 
 	async removeProvider(serviceUUID, providerID) {
@@ -297,11 +322,11 @@ module.exports = class Environment extends VersionedData {
 
 		const webports = this.elements.get('webports');
 
-		for await(const resource of webports) {
+		for await(const resourceKey of webports) {
 
-			console.log('webport info: ' + JSON.stringfy(webport));
+			const webport = await host.getResourceObject(resourceKey);
 
-			const webport = await host.getResourceObject(resource);
+			// console.log('webport info: ' + JSON.stringify(webport));
 
 			if(webport.hostid === hostID) {
 				return webport;
@@ -312,15 +337,11 @@ module.exports = class Environment extends VersionedData {
 		return null;
 	}
 
-	async applyAddWebport(issuer, params) {
+	async applyAddWebport(issuer, params, merge=false) {
+
+		VersionedData.validateParameters(params, ['hostid', 'protocol', 'address', 'port']);
 
 		await this.auth(issuer);
-
-		//validate params
-		if('hostid' in params === false) throw 'missing webport hostid';
-		if('protocol' in params === false) throw 'missing webport protocol';
-		if('address' in params === false) throw 'missing webport address';
-		if('port' in params === false) throw 'missing webport number';
 
 		const webports = this.elements.get('webports');
 
@@ -328,7 +349,12 @@ module.exports = class Environment extends VersionedData {
 
 		if(await webports.has(resourceKey)) {
 			//Exact same information already present
-			throw Error('webport already defined');
+			if(merge) {
+				console.log('addWebport successfully MERGED');
+				return;
+			} else {
+				throw Error('webport already defined');
+			}
 		}
 
 		await webports.add(resourceKey);
@@ -343,6 +369,7 @@ module.exports = class Environment extends VersionedData {
 			addWebport: info
 		});
 
+		nvdata.save(this.uuid, this.version);
 	}
 
 };

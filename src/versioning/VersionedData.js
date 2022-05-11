@@ -50,9 +50,22 @@ module.exports = class VersionedData {
 	setState(state) {
 
 		for(const prop in state) {
+
 			const value = state[prop];
+
+			if(this.elements.has(prop) === false) {
+				this.addSet(prop);
+			}
+
 			const element = this.elements.get(prop);
 			element.setState(value);
+		}
+
+		//remove elements not in stateID
+		for(const [name, element] of this.elements) {
+			if(name in state === false) {
+				this.elements.delete(name);
+			}
 		}
 
 	}
@@ -84,7 +97,7 @@ module.exports = class VersionedData {
 		}
 	}
 
-	async apply(issuer, methodName, params) {
+	async apply(issuer, methodName, params, merge=false) {
 
 		const methodCallback = this.methods.get(methodName);
 
@@ -92,7 +105,9 @@ module.exports = class VersionedData {
 			throw Error('apply failed: unknown change method ' + methodName);
 		}
 
-		await methodCallback(issuer, params);
+		if(merge) console.log('>>MERGE ' + methodName + ' params: ' + JSON.stringify(params));
+
+		await methodCallback(issuer, params, merge);
 
 	}
 
@@ -104,19 +119,19 @@ module.exports = class VersionedData {
 
 		const stateKey = statement.data.state;
 
-		console.log("State key: \'" + stateKey + '\'');
+		// console.log("State key: \'" + stateKey + '\'');
 
 		if(stateKey !== '') {
 
 			const state = await host.getResourceObject(statement.data.state);
 
-			console.log("Revert to state object: " + JSON.stringify(state));
+			// console.log("Revert to state object: " + JSON.stringify(state));
 
 			this.setState(state);
 
 		} else {
 
-			console.log('Revert to NULL state');
+			// console.log('Revert to NULL state');
 
 			this.resetState();
 		}
@@ -127,11 +142,11 @@ module.exports = class VersionedData {
 
 	async update(version, owner) {
 
-		console.log("Received update version: " + version);
+		console.log(">> Env update to version: " + version);
 
 		const receivedMessage = await VersionStatement.fromResource(version, owner);
 
-		console.log("Received update statement " + JSON.stringify(receivedMessage));
+		// console.log("Received update statement " + JSON.stringify(receivedMessage));
 
 		var localChain = new VersionChain(this.version, host.id, 50);
 		var remoteChain = new VersionChain(version, owner, 50);
@@ -153,10 +168,11 @@ module.exports = class VersionedData {
 		// 		1) I have concurrent changes
 		// && 	2) remote chain is LoggerManager
 		// 			so... stash localChanges and perform remote before
-		if(remoteCommitsAhead > localCommitsAhead) {
+		if(remoteCommitsAhead > 0
+		&& remoteCommitsAhead >= localCommitsAhead) {
 
 			if(localCommitsAhead > 0) {
-				console.log("Stashing local changes");
+				// console.log("Stashing local changes");
 				await this.revertToVersion(commonVersion);
 			}
 
@@ -165,7 +181,7 @@ module.exports = class VersionedData {
 				//just accept remote changes
 				const remoteChanges = await remoteChain.getChanges();
 
-				console.log("remoteChanges:" + JSON.stringify(remoteChanges));
+				// console.log("remoteChanges:" + JSON.stringify(remoteChanges));
 
 				for await (const [issuer, method, params] of remoteChanges) {
 
@@ -185,21 +201,39 @@ module.exports = class VersionedData {
 				const stateKey = await host.storeResourceObject(await this.getState());
 				const expectedState = await remoteChain.getHeadState();
 
-				console.log("state after apply: " + stateKey);
-				console.log("expected state: " + expectedState);
+				// console.log("state after apply: " + stateKey);
+				// console.log("expected state: " + expectedState);
 
 				if(stateKey !== expectedState) {
-					throw Error('version mismatch after changes applied');
+					throw Error('version mismatch after remote changes applied');
 				}
 
 				this.version = remoteChain.head;
 
 				const localChanges = await localChain.getChanges();
 
-				//now merge local changes at end of remote chain
-				for await (const [method, params] of localChanges) {
-					console.log('await this.change(' + method + ',' + JSON.stringify(params) + ')');
+				//now merge local changes at end of remote chain, if any
+				if(localCommitsAhead > 0) {
+
+					for await (const [issuer, method, params] of localChanges) {
+						await this.apply(issuer, method, params, true);
+					}
+
+					const stateAfterMergeKey = await host.storeResourceObject(await this.getState());
+
+					//only commit if changes were not redundant
+					if(stateAfterMergeKey !== expectedState) {
+						await this.commit({
+							merge: {
+								head: localChain.head,
+								base: localChain.base}
+							}
+						);
+					}
 				}
+
+				//Save changes permanently
+				await nvdata.save(this.uuid, this.version);
 
 			} catch (error) {
 
@@ -265,7 +299,17 @@ module.exports = class VersionedData {
 		console.log('>> ' + id + ' auth OK');
 	}
 
-	async applyAddAdmin(issuer, newAdminID) {
+	async applyAddAdmin(issuer, params, merge=false) {
+
+		console.log("applyAddAdmin params: " + JSON.stringify(params));
+
+		VersionedData.validateParameters(params, ['id']);
+
+		const newAdminID = params.id;
+
+		if(Utils.isBase64(newAdminID) === false) {
+			throw Error('invalid admin ID');
+		}
 
 		//newAdmin must be a valid host ID
 		console.log("APPLY >> VersionedData.applyAddAdmin ID=" + newAdminID
@@ -273,14 +317,19 @@ module.exports = class VersionedData {
 
 		const admins = this.elements.get('admins');
 
-		console.log("Current admins: ")
+		console.log("Current admins: ");
 		for await (const admin of admins) {
 			console.log('> ' + admin);
 		}
 
 		//Check if admin was not already present
 		if(await admins.has(newAdminID)) {
-			throw Error('applyAddAdmin failed: id already in set');
+			if(merge) {
+				console.log('applyAddAdmin successfully MERGED');
+				return;
+			} else {
+				throw Error('applyAddAdmin failed: id already in set');
+			}
 		}
 
 		//Check auth, non strict
@@ -293,14 +342,18 @@ module.exports = class VersionedData {
 
 	async addAdmin(newAdminID) {
 
+		const params = {id: newAdminID};
+
 		//newAdmin must be a valid host ID
 		console.log("VersionedData.addAdmin ID="+newAdminID);
 
-		await this.applyAddAdmin(host.id, newAdminID);
+		await this.applyAddAdmin(host.id, params);
 
 		await this.commit({
-			addAdmin: newAdminID
+			addAdmin: params
 		});
+
+		await nvdata.save(this.uuid, this.version);
 
 	}
 
