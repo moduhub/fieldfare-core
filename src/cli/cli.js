@@ -17,6 +17,9 @@ const Utils = require('../basic/Utils.js');
 
 const WebClientTransceiver = require('../WebClientTransceiver.js');
 
+const VersionChain = require('../versioning/VersionChain.js');
+
+
 function parseArgumentsIntoOptions(rawArgs) {
     const args = arg(
     {
@@ -211,10 +214,6 @@ async function addBootWebport(options) {
 
 }
 
-async function addService(options) {
-
-
-}
 
 export async function cli(args) {
 
@@ -266,6 +265,23 @@ export async function cli(args) {
 
         } break;
 
+        case 'getChanges': {
+
+            await initHost(options);
+            await initEnvironment(options);
+            // await initBootWebports();
+            // await env.sync();
+
+            const localChain = new VersionChain(env.version, host.id, 50);
+
+            const localChanges = await localChain.getChanges();
+
+            for await (const [issuer, method, params] of localChanges) {
+                console.log('issuer:\"' + issuer + '\" method:' + method + ' params:\n'+ JSON.stringify(params, null, 2));
+            }
+
+        } break;
+
         case 'getAdmins': {
 
             await initHost(options);
@@ -300,17 +316,17 @@ export async function cli(args) {
 
         case 'addAdmin': {
 
-            console.log(">>addAdmin " + options.host
-                + 'to environment ' + envUUID);
-
                 await initHost(options);
                 await initEnvironment(options);
                 await initBootWebports();
 
+                console.log(">>addAdmin " + options.host
+                    + 'to environment ' + envUUID);
+
                 console.log("awaiting env sync before edit");
                 await env.sync();
 
-                env.addAdmin(options);
+                await env.addAdmin(options.host);
 
                 console.log("awaiting env sync after edit");
                 await env.sync();
