@@ -29,6 +29,7 @@ function parseArgumentsIntoOptions(rawArgs) {
         '--operation': String,
         '--address': String,
         '--port':String,
+        '--file':String,
         '-k': '--key',
         '-o': '--operation',
     },
@@ -43,6 +44,7 @@ function parseArgumentsIntoOptions(rawArgs) {
         address: args['--address'] || null,
         port: args['--port'] || null,
         operation: args['--operation'] || false,
+        file: args['--file'] || null
     };
 }
 
@@ -227,6 +229,17 @@ export async function cli(args) {
 
     switch(options.operation) {
 
+        case 'serve' : {
+
+            await initHost(options);
+            await initEnvironment(options);
+
+            const {setup} = await import(process.cwd() + '\\' + options.file);
+
+            await setup(env);
+
+        } break;
+
         case 'setEnvironment': {
 
             try {
@@ -239,6 +252,8 @@ export async function cli(args) {
 
                 process.exit(1);
             }
+
+            process.exit(0);
 
         } break;
 
@@ -257,11 +272,15 @@ export async function cli(args) {
                 process.exit(1);
             }
 
+            process.exit(0);
+
         } break;
 
         case 'clearBootWebports' : {
 
             await nvdata.save('bootWebports', "[]");
+
+            process.exit(0);
 
         } break;
 
@@ -280,6 +299,8 @@ export async function cli(args) {
                 console.log('issuer:\"' + issuer + '\" method:' + method + ' params:\n'+ JSON.stringify(params, null, 2));
             }
 
+            process.exit(0);
+
         } break;
 
         case 'getAdmins': {
@@ -296,6 +317,8 @@ export async function cli(args) {
                 console.log(">> " + admin);
             }
 
+            process.exit(0);
+
         } break;
 
         case 'getProviders': {
@@ -311,6 +334,8 @@ export async function cli(args) {
             for await (const hostid of providers) {
                 console.log(">> " + hostid);
             }
+
+            process.exit(0);
 
         } break;
 
@@ -331,12 +356,15 @@ export async function cli(args) {
                 console.log("awaiting env sync after edit");
                 await env.sync();
 
+                process.exit(0);
+
         } break;
 
         default: {
             console.log('Unknown operation: ' + options.operation);
+            process.exit(1);
         } break;
     }
 
-    process.exit(0);
+
 }
