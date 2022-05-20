@@ -10,7 +10,7 @@ const VersionStatement = require('./versioning/VersionStatement.js');
 
 const HashLinkedTree = require('./structures/HashLinkedTree.js');
 
-const Service = require('./env/Service.js');
+const LocalService = require('./env/LocalService.js');
 
 
 module.exports = class Environment extends VersionedData {
@@ -154,9 +154,51 @@ module.exports = class Environment extends VersionedData {
 
 	updateProviderState(providerID, stateHash) {
 
-		//provider state is a versioned state strucutre
+		//provider state is a versioned state structure
 		var currentStateObjectHash = this.getCurrentHostState(providerID);
 
+	}
+
+	getActiveProviders(serviceUUID, howMany=-1) {
+
+		var activeProviders = [];
+
+		for (const [id, info] of this.activeHosts) {
+			const remoteHost = info.remoteHostObj;
+			if(remoteHost.hasService(serviceUUID)) {
+				activeProviders.push(remoteHost);
+				if(howMany !== -1) {
+					if(activeProviders.size >= howMany) {
+						break;
+					}
+				}
+			}
+		}
+
+		return activeProviders;
+	}
+
+	establishProvidersOf(serviceUUID, howMany=1) {
+
+		var newProviders = [];
+
+		//Establish new
+		const providers = await this.getProviders(serviceUUID);
+
+		for await (const providerID of providers) {
+			if(this.activeHosts.has(providerID) === false) {
+				try {
+					const remoteHost = await host.establish(providerID);
+					newProviders.push(remoteHost);
+				} catch (error) {
+					console.log("Failed to reach host " + providerID);
+				}
+			}
+		}
+
+		//throw Error('Unable to find a provider for service ' + serviceUUID);
+
+		return newProviders;
 	}
 
 	async applyAddService(issuer, params, merge=false) {
@@ -167,7 +209,7 @@ module.exports = class Environment extends VersionedData {
 
 		const definition = params.definition;
 
-		Service.validate(definition);
+		LocalService.validate(definition);
 
 		const services = this.elements.get('services');
 
@@ -209,7 +251,7 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
-	async getService(uuid) {
+	async getServiceDefinition(uuid) {
 
 		var definition;
 
@@ -226,7 +268,7 @@ module.exports = class Environment extends VersionedData {
 			}
 		}
 
-		throw 'service definition not found in env';
+		throw Error('service definition not found in env');
 
 	}
 

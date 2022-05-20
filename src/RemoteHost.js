@@ -13,6 +13,7 @@ module.exports = class RemoteHost {
 	constructor(id) {
 		this.id = id;
 		this.channels = new Set();
+		this.services = new Map();
 	}
 
 	send(message) {
@@ -27,7 +28,7 @@ module.exports = class RemoteHost {
 
 		message.setDestinationAddress(this.id);
 
-		for( const channel of this.channels) {
+		for(const channel of this.channels) {
 
 			// console.log("Dispatching message to "
 			// 	+ channel.type
@@ -75,7 +76,18 @@ module.exports = class RemoteHost {
 
 			} else {
 
-				throw Error('unexpected service id');
+				const localService = host.getLocalService(message.service);
+
+				if(localService === undefined
+				|| localService === null) {
+					throw Error('unexpected service id');
+				}
+
+				if(await this.verifyMessage(message) !== true) {
+					throw Error('invalid message signature');
+				}
+
+				localService.treatRequest(remoteHost, message.data);
 
 			}
 

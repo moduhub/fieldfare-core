@@ -9,7 +9,7 @@ const Utils = require('./basic/Utils.js');
 const Message = require('./Message.js');
 const RemoteHost = require('./RemoteHost.js');
 const Request = require('./Request.js');
-const Service = require('./env/Service.js');
+const LocalService = require('./env/LocalService.js');
 
 const ResourcesManager = require('./resources/ResourcesManager.js');
 
@@ -115,7 +115,7 @@ module.exports = class HostManager {
 
 	async setupService(definition) {
 
-		var newService = Service.fromDefinition(definition);
+		var newService = LocalService.fromDefinition(definition);
 
 		//Register service under host mapping
 		this.services.set(definition.uuid, newService);
@@ -131,6 +131,10 @@ module.exports = class HostManager {
         }
 
 		return newService;
+	}
+
+	getLocalService(uuid) {
+		return this.services.get(uuid);
 	}
 
 	updateState() {
@@ -509,6 +513,28 @@ module.exports = class HostManager {
 
 		throw Error('destination ' + JSON.stringify(destination) + ' not send-able');
 
+	}
+
+	async establish(remoteHostID) {
+
+		const remoteHost = this.remoteHosts.get(snapshotProviderID);
+
+		if(remoteHost === undefined
+		|| remoteHost === null
+		|| remoteHost.isActive() === false) {
+
+			// //attemp connection to webport assigned to this host
+			// const webport = await env.getWebport(snapshotProviderID);
+			//
+			// await host.connectWebport(webport);
+			//
+			throw Error('function not implemented');
+
+		}
+
+		console.log("Remote host " + snapshotProviderID + " is active");
+
+		return remoteHost;
 	}
 
 };

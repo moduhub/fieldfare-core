@@ -11,7 +11,7 @@ module.exports = class Service {
 
     constructor() {
 
-        this.methods = [];
+        this.methods = new Map();
         this.data = new Object;
 
     }
@@ -44,7 +44,7 @@ module.exports = class Service {
     static customDataType(name, type) {
 
         if(name in dataTypes) {
-            throw 'customDataType name already used';
+            throw Error('customDataType name already used');
         }
 
         dataTypes[name] = type;
@@ -68,7 +68,7 @@ module.exports = class Service {
             if(typeClass) {
                 var newEntry = new typeClass;
             } else {
-                throw 'unknown service data type: ' + entry.type;
+                throw Error('unknown service data type: ' + entry.type);
             }
 
             newEntry.name = entry.name; //is this a bad practice?
@@ -109,7 +109,7 @@ module.exports = class Service {
             // console.log("entry state: " + state[prop]);
 
             if(prop in this.data === false) {
-                throw 'state data mismatch';
+                throw Error('state data mismatch');
             }
 
             const entryState = state[prop];
@@ -118,4 +118,31 @@ module.exports = class Service {
         }
 
     }
+
+    assignMethod(name, callback) {
+
+        this.methods.add(callback);
+
+    }
+
+    treatRequest(remoteHost, payload) {
+
+        console.log('Service UUID: ' + this.definition.uuid
+            + ' received payload:' + JSON.stringify(payload));
+
+        for(const prop in payload) {
+
+            const callback = this.methods.get(prop);
+
+            if(callback
+            && callback !== null
+            && callback !== undefined) {
+                callback(remoteHost, payload);
+            } else {
+                throw Error('undefined method \"'+prop+'\" requested from service ' + this.uuid);
+            }
+        }
+
+    }
+
 }
