@@ -159,6 +159,18 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
+	numActiveProviders(serviceUUID) {
+
+		var count = 0;
+		for (const [id, info] of this.activeHosts) {
+			const remoteHost = info.remoteHostObj;
+			if(remoteHost.hasService(serviceUUID)) {
+				count++;
+			}
+		}
+		return count;
+	}
+
 	getActiveProviders(serviceUUID, howMany=-1) {
 
 		var activeProviders = [];
@@ -178,7 +190,7 @@ module.exports = class Environment extends VersionedData {
 		return activeProviders;
 	}
 
-	establishProvidersOf(serviceUUID, howMany=1) {
+	async establishProvidersOf(serviceUUID, howMany=1) {
 
 		var newProviders = [];
 
@@ -280,7 +292,7 @@ module.exports = class Environment extends VersionedData {
 
 			const service = await host.getResourceObject(resourceKey);
 
-			console.log('hasService ' + uuid + ' compare with ' + service.uuid);
+			// console.log('hasService ' + uuid + ' compare with ' + service.uuid);
 
 			if(service.uuid === uuid) {
 				return true;
@@ -290,9 +302,19 @@ module.exports = class Environment extends VersionedData {
 		return false;
 	}
 
-	getProviders(serviceUUID) {
+	async getProviders(serviceUUID) {
 
-		const providers = this.elements.get(serviceUUID + '.providers');
+		if(await this.hasService(serviceUUID) === false) {
+			throw Error('Service ' + serviceUUID + ' is not defined in env ' + this.uuid);
+		}
+
+		const listName = serviceUUID + '.providers';
+
+		if(this.elements.has(listName) == false) {
+			throw Error('Service '+serviceUUID+' providers list does not exist');
+		}
+
+		const providers = this.elements.get(listName);
 
 		// console.log("provider: " + JSON.stringify(provider));
 
@@ -301,13 +323,13 @@ module.exports = class Environment extends VersionedData {
 
 	async isProvider(serviceUUID, hostID) {
 
-		const providers = this.getProviders(serviceUUID);
+		const providers = await this.getProviders(serviceUUID);
 
 		if(providers
 		&& providers !== undefined
 		&& providers !== null) {
 
-			return providers.has(hostID);
+			return await providers.has(hostID);
 
 		}
 
