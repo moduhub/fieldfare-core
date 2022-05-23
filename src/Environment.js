@@ -49,14 +49,14 @@ module.exports = class Environment extends VersionedData {
 		}
 
 		const latestVersion = await nvdata.load(uuid);
-		console.log("Latest Version: " + latestVersion);
+		// console.log("Latest Version: " + latestVersion);
 
 		const rootStatement = await VersionStatement.createRoot(uuid);
 
 		const rootVersion = await host.storeResourceObject(rootStatement);
 
-		console.log("Root version: " + JSON.stringify(rootStatement, null, 2)
-		+ '=>' + rootVersion);
+		// console.log("Root version: " + JSON.stringify(rootStatement, null, 2)
+		// + '=>' + rootVersion);
 
 		if(latestVersion
 		&& latestVersion !== null
@@ -382,23 +382,25 @@ module.exports = class Environment extends VersionedData {
 
 	}
 
-	async getWebport(hostID) {
+	async getWebports(hostID) {
 
-		const webports = this.elements.get('webports');
+		var hostWebports = [];
 
-		for await(const resourceKey of webports) {
+		const envWebports = this.elements.get('webports');
+
+		for await(const resourceKey of envWebports) {
 
 			const webport = await host.getResourceObject(resourceKey);
 
 			// console.log('webport info: ' + JSON.stringify(webport));
 
 			if(webport.hostid === hostID) {
-				return webport;
+				hostWebports.push(webport);
 			}
 
 		}
 
-		return null;
+		return hostWebports;
 	}
 
 	async applyAddWebport(issuer, params, merge=false) {
