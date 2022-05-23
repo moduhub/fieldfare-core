@@ -11,11 +11,11 @@ const LevelResourcesManager = require('../resources/LevelResourcesManager.js');
 
 const LevelNVData = require('../nvd/LevelNVData.js');
 
+const WebServerTransceiver = require('../WebServerTransceiver.js');
+//const WebClientTransceiver = require('../WebClientTransceiver.js');
 const UDPTransceiver = require('../UDPTransceiver.js');
 
 const Utils = require('../basic/Utils.js');
-
-const WebClientTransceiver = require('../WebClientTransceiver.js');
 
 const VersionChain = require('../versioning/VersionChain.js');
 
@@ -66,19 +66,6 @@ async function initHost(options) {
 
     await host.setupId(privateKeyData);
 
-    webClientTransceiver = new WebClientTransceiver();
-
-    const udpPort = Math.floor(Math.random() * (maxUDPPort - minUDPPort) + minUDPPort);
-    console.log('Opening UDP port ' + udpPort);
-    udpTransceiver = new UDPTransceiver(udpPort);
-
-    udpTransceiver.onNewChannel = (newChannel) => {
-
-        console.log("UDPtrx onNewChannel");
-        host.bootChannel(newChannel);
-
-    };
-
 }
 
 async function setEnvironment(options) {
@@ -110,11 +97,53 @@ async function initEnvironment(options) {
     await env.init(envUUID);
 
 	host.addEnvironment(env);
-
 }
 
-async function initBootWebports() {
 
+async function initWebports() {
+
+    //Part 1: Serve webports required in env
+    const servedWebports = await env.getWebports(host.id);
+
+    for(const webport of servedWebports) {
+
+        switch (webport.protocol) {
+
+            case 'ws': {
+
+                if(wsServerTransceiver) {
+                    throw Error('Cannot serve more than one WS port');
+                }
+
+                // if(wsClientTransceiver) {
+                //     throw Error('Cannot serve WS port while operating as a WS client');
+                // }
+
+                wsServerTransceiver = new WebServerTransceiver(webport.port);
+
+            } break;
+
+            case 'udp': {
+
+                if(udpTransceiver) {
+                    throw Error('Cannot serve more than one UDP port');
+                }
+
+                console.log('Opening UDP port ' + webport.port);
+                udpTransceiver = new UDPTransceiver(webport.port);
+                udpTransceiver.onNewChannel = (newChannel) => {
+                    host.bootChannel(newChannel);
+                };
+
+            } break;
+
+            default:
+                throw Error('invalid webport protocol: ' + webport.protocol);
+        }
+
+    }
+
+    // Part2: Boot webports
     const webportsJSON = await nvdata.load('bootWebports');
 
     var webports;
@@ -140,7 +169,18 @@ async function initBootWebports() {
 
             case 'udp': {
 
-                console.log("Opening UDp destination: " + webport.address + ":" + webport.port);
+                if(udpTransceiver === undefined
+                || udpTransceiver === null) {
+                    //If no udp serve port specified, use a random one
+                    const udpPort = Math.floor(Math.random() * (maxUDPPort - minUDPPort) + minUDPPort);
+                    console.log('Opening UDP port ' + udpPort);
+                    udpTransceiver = new UDPTransceiver(udpPort);
+                    udpTransceiver.onNewChannel = (newChannel) => {
+                        host.bootChannel(newChannel);
+                    };
+                }
+
+                console.log("Opening UDP destination: " + webport.address + ":" + webport.port);
 
                 var udpChannel = udpTransceiver.newChannel(webport.address, webport.port);
 
@@ -156,7 +196,7 @@ async function initBootWebports() {
 
 }
 
-async function addBootWebport(options) {
+function webportFromOptions(options) {
 
     //Check Parameters
     if(options.address === null
@@ -184,6 +224,15 @@ async function addBootWebport(options) {
         throw Error('Invalid port range');
     }
 
+    return {
+        protocol: protocol,
+        address: options.address,
+        port: options.port
+    };
+}
+
+async function addBootWebport(options) {
+
     const webportsJSON = await nvdata.load('bootWebports');
 
     var webports;
@@ -195,11 +244,7 @@ async function addBootWebport(options) {
         webports = JSON.parse(webportsJSON);
     }
 
-    const newWebportData = {
-        protocol: protocol,
-        address: options.address,
-        port: options.port
-    };
+    const newWebportData = webportFromOptions(options);
 
     if(webports.includes(newWebportData)) {
         throw Error('Webport already defined');
@@ -216,6 +261,25 @@ async function addBootWebport(options) {
 
 }
 
+async function addServedWebport(options) {
+
+    console.log("addServedWebport running");
+
+    var newWebportData = webportFromOptions(options);
+
+    newWebportData.hostid = host.id;
+
+    console.log("adding served webport to env:" + JSON.stringify(newWebportData));
+
+    await env.addWebport(newWebportData);
+
+}
+
+async function removeServedWebports(options) {
+
+    throw Error('uninmplemented');
+
+}
 
 export async function cli(args) {
 
@@ -233,6 +297,7 @@ export async function cli(args) {
 
             await initHost(options);
             await initEnvironment(options);
+            await initWebports();
 
             const {setup} = await import(process.cwd() + '\\' + options.file);
 
@@ -276,6 +341,17 @@ export async function cli(args) {
 
         } break;
 
+        case 'getBootWebports': {
+
+            const webportsJSON = await nvdata.load('bootWebports');
+
+            //const webports = JSON.parse(webportsJSON);
+
+            console.log(webportsJSON);
+
+            process.exit(0);
+        }
+
         case 'clearBootWebports' : {
 
             await nvdata.save('bootWebports', "[]");
@@ -284,12 +360,36 @@ export async function cli(args) {
 
         } break;
 
+        case 'addServedWebport' : {
+
+            try {
+                await initHost(options);
+                await initEnvironment(options);
+                await addServedWebport(options);
+            } catch (error) {
+                console.log("Failed to add served webport: " + error);
+            } finally {
+                process.exit(0);
+            }
+
+        } break;
+
+        case 'removeServedWebports': {
+
+            try {
+                await removeServedWebports(options);
+            } catch (error) {
+                console.log("Failed to remove served webports: " + error);
+            } finally {
+                process.exit(0);
+            }
+
+        } break;
+
         case 'getChanges': {
 
             await initHost(options);
             await initEnvironment(options);
-            // await initBootWebports();
-            // await env.sync();
 
             const localChain = new VersionChain(env.version, host.id, 50);
 
@@ -307,8 +407,6 @@ export async function cli(args) {
 
             await initHost(options);
             await initEnvironment(options);
-            await initBootWebports();
-            await env.sync();
 
             console.log(">>getAdmins from " + envUUID);
 
@@ -325,8 +423,6 @@ export async function cli(args) {
 
             await initHost(options);
             await initEnvironment(options);
-            await initBootWebports();
-            await env.sync();
 
             console.log('>>getProviders of service ' + options.uuid + ' from env ' + envUUID);
 
@@ -339,24 +435,42 @@ export async function cli(args) {
 
         } break;
 
+        case 'getWebports': {
+
+            await initHost(options);
+            await initEnvironment(options);
+            const webports = await env.elements.get('webports');
+            for await (const resource of webports) {
+                const webport = await host.getResourceObject(resource);
+                console.log(JSON.stringify(webport));
+            }
+            process.exit(0);
+
+        } break;
+
         case 'addAdmin': {
 
                 await initHost(options);
                 await initEnvironment(options);
-                await initBootWebports();
 
                 console.log(">>addAdmin " + options.host
                     + 'to environment ' + envUUID);
 
-                console.log("awaiting env sync before edit");
-                await env.sync();
-
                 await env.addAdmin(options.host);
 
-                console.log("awaiting env sync after edit");
-                await env.sync();
-
                 process.exit(0);
+
+        } break;
+
+        case 'sync': {
+
+            await initHost(options);
+            await initEnvironment(options);
+            await initWebports();
+
+            await env.sync();
+
+            process.exit(0);
 
         } break;
 
