@@ -8,16 +8,53 @@ const Utils = require('../basic/Utils.js');
 const uuidInputQuestion = {
     type: 'input',
     name: 'uuid',
-    message: "Please input an UUID (leave blank to cancel)",
+    message: "Please enter an UUID (leave blank to cancel)",
     validate(value) {
 
-        if (Utils.isUUID(value)) {
+        if (Utils.isUUID(value)
+        || value === '') {
             return true;
         }
 
         return 'Please enter a valid UUID';
     }
 };
+
+const newWebportInput = [
+    {
+        type: 'list',
+        name: 'protocol',
+        message: "Choose a protocol: ",
+        choices: ['ws', 'udp'],
+    },
+    {
+        type: 'input',
+        name: 'address',
+        message: "Enter destination IPv4: ",
+        validate(value) {
+
+            if (Utils.isIPV4(value)) {
+                return true;
+            }
+
+            return 'Please enter a valid IPv4';
+        }
+    },
+    {
+        type: 'input',
+        name: 'port',
+        message: "Enter port number: ",
+        validate(value) {
+
+            if (value > 1023
+            && value < 65536) {
+                return true;
+            }
+
+            return 'Please enter a number between 1023 and 65536';
+        }
+    }
+];
 
 async function environmentMenu() {
 
@@ -35,9 +72,18 @@ async function environmentMenu() {
 
     switch(answer.action) {
         case 'Set Enviroment UUID': {
-            const answer = await inquirer.prompt(uuidInputQuestion);
-            if(answer.uuid !== '')  {
-                await actions.setEnvironmentUUID(answer.uuid);
+
+            const {confirm} = await inquirer.prompt({
+                type: 'confirm',
+                name: 'confirm',
+                message: "Are you sure you want to drop previous UUID?"
+            });
+
+            if(confirm) {
+                const answer = await inquirer.prompt(uuidInputQuestion);
+                if(answer.uuid !== '')  {
+                    await actions.setEnvironmentUUID(answer.uuid);
+                }
             }
             environmentMenu();
         } break;
@@ -66,10 +112,21 @@ async function localHostMenu() {
     const answer = await inquirer.prompt(prompt);
 
     switch(answer.action) {
-        case 'Generate Private Key':
-            await actions.generatePrivateKey();
+        case 'Generate Private Key': {
+
+            const {confirm} = await inquirer.prompt({
+                type: 'confirm',
+                name: 'confirm',
+                message: "Are you sure you want to drop previous Private Key?"
+            });
+
+            if(confirm) {
+                await actions.generatePrivateKey();
+            }
+
             localHostMenu();
-            break;
+
+        } break;
 
         default:
             mainMenu();
@@ -83,32 +140,98 @@ async function bootWebportsMenu() {
       type: 'list',
       name: 'action',
       message: 'Choose one action: ',
-      choices: ['Add Webport', 'Remove All', 'Back'],
+      choices: ['Add Webport', 'Remove Webport', 'Remove All', 'Back'],
     };
 
     console.log("__________ Boot Webports Configuration __________");
-    //console.log("| Current Host ID: " + await actions.getHostID());
+
+    const webports = await actions.getBootWebports();
+
+    if(webports) {
+        console.table(webports);
+    } else {
+        console.log(" <No boot webports defined>");
+    }
 
     const answer = await inquirer.prompt(prompt);
 
     switch(answer.action) {
         case 'Add Webport':
+            const answers = await inquirer.prompt(newWebportInput);
+            console.log(JSON.stringify(answers));
+            await actions.addBootWebport(answers);
             bootWebportsMenu();
             break;
 
-        case 'Remove All':
+        case 'Remove Webport': {
+            if(webports.length > 0) {
+                var index = 0;
+                if(webports.length > 1) {
+                    const answer = await inquirer.prompt({
+                        type: 'input',
+                        name: 'index',
+                        validate(value) {
+                            if(value !== undefined
+                            && value !== null
+                            && value !== '') {
+                                const number = parseInt(value);
+                                if(value >= 0
+                                && value < webports.length) {
+                                    return true;
+                                }
+                            }
+
+                            return "Enter an index between (including) 0 and " + (webports.length-1);
+                        }
+                    });
+                    index = parseInt(answer.index);
+                }
+
+                const webportToRemove = webports[index];
+
+                console.table(webportToRemove);
+
+                const {confirm} = await inquirer.prompt({
+                    type: 'confirm',
+                    name: 'confirm',
+                    message: 'Are you sure you with to drop this webport?'
+                });
+
+                if(confirm) {
+                    await actions.removeBootWebport(index);
+                }
+
+                bootWebportsMenu();
+
+            } else {
+                console.log("Boot webports registry is empty");
+            }
+        } break;
+
+        case 'Remove All': {
+
+            const {confirm} = await inquirer.prompt({
+                type: 'confirm',
+                name: 'confirm',
+                message: "Are you sure you want to drop all Boot Webports?"
+            });
+
+            if(confirm) {
+                await actions.removeAllBootWebports();
+            }
+
             bootWebportsMenu();
-            break;
+
+        } break;
 
         default:
             mainMenu();
     }
-
 }
 
 function mainMenu() {
 
-    const prompt = {
+    const menu = {
       type: 'list',
       name: 'submenu',
       message: 'Choose one module to configure: ',
@@ -117,7 +240,7 @@ function mainMenu() {
 
     console.log('--- ModuHub mhlib.js configuration ---');
 
-    inquirer.prompt(prompt).then((answers) => {
+    inquirer.prompt(menu).then((answers) => {
         switch (answers.submenu ) {
             case'Local Host':
                 localHostMenu();

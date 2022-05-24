@@ -120,3 +120,62 @@ export async function generatePrivateKey() {
     await nvdata.save('privateKey', privateKeyData);
 
 }
+
+export async function getBootWebports() {
+
+    const webportsJSON = await nvdata.load('bootWebports');
+
+    if(webportsJSON) {
+        return JSON.parse(webportsJSON);
+    } else {
+        return undefined;
+    }
+
+}
+
+export async function addBootWebport(newWebportData) {
+
+    const webportsJSON = await nvdata.load('bootWebports');
+
+    var webports;
+
+    if(webportsJSON === null
+    || webportsJSON === undefined) {
+        webports = [];
+    } else {
+        webports = JSON.parse(webportsJSON);
+    }
+
+    if(webports.includes(newWebportData)) {
+        throw Error('Webport already defined');
+    }
+
+    webports.push(newWebportData);
+
+    await nvdata.save('bootWebports', JSON.stringify(webports));
+
+}
+
+export async function removeBootWebport(index) {
+
+    const webportsJSON = await nvdata.load('bootWebports');
+
+    var webports;
+
+    if(webportsJSON === null
+    || webportsJSON === undefined) {
+        webports = [];
+    } else {
+        webports = JSON.parse(webportsJSON);
+    }
+
+    webports.splice(index, 1);
+
+    await nvdata.save('bootWebports', JSON.stringify(webports));
+}
+
+export async function removeAllBootWebports() {
+
+    await nvdata.save('bootWebports', '[]');
+
+}
