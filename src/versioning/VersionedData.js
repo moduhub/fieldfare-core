@@ -12,6 +12,9 @@ const VersionChain = require('./VersionChain.js');
 
 const Utils = require('../basic/Utils.js');
 
+import {logger} from '../basic/Log'
+
+
 module.exports = class VersionedData {
 
 	constructor() {
@@ -105,7 +108,7 @@ module.exports = class VersionedData {
 			throw Error('apply failed: unknown change method ' + methodName);
 		}
 
-		if(merge) console.log('>>MERGE ' + methodName + ' params: ' + JSON.stringify(params));
+		if(merge) logger.log('info', '>>MERGE ' + methodName + ' params: ' + JSON.stringify(params));
 
 		await methodCallback(issuer, params, merge);
 
@@ -113,25 +116,25 @@ module.exports = class VersionedData {
 
 	async revertToVersion(version) {
 
-		// console.log("REVERTING TO VERSION: "  + version);
+		// logger.log('info', "REVERTING TO VERSION: "  + version);
 
 		const statement = await host.getResourceObject(version);
 
 		const stateKey = statement.data.state;
 
-		// console.log("State key: \'" + stateKey + '\'');
+		// logger.log('info', "State key: \'" + stateKey + '\'');
 
 		if(stateKey !== '') {
 
 			const state = await host.getResourceObject(statement.data.state);
 
-			// console.log("Revert to state object: " + JSON.stringify(state));
+			// logger.log('info', "Revert to state object: " + JSON.stringify(state));
 
 			this.setState(state);
 
 		} else {
 
-			// console.log('Revert to NULL state');
+			// logger.log('info', 'Revert to NULL state');
 
 			this.resetState();
 		}
@@ -142,11 +145,11 @@ module.exports = class VersionedData {
 
 	async update(version, owner) {
 
-		console.log(">> Env update to version: " + version);
+		logger.log('info', ">> Env update to version: " + version);
 
 		const receivedMessage = await VersionStatement.fromResource(version, owner);
 
-		// console.log("Received update statement " + JSON.stringify(receivedMessage));
+		// logger.log('info', "Received update statement " + JSON.stringify(receivedMessage));
 
 		var localChain = new VersionChain(this.version, host.id, 50);
 		var remoteChain = new VersionChain(version, owner, 50);
@@ -157,13 +160,13 @@ module.exports = class VersionedData {
 		localChain.limit(commonVersion, false);
 		remoteChain.limit(commonVersion, false);
 
-		console.log("Common version is " + commonVersion);
+		logger.log('info', "Common version is " + commonVersion);
 
 		const localCommitsAhead = await localChain.length();
 		const remoteCommitsAhead = await remoteChain.length();
 
-		console.log("Local env is " + localCommitsAhead + " commits ahead");
-		console.log("Remote env is " + remoteCommitsAhead + " commits ahead");
+		logger.log('info', "Local env is " + localCommitsAhead + " commits ahead");
+		logger.log('info', "Remote env is " + remoteCommitsAhead + " commits ahead");
 
 		// 		1) I have concurrent changes
 		// && 	2) remote chain is LoggerManager
@@ -172,7 +175,7 @@ module.exports = class VersionedData {
 		&& remoteCommitsAhead >= localCommitsAhead) {
 
 			if(localCommitsAhead > 0) {
-				// console.log("Stashing local changes");
+				// logger.log('info', "Stashing local changes");
 				await this.revertToVersion(commonVersion);
 			}
 
@@ -181,19 +184,19 @@ module.exports = class VersionedData {
 				//just accept remote changes
 				const remoteChanges = await remoteChain.getChanges();
 
-				// console.log("remoteChanges:" + JSON.stringify(remoteChanges));
+				// logger.log('info', "remoteChanges:" + JSON.stringify(remoteChanges));
 
 				for await (const [issuer, method, params] of remoteChanges) {
 
 					// const stateBefore = await host.storeResourceObject(await this.getState());
-					// console.log("State before apply: " + JSON.stringify(this.getState(), null, 2)
+					// logger.log('info', "State before apply: " + JSON.stringify(this.getState(), null, 2)
 					// 	+ ' => ' + stateBefore);
 					//
-					// console.log('await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
+					// logger.log('info', 'await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
 					await this.apply(issuer, method, params);
 					//
 					// const stateAfter = await host.storeResourceObject(await this.getState());
-					// console.log("State after apply: " + JSON.stringify(this.getState(), null, 2)
+					// logger.log('info', "State after apply: " + JSON.stringify(this.getState(), null, 2)
 					// 	+ ' => ' + stateAfter);
 
 				}
@@ -201,8 +204,8 @@ module.exports = class VersionedData {
 				const stateKey = await host.storeResourceObject(await this.getState());
 				const expectedState = await remoteChain.getHeadState();
 
-				// console.log("state after apply: " + stateKey);
-				// console.log("expected state: " + expectedState);
+				// logger.log('info', "state after apply: " + stateKey);
+				// logger.log('info', "expected state: " + expectedState);
 
 				if(stateKey !== expectedState) {
 					throw Error('version mismatch after remote changes applied');
@@ -246,7 +249,7 @@ module.exports = class VersionedData {
 
 		} else {
 
-			console.log("Local chain is ahead of remote chain, nothing to do");
+			logger.log('info', "Local chain is ahead of remote chain, nothing to do");
 
 			//Local chain is ahead of remote, wait for remote to merge
 			// Todo: notify him?
@@ -273,7 +276,7 @@ module.exports = class VersionedData {
 
 		this.version = await host.storeResourceObject(versionStatement);
 
-		console.log("New version statement: " + JSON.stringify(versionStatement, null, 2)//.replaceAll('\\', '')
+		logger.log('info', "New version statement: " + JSON.stringify(versionStatement, null, 2)//.replaceAll('\\', '')
 			+ "->" + this.version);
 
 	}
@@ -287,8 +290,8 @@ module.exports = class VersionedData {
 		const admins = this.elements.get('admins');
 
 		if(await admins.isEmpty() !== false) {
-			if(await admins.has(id) == false) {
-				throw Error('addAdmin failed: not authorized');
+			if(await admins.has(id) === false) {
+				throw Error('not authorized');
 			}
 		} else {
 			if(strict) {
@@ -296,12 +299,12 @@ module.exports = class VersionedData {
 			}
 		}
 
-		console.log('>> ' + id + ' auth OK');
+		logger.log('info', '>> ' + id + ' auth OK');
 	}
 
 	async applyAddAdmin(issuer, params, merge=false) {
 
-		console.log("applyAddAdmin params: " + JSON.stringify(params));
+		logger.log('info', "applyAddAdmin params: " + JSON.stringify(params));
 
 		VersionedData.validateParameters(params, ['id']);
 
@@ -312,20 +315,20 @@ module.exports = class VersionedData {
 		}
 
 		//newAdmin must be a valid host ID
-		console.log("APPLY >> VersionedData.applyAddAdmin ID=" + newAdminID
+		logger.log('info', "APPLY >> VersionedData.applyAddAdmin ID=" + newAdminID
 		 	+ ' from ' + issuer);
 
 		const admins = this.elements.get('admins');
 
-		console.log("Current admins: ");
+		logger.log('info', "Current admins: ");
 		for await (const admin of admins) {
-			console.log('> ' + admin);
+			logger.log('info', '> ' + admin);
 		}
 
 		//Check if admin was not already present
 		if(await admins.has(newAdminID)) {
 			if(merge) {
-				console.log('applyAddAdmin successfully MERGED');
+				logger.log('info', 'applyAddAdmin successfully MERGED');
 				return;
 			} else {
 				throw Error('applyAddAdmin failed: id already in set');
@@ -345,7 +348,7 @@ module.exports = class VersionedData {
 		const params = {id: newAdminID};
 
 		//newAdmin must be a valid host ID
-		console.log("VersionedData.addAdmin ID="+newAdminID);
+		logger.log('info', "VersionedData.addAdmin ID="+newAdminID);
 
 		await this.applyAddAdmin(host.id, params);
 

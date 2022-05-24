@@ -12,6 +12,9 @@ const HashLinkedTree = require('./structures/HashLinkedTree.js');
 
 const LocalService = require('./env/LocalService.js');
 
+import {logger} from './basic/Log'
+
+
 module.exports = class Environment extends VersionedData {
 
 	constructor() {

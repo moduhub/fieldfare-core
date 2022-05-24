@@ -2,12 +2,89 @@
 import inquirer from 'inquirer';
 import arg from 'arg';
 import fs from 'fs';
+import {v4 as uuidv4 } from 'uuid';
 
 import {initHost, initEnvironment, initWebports} from './cliCommon';
 
 const Utils = require('../basic/Utils.js');
 
 const VersionChain = require('../versioning/VersionChain.js');
+
+var env;
+
+function hasSpecialChars(value) {
+    const regex = /^[a-zA-Z0-9!@#\$%\^\&*\)\(+=._-]+$/g;
+    return !(regex.test(value));
+}
+
+const inputHostID = {
+    type: 'input',
+    name: 'hostid',
+    message: "Please enter a Host ID (leave blank to cancel): ",
+    validate(value) {
+        if(value == '') {
+            return true;
+        }
+
+        if (Utils.isBase64(value)
+        && value.length === 44) {
+            return true;
+        }
+
+        return 'Please enter a valid Host ID in base64 format';
+    }
+};
+
+const inputServiceUUID = {
+    type: 'input',
+    name: 'uuid',
+    message: 'Enter service UUID or leave blank to generate a UUIDv4: ',
+    validate(value) {
+        if(value == ''
+        || Utils.isUUID(value)) {
+            return true;
+        }
+        return 'Please enter a valid UUID';
+    }
+}
+
+const inputServiceName = {
+    type: 'input',
+    name: 'serviceName',
+    message: 'Enter service name: ',
+    validate(value) {
+        if(value.length == 0) {
+            return 'Please enter some value';
+        }
+        if(value.length > 16) {
+            return 'Name is too long! (max 16 chars)';
+        }
+        if(hasSpecialChars(value)) {
+            return 'Name contains invalid chars';
+        }
+        return true;
+    }
+}
+
+const inputServiceMethod = {
+    type: 'input',
+    name: 'methodName',
+    message: 'Enter a new method name, leave blank to proceed to next step: '
+};
+
+const inputServiceElementType = {
+    type: 'list',
+    name: 'dataType',
+    message: 'Choose new element type: ',
+    choices: ['list', 'set', 'map', 'geofield']
+};
+
+const inputServiceElementName = {
+    type: 'input',
+    name: 'dataName',
+    message: 'Enter element name, leave blank to end: '
+};
+
 
 function parseArgumentsIntoOptions(rawArgs) {
     const args = arg(
@@ -33,6 +110,150 @@ function parseArgumentsIntoOptions(rawArgs) {
     };
 }
 
+async function adminsMenu() {
+
+    const menu = {
+      type: 'list',
+      name: 'action',
+      message: 'Choose one action: ',
+      choices: ['Add new', 'Back'],
+    };
+
+    console.log('__________ Environment Admins configuration __________');
+
+    var adminList = []
+
+    const envAdmins = await env.elements.get('admins');
+
+    for await (const admin of envAdmins) {
+        adminList.push(admin);
+    }
+
+    console.table(adminList);
+
+    const {action} = await inquirer.prompt(menu);
+
+    switch (action) {
+
+        case 'Add new':
+
+            const {hostid} = await inquirer.prompt(inputHostID);
+
+            if(hostid !== '') {
+                try {
+                    await env.addAdmin(hostid);
+                } catch (error) {
+                    console.log("FAILED: " + error);
+                }
+            }
+
+            adminsMenu();
+            break;
+
+        default:
+            mainMenu();
+    }
+
+}
+
+async function servicesMenu() {
+
+    const menu = {
+      type: 'list',
+      name: 'action',
+      message: 'Choose one action: ',
+      choices: ['Add new', 'Back'],
+    };
+
+    console.log('__________ Environment Services configuration __________');
+
+    var servicesList = []
+
+    const services = await env.elements.get('services');
+
+    for await (const key of services) {
+        servicesList.push(await host.getResourceObject(key));
+    }
+
+    if(servicesList.length > 0) {
+        console.table(servicesList);
+    } else {
+        console.log('<no services defined>');
+    }
+
+    const {action} = await inquirer.prompt(menu);
+
+    switch (action) {
+
+        case 'Add new': {
+
+            try {
+
+                await env.auth(host.id);
+
+                var {uuid} = await inquirer.prompt(inputServiceUUID);
+
+                if(uuid === '') {
+                    uuid = uuidv4();
+                }
+
+                const {serviceName} = await inquirer.prompt(inputServiceName);
+
+                var definition = {
+                    uuid: uuid,
+                    name: serviceName,
+                    methods: [],
+                    data: []
+                };
+
+                while (true) {
+                    const {methodName} = await inquirer.prompt(inputServiceMethod);
+
+                    if(methodName === '') break;
+
+                    definition.methods.push(methodName);
+                }
+
+                while (true) {
+                    const {dataName} = await inquirer.prompt(inputServiceElementName);
+
+                    if(dataName === '') break;
+
+                    const {dataType} = await inquirer.prompt(inputServiceElementType);
+
+                    definition.data.push({
+                        name: dataName,
+                        type: dataType
+                    });
+                }
+
+                console.log("Please review the data entered: ");
+                console.log(JSON.stringify(definition, null, 4));
+
+                const {confirm} = await inquirer.prompt({
+                    type: 'confirm',
+                    name: 'confirm',
+                    message: 'Do you wish to confirm service inclusion?'
+                })
+
+                if(confirm) {
+                    await env.addService(definition);
+                }
+
+            } catch (error) {
+                console.log('Cannot add a new service: ' + error);
+            }
+
+            servicesMenu();
+
+        } break;
+
+        default:
+            mainMenu();
+    }
+
+}
+
 async function mainMenu() {
 
     const menu = {
@@ -42,17 +263,17 @@ async function mainMenu() {
       choices: ['Admins', 'Services', 'Providers', 'Webports', 'Exit'],
     };
 
-    console.log('--- ModuHub mhlib.js Environment configuration ---');
+    console.log('__________ ModuHub mhlib.js Environment configuration __________');
 
-    const {submenu} = await inquirer.prompt(menu)
+    const {submenu} = await inquirer.prompt(menu);
 
     switch (submenu) {
         case 'Admins':
-            mainMenu();
+            adminsMenu();
             break;
 
         case 'Services':
-            mainMenu();
+            servicesMenu();
             break;
 
         case 'Providers':
@@ -73,7 +294,7 @@ export async function main(args) {
     // console.log(options);
 
     await initHost();
-    const env = await initEnvironment();
+    env = await initEnvironment();
     await initWebports(env);
 
     switch(options.operation) {

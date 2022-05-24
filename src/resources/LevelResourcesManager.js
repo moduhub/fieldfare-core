@@ -3,6 +3,8 @@ const { Level } = require('level');
 
 const ResourcesManager = require('./ResourcesManager.js');
 
+import { logger } from '../basic/Log'
+
 
 module.exports = class LevelResourcesManager extends ResourcesManager {
 
@@ -12,7 +14,7 @@ module.exports = class LevelResourcesManager extends ResourcesManager {
         this.db = new Level('resources', { valueEncoding: 'json' })
 
         setInterval(async () => {
-            console.log(await this.report());
+            logger.log('info', await this.report());
         }, 10000);
 
     }
@@ -55,7 +57,7 @@ module.exports = class LevelResourcesManager extends ResourcesManager {
 
     async storeResource(base64data) {
 
-        //console.log("LevelResourcesManager storing res: " + base64data);
+        //logger.log('info', "LevelResourcesManager storing res: " + base64data);
 
         const base64hash = await ResourcesManager.generateKeyForData(base64data);
 
@@ -66,7 +68,7 @@ module.exports = class LevelResourcesManager extends ResourcesManager {
 
     async getResource(base64hash) {
 
-        //console.log("LevelResourcesManager fetching res: " + base64hash);
+        //logger.log('info', "LevelResourcesManager fetching res: " + base64hash);
 
         var base64data;
 
