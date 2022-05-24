@@ -86,13 +86,13 @@ module.exports = class HostManager {
 
 		this.id = await this.storeResourceObject(pubKeyData);
 
-		console.log('HOST ID: ' + this.id);
+		// console.log('HOST ID: ' + this.id);
 
 		setInterval(() => {
 
-			console.log("Host is announcing to "
-				+ this.remoteHosts.size + " remote hosts and "
-				+ this.bootChannels.size + ' boot channels');
+			// console.log("Host is announcing to "
+			// 	+ this.remoteHosts.size + " remote hosts and "
+			// 	+ this.bootChannels.size + ' boot channels');
 
 			for (const [id,host] of this.remoteHosts) 		this.announce(host);
 			for (const channel of this.bootChannels) 	this.announce(channel);
@@ -105,7 +105,7 @@ module.exports = class HostManager {
 
 		this.environments.add(env);
 
-		console.log("Registered enviroments: ");
+		// console.log("Registered enviroments: ");
 
 		for(const env of this.environments) {
 			console.log(env.uuid);
@@ -281,7 +281,7 @@ module.exports = class HostManager {
 			} catch (error) {
 
 				if(error.name === 'NOT_FOUND_ERROR') {
-					console.log('Manager ' + manager + ' does not have ' + hash);
+					// console.log('Manager ' + manager + ' does not have ' + hash);
 				} else {
 					throw Error('getResource failed: ', {cause: error});
 				}
@@ -353,7 +353,7 @@ module.exports = class HostManager {
 
 			} catch (error) {
 
-				console.error('Get resource request failed: ' + error.stack);
+				// console.error('Get resource request failed: ' + error.stack);
 
 			} finally {
 
@@ -386,7 +386,7 @@ module.exports = class HostManager {
 
 		} else {
 
-			console.log("Error: Destination is unknown");
+			throw Error('Destination is unknown');
 
 			//TODO: routing here
 		}
@@ -399,7 +399,7 @@ module.exports = class HostManager {
 
 		channel.onMessageReceived = (message) => {
 
-			console.log("Received message from boot channel: " + JSON.stringify(message));
+			// console.log("Received message from boot channel: " + JSON.stringify(message));
 
 			if(message.service == 'announce') {
 
@@ -412,14 +412,14 @@ module.exports = class HostManager {
 
 					var remoteId = message.data.id;
 
-					console.log("Received direct announce from boot channel. Host ID: " + remoteId);
+					// console.log("Received direct announce from boot channel. Host ID: " + remoteId);
 
 					var remoteHost = this.remoteHosts.get(remoteId);
 
 					//register channel to remote host
 					if(remoteHost == undefined) {
 
-						console.log("Host was not registered. Creating new... ");
+						// console.log("Host was not registered. Creating new... ");
 
 						remoteHost = this.registerRemoteHost(remoteId);
 
@@ -438,7 +438,7 @@ module.exports = class HostManager {
 //				}
 
 			} else {
-				console.log("Message service not announce! Service: " + message.service);
+				// console.log("Message service not announce! Service: " + message.service);
 			}
 
 		};
@@ -450,7 +450,7 @@ module.exports = class HostManager {
 
 		} catch (error) {
 
-			console.log('Host.bootChannel.send() failed: ' + error);
+			throw Error('Host.bootChannel.send() failed', {cause:error});
 
 		}
 

@@ -11,15 +11,11 @@ module.exports = class LevelNVData {
 
     async save(key, object) {
 
-        console.log("LevelNVData storing key: " + key);
-
         await this.db.put(key, object);
 
     }
 
     async load(key) {
-
-        console.log("LevelNVData fetching key: " + key);
 
         var object;
 

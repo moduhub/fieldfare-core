@@ -2,18 +2,7 @@
 import arg from 'arg';
 import fs from 'fs';
 
-const HostManager = require('../HostManager.js');
-//import HostManager from '../HostManager';
-
-const Environment = require('../Environment.js');
-
-const LevelResourcesManager = require('../resources/LevelResourcesManager.js');
-
-const LevelNVData = require('../nvd/LevelNVData.js');
-
-const WebServerTransceiver = require('../WebServerTransceiver.js');
-//const WebClientTransceiver = require('../WebClientTransceiver.js');
-const UDPTransceiver = require('../UDPTransceiver.js');
+import {initHost, initEnvironment, initWebports} from './cliCommon';
 
 const Utils = require('../basic/Utils.js');
 
@@ -50,151 +39,6 @@ function parseArgumentsIntoOptions(rawArgs) {
 
 var envUUID;
 var env;
-var webClientTransceiver;
-var udpTransceiver;
-
-const minUDPPort = 10000;
-const maxUDPPort = 60000;
-
-async function initHost(options) {
-
-    global.host = new HostManager();
-
-    host.addResourcesManager(new LevelResourcesManager());
-
-    const privateKeyData = JSON.parse(fs.readFileSync(options.privateKeyFile, { encoding: 'utf8' }));
-
-    await host.setupId(privateKeyData);
-
-}
-
-async function setEnvironment(options) {
-
-    console.log(">>setEnvironment to " + options.uuid);
-
-    if(Utils.isUUID(options.uuid) === false) {
-        throw Error('invalid UUID');
-    }
-
-    envUUID = options.uuid;
-    await nvdata.save('envUUID', envUUID);
-
-}
-
-async function initEnvironment(options) {
-
-    envUUID = await nvdata.load('envUUID');
-
-    if(envUUID === null
-    || envUUID === undefined) {
-        throw Error('Environment UUID not set');
-    }
-
-    env = new Environment();
-
-    console.log("Setting up env " + envUUID);
-
-    await env.init(envUUID);
-
-	host.addEnvironment(env);
-}
-
-
-async function initWebports() {
-
-    //Part 1: Serve webports required in env
-    const servedWebports = await env.getWebports(host.id);
-
-    for(const webport of servedWebports) {
-
-        switch (webport.protocol) {
-
-            case 'ws': {
-
-                if(wsServerTransceiver) {
-                    throw Error('Cannot serve more than one WS port');
-                }
-
-                // if(wsClientTransceiver) {
-                //     throw Error('Cannot serve WS port while operating as a WS client');
-                // }
-
-                wsServerTransceiver = new WebServerTransceiver(webport.port);
-
-            } break;
-
-            case 'udp': {
-
-                if(udpTransceiver) {
-                    throw Error('Cannot serve more than one UDP port');
-                }
-
-                console.log('Opening UDP port ' + webport.port);
-                udpTransceiver = new UDPTransceiver(webport.port);
-                udpTransceiver.onNewChannel = (newChannel) => {
-                    host.bootChannel(newChannel);
-                };
-
-            } break;
-
-            default:
-                throw Error('invalid webport protocol: ' + webport.protocol);
-        }
-
-    }
-
-    // Part2: Boot webports
-    const webportsJSON = await nvdata.load('bootWebports');
-
-    var webports;
-
-    if(webportsJSON === null
-    || webportsJSON === undefined) {
-        webports = [];
-    } else {
-        webports = JSON.parse(webportsJSON);
-    }
-
-    for (const webport of webports) {
-
-        switch (webport.protocol) {
-
-            // case 'ws': {
-            //
-            //     var wsChannel = await webClientTransceiver.newChannel(webport.address, webport.port);
-            //
-            //     host.bootChannel(wsChannel);
-            //
-            // } break;
-
-            case 'udp': {
-
-                if(udpTransceiver === undefined
-                || udpTransceiver === null) {
-                    //If no udp serve port specified, use a random one
-                    const udpPort = Math.floor(Math.random() * (maxUDPPort - minUDPPort) + minUDPPort);
-                    console.log('Opening UDP port ' + udpPort);
-                    udpTransceiver = new UDPTransceiver(udpPort);
-                    udpTransceiver.onNewChannel = (newChannel) => {
-                        host.bootChannel(newChannel);
-                    };
-                }
-
-                console.log("Opening UDP destination: " + webport.address + ":" + webport.port);
-
-                var udpChannel = udpTransceiver.newChannel(webport.address, webport.port);
-
-                host.bootChannel(udpChannel);
-
-            } break;
-
-            default:
-                throw Error('invalid webport protocol: ' + webport.protocol);
-        }
-
-    }
-
-}
 
 function webportFromOptions(options) {
 
@@ -281,7 +125,7 @@ async function removeServedWebports(options) {
 
 }
 
-export async function cli(args) {
+export async function main(args) {
 
     let options = parseArgumentsIntoOptions(args);
     console.log(options);
@@ -292,18 +136,6 @@ export async function cli(args) {
     global.nvdata = new LevelNVData();
 
     switch(options.operation) {
-
-        case 'serve' : {
-
-            await initHost(options);
-            await initEnvironment(options);
-            await initWebports();
-
-            const {setup} = await import(process.cwd() + '\\' + options.file);
-
-            await setup(env);
-
-        } break;
 
         case 'setEnvironment': {
 

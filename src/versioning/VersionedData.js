@@ -113,7 +113,7 @@ module.exports = class VersionedData {
 
 	async revertToVersion(version) {
 
-		console.log("REVERTING TO VERSION: "  + version);
+		// console.log("REVERTING TO VERSION: "  + version);
 
 		const statement = await host.getResourceObject(version);
 
