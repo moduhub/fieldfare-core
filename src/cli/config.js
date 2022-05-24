@@ -1,4 +1,5 @@
 
+import inquirer from 'inquirer';
 import arg from 'arg';
 import fs from 'fs';
 
@@ -8,195 +9,82 @@ const Utils = require('../basic/Utils.js');
 
 const VersionChain = require('../versioning/VersionChain.js');
 
-
 function parseArgumentsIntoOptions(rawArgs) {
     const args = arg(
     {
-        '--key': String,
         '--host': String,
         '--uuid': String,
-        '--operation': String,
         '--address': String,
         '--port':String,
-        '--file':String,
-        '-k': '--key',
-        '-o': '--operation',
+        '--file':String
     },
     {
-        argv: rawArgs.slice(2),
+        argv: rawArgs.slice(3),
     }
     );
+
     return {
-        privateKeyFile: args['--key'] || 'privateKey.jwk',
         uuid: args['--uuid'] || null,
         host: args['--host'] || null,
         address: args['--address'] || null,
         port: args['--port'] || null,
-        operation: args['--operation'] || false,
+        operation: rawArgs[2],
         file: args['--file'] || null
     };
 }
 
-var envUUID;
-var env;
+async function mainMenu() {
 
-function webportFromOptions(options) {
-
-    //Check Parameters
-    if(options.address === null
-    || options.address === undefined) {
-        throw Error('Missing webport address');
-    }
-
-    if(options.port === null
-    || options.port === undefined) {
-        throw Error('Missing webport port');
-    }
-
-    var protocol;
-    if(options.address.search('ws://') === 0) {
-        protocol = 'ws';
-    } else
-    if(Utils.isIPV4(options.address)) {
-        protocol = 'udp';
-    } else {
-        throw Error('Invalid address, must start with ws:// or be a valid IPv4');
-    }
-
-    if(options.port <= 0
-    && options.port > 65535) {
-        throw Error('Invalid port range');
-    }
-
-    return {
-        protocol: protocol,
-        address: options.address,
-        port: options.port
+    const menu = {
+      type: 'list',
+      name: 'submenu',
+      message: 'Choose one module to configure: ',
+      choices: ['Admins', 'Services', 'Providers', 'Webports', 'Exit'],
     };
-}
 
-async function addBootWebport(options) {
+    console.log('--- ModuHub mhlib.js Environment configuration ---');
 
-    const webportsJSON = await nvdata.load('bootWebports');
+    const {submenu} = await inquirer.prompt(menu)
 
-    var webports;
+    switch (submenu) {
+        case 'Admins':
+            mainMenu();
+            break;
 
-    if(webportsJSON === null
-    || webportsJSON === undefined) {
-        webports = [];
-    } else {
-        webports = JSON.parse(webportsJSON);
-    }
+        case 'Services':
+            mainMenu();
+            break;
 
-    const newWebportData = webportFromOptions(options);
+        case 'Providers':
+            mainMenu();
+            break;
 
-    if(webports.includes(newWebportData)) {
-        throw Error('Webport already defined');
-    }
-
-    webports.push(newWebportData);
-
-    await nvdata.save('bootWebports', JSON.stringify(webports));
-
-    console.log('Current webports: ');
-    for(const webport of webports) {
-        console.log(JSON.stringify(webport));
+        default:
+            console.log("All done! Exit...");
+            process.exit(0);
     }
 
 }
 
-async function addServedWebport(options) {
-
-    console.log("addServedWebport running");
-
-    var newWebportData = webportFromOptions(options);
-
-    newWebportData.hostid = host.id;
-
-    console.log("adding served webport to env:" + JSON.stringify(newWebportData));
-
-    await env.addWebport(newWebportData);
-
-}
-
-async function removeServedWebports(options) {
-
-    throw Error('uninmplemented');
-
-}
 
 export async function main(args) {
 
-    let options = parseArgumentsIntoOptions(args);
-    console.log(options);
+    const options = parseArgumentsIntoOptions(args);
+    // console.log(options);
 
-    //Note: On node it is necessary to provide the correct webcrypto implementation
-    global.crypto = require('crypto').webcrypto;
-
-    global.nvdata = new LevelNVData();
+    await initHost();
+    const env = await initEnvironment();
+    await initWebports(env);
 
     switch(options.operation) {
 
-        case 'setEnvironment': {
-
-            try {
-
-                await setEnvironment(options);
-
-            } catch(error) {
-
-                console.log("Set enviroment failed: " + error);
-
-                process.exit(1);
-            }
-
-            process.exit(0);
-
-        } break;
-
-        case 'addBootWebport': {
-
-            console.log('>>addBootWebport ' + options.address + ':' + options.port);
-
-            try {
-
-                await addBootWebport(options);
-
-            } catch(error) {
-
-                console.log("Add boot webport failed: " + error);
-
-                process.exit(1);
-            }
-
-            process.exit(0);
-
-        } break;
-
-        case 'getBootWebports': {
-
-            const webportsJSON = await nvdata.load('bootWebports');
-
-            //const webports = JSON.parse(webportsJSON);
-
-            console.log(webportsJSON);
-
-            process.exit(0);
-        }
-
-        case 'clearBootWebports' : {
-
-            await nvdata.save('bootWebports', "[]");
-
-            process.exit(0);
-
+        case 'menu': {
+            await mainMenu();
         } break;
 
         case 'addServedWebport' : {
 
             try {
-                await initHost(options);
-                await initEnvironment(options);
                 await addServedWebport(options);
             } catch (error) {
                 console.log("Failed to add served webport: " + error);
@@ -220,9 +108,6 @@ export async function main(args) {
 
         case 'getChanges': {
 
-            await initHost(options);
-            await initEnvironment(options);
-
             const localChain = new VersionChain(env.version, host.id, 50);
 
             const localChanges = await localChain.getChanges();
@@ -237,10 +122,7 @@ export async function main(args) {
 
         case 'getAdmins': {
 
-            await initHost(options);
-            await initEnvironment(options);
-
-            console.log(">>getAdmins from " + envUUID);
+            console.log(">>getAdmins from " + env.uuid);
 
             const envAdmins = env.elements.get('admins');
             for await (const admin of envAdmins) {
@@ -252,9 +134,6 @@ export async function main(args) {
         } break;
 
         case 'getProviders': {
-
-            await initHost(options);
-            await initEnvironment(options);
 
             console.log('>>getProviders of service ' + options.uuid + ' from env ' + envUUID);
 
@@ -269,8 +148,6 @@ export async function main(args) {
 
         case 'getWebports': {
 
-            await initHost(options);
-            await initEnvironment(options);
             const webports = await env.elements.get('webports');
             for await (const resource of webports) {
                 const webport = await host.getResourceObject(resource);
@@ -282,9 +159,6 @@ export async function main(args) {
 
         case 'addAdmin': {
 
-                await initHost(options);
-                await initEnvironment(options);
-
                 console.log(">>addAdmin " + options.host
                     + 'to environment ' + envUUID);
 
@@ -295,10 +169,6 @@ export async function main(args) {
         } break;
 
         case 'sync': {
-
-            await initHost(options);
-            await initEnvironment(options);
-            await initWebports();
 
             await env.sync();
 
