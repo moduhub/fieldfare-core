@@ -12,7 +12,6 @@ const HashLinkedTree = require('./structures/HashLinkedTree.js');
 
 const LocalService = require('./env/LocalService.js');
 
-
 module.exports = class Environment extends VersionedData {
 
 	constructor() {
@@ -28,15 +27,15 @@ module.exports = class Environment extends VersionedData {
 		this.methods.set('addProvider', this.applyAddProvider.bind(this));
 
 		//report periodically
-		setInterval(() => {
-			console.log("REPORT: Active hosts of env " + this.uuid + ": " + this.activeHosts.size);
-			for(const [id, info] of this.activeHosts) {
-				const timeDiff = Date.now() - info.lastEnvUpdate;
-				console.log("HOST: " + id
-					+ 'at version ' + info.latestVersion
-					+ ' updated ' + timeDiff + 'ms ago.');
-			}
-		}, 10000);
+		// setInterval(() => {
+		// 	logger.log('info', "REPORT: Active hosts of env " + this.uuid + ": " + this.activeHosts.size);
+		// 	for(const [id, info] of this.activeHosts) {
+		// 		const timeDiff = Date.now() - info.lastEnvUpdate;
+		// 		logger.log('info', "HOST: " + id
+		// 			+ 'at version ' + info.latestVersion
+		// 			+ ' updated ' + timeDiff + 'ms ago.');
+		// 	}
+		// }, 10000);
 
 	}
 
@@ -45,17 +44,17 @@ module.exports = class Environment extends VersionedData {
 		this.uuid = uuid;
 
 		if(nvdata === undefined) {
-			throw 'nvdata was not initialized';
+			throw Error('nvdata was not initialized');
 		}
 
 		const latestVersion = await nvdata.load(uuid);
-		// console.log("Latest Version: " + latestVersion);
+		// logger.log('info', "Latest Version: " + latestVersion);
 
 		const rootStatement = await VersionStatement.createRoot(uuid);
 
 		const rootVersion = await host.storeResourceObject(rootStatement);
 
-		// console.log("Root version: " + JSON.stringify(rootStatement, null, 2)
+		// logger.log('info', "Root version: " + JSON.stringify(rootStatement, null, 2)
 		// + '=>' + rootVersion);
 
 		if(latestVersion
@@ -91,16 +90,16 @@ module.exports = class Environment extends VersionedData {
 			const newInfo = {
 				remoteHostObj: remoteHost,
 				timeout: setTimeout(() => {
-					console.log("Host went inactive: " + remoteHost.id);
+					// logger.log('info', "Host went inactive: " + remoteHost.id);
 					this.removeActiveHost(remoteHost.id)
 				}, 10000),
 				lastEnvUpdate: Date.now(),
 				latestVersion: version
 			}
 
-			console.log("hostInfo: " + newInfo.remoteHostObj.id
-				+ ' date: ' + newInfo.lastEnvUpdate
-				+ 'at version: ' + newInfo.latestVersion);
+			// logger.log('info', "hostInfo: " + newInfo.remoteHostObj.id
+			// 	+ ' date: ' + newInfo.lastEnvUpdate
+			// 	+ 'at version: ' + newInfo.latestVersion);
 
 			this.activeHosts.set(remoteHost.id, newInfo);
 
@@ -111,7 +110,7 @@ module.exports = class Environment extends VersionedData {
 	getSyncedHosts() {
 		var numSyncedHosts = 0;
 		for(const [id, info] of this.activeHosts) {
-			// console.log("this.version: " + this.version
+			// logger.log('info', "this.version: " + this.version
 			// 	+ ' - their.version: ' + info.latestVersion);
 			if(info.latestVersion === this.version) {
 				numSyncedHosts++;
@@ -137,10 +136,10 @@ module.exports = class Environment extends VersionedData {
 					resolve(syncedHosts);
 				} else {
 					if(this.activeHosts.size === 0) {
-						console.log("env.sync waiting for active host");
+						// logger.log('info', "env.sync waiting for active host");
 					} else {
-						console.log('env.sync waiting for any of ' + this.activeHosts.size
-							+ ' active hosts to sync');
+						// logger.log('info', 'env.sync waiting for any of ' + this.activeHosts.size
+						// 	+ ' active hosts to sync');
 					}
 					if(++attempts > 10) {
 						clearInterval(interval);
@@ -203,7 +202,7 @@ module.exports = class Environment extends VersionedData {
 					const remoteHost = await host.establish(providerID);
 					newProviders.push(remoteHost);
 				} catch (error) {
-					console.log("Failed to reach host " + providerID);
+					logger.log('info', "Failed to reach host " + providerID);
 				}
 			}
 		}
@@ -217,7 +216,7 @@ module.exports = class Environment extends VersionedData {
 
 		VersionedData.validateParameters(params, ['definition']);
 
-		console.log('applyAddService params: ' + JSON.stringify(params));
+		logger.log('info', 'applyAddService params: ' + JSON.stringify(params));
 
 		const definition = params.definition;
 
@@ -229,7 +228,7 @@ module.exports = class Environment extends VersionedData {
 			if(merge) {
 				const resouceKey = await ResourcesManager.generateKeyForObject(definition);
 				if(await services.has(resourceKey)) {
-					console.log('applyAddService succesfuly MERGED');
+					logger.log('info', 'applyAddService succesfuly MERGED');
 					return;
 				} else {
 					throw Error('applyAddService MERGE FAILED: different service defined with same UUID');
@@ -273,7 +272,7 @@ module.exports = class Environment extends VersionedData {
 
 			const service = await host.getResourceObject(resource);
 
-			//console.log(JSON.stringify(service));
+			//logger.log('info', JSON.stringify(service));
 
 			if(service.uuid === uuid) {
 				return service;
@@ -292,7 +291,7 @@ module.exports = class Environment extends VersionedData {
 
 			const service = await host.getResourceObject(resourceKey);
 
-			// console.log('hasService ' + uuid + ' compare with ' + service.uuid);
+			// logger.log('info', 'hasService ' + uuid + ' compare with ' + service.uuid);
 
 			if(service.uuid === uuid) {
 				return true;
@@ -316,7 +315,7 @@ module.exports = class Environment extends VersionedData {
 
 		const providers = this.elements.get(listName);
 
-		// console.log("provider: " + JSON.stringify(provider));
+		// logger.log('info', "provider: " + JSON.stringify(provider));
 
 		return providers;
 	}
@@ -347,7 +346,7 @@ module.exports = class Environment extends VersionedData {
 
 		if(await providers.has(params.host)) {
 			if(merge) {
-				console.log('addProvider successfully MERGED');
+				logger.log('info', 'addProvider successfully MERGED');
 			} else {
 				throw Error('provider already in list');
 			}
@@ -392,7 +391,7 @@ module.exports = class Environment extends VersionedData {
 
 			const webport = await host.getResourceObject(resourceKey);
 
-			// console.log('webport info: ' + JSON.stringify(webport));
+			// logger.log('info', 'webport info: ' + JSON.stringify(webport));
 
 			if(webport.hostid === hostID) {
 				hostWebports.push(webport);
@@ -416,7 +415,7 @@ module.exports = class Environment extends VersionedData {
 		if(await webports.has(resourceKey)) {
 			//Exact same information already present
 			if(merge) {
-				console.log('addWebport successfully MERGED');
+				logger.log('info', 'addWebport successfully MERGED');
 				return;
 			} else {
 				throw Error('webport already defined');

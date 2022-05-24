@@ -12,6 +12,7 @@ const WebServerTransceiver = require('../WebServerTransceiver.js');
 //const WebClientTransceiver = require('../WebClientTransceiver.js');
 const UDPTransceiver = require('../UDPTransceiver.js');
 
+import {logger} from '../basic/Log';
 
 var webClientTransceiver;
 var udpTransceiver;
@@ -50,7 +51,7 @@ export async function initEnvironment() {
 
     const env = new Environment();
 
-    console.log("Setting up env " + envUUID);
+    logger.log('info', "Setting up env " + envUUID);
 
     await env.init(envUUID);
 
@@ -58,6 +59,7 @@ export async function initEnvironment() {
 
     return env;
 }
+
 
 export async function initWebports(env) {
 
@@ -88,7 +90,7 @@ export async function initWebports(env) {
                     throw Error('Cannot serve more than one UDP port');
                 }
 
-                console.log('Opening UDP port ' + webport.port);
+                logger.log('info', 'Opening UDP port ' + webport.port);
                 udpTransceiver = new UDPTransceiver(webport.port);
                 udpTransceiver.onNewChannel = (newChannel) => {
                     host.bootChannel(newChannel);
@@ -132,14 +134,14 @@ export async function initWebports(env) {
                 || udpTransceiver === null) {
                     //If no udp serve port specified, use a random one
                     const udpPort = Math.floor(Math.random() * (maxUDPPort - minUDPPort) + minUDPPort);
-                    console.log('Opening UDP port ' + udpPort);
+                    logger.log('info', 'Opening UDP port ' + udpPort);
                     udpTransceiver = new UDPTransceiver(udpPort);
                     udpTransceiver.onNewChannel = (newChannel) => {
                         host.bootChannel(newChannel);
                     };
                 }
 
-                console.log("Opening UDP destination: " + webport.address + ":" + webport.port);
+                logger.log('info', "Opening UDP destination: " + webport.address + ":" + webport.port);
 
                 var udpChannel = udpTransceiver.newChannel(webport.address, webport.port);
 

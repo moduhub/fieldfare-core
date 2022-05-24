@@ -1,6 +1,8 @@
 
 import {initHost, initEnvironment, initWebports} from './cliCommon';
 
+import winston from 'winston';
+
 export async function main(args) {
 
     console.log('args: ' + args);
@@ -8,6 +10,10 @@ export async function main(args) {
     await initHost();
     const env = await initEnvironment();
     await initWebports(env);
+
+    logger.add(new winston.transports.Console({
+       format: winston.format.simple(),
+     }));
 
     if(args) {
         try {

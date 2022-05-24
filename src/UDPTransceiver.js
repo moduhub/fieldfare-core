@@ -8,6 +8,7 @@ const dgram = require('dgram');
 const Transceiver = require('./Transceiver.js');
 const Utils = require('./basic/Utils.js');
 
+import { logger } from './basic/Log';
 
 module.exports = class UDPTransceiver extends Transceiver {
 
@@ -19,18 +20,18 @@ module.exports = class UDPTransceiver extends Transceiver {
 		this.socket = dgram.createSocket('udp4');
 
 		this.socket.on('error', (err) => {
-			console.log(`server error:\n${err.stack}`);
+			logger.log('info', `server error:\n${err.stack}`);
 			this.socket.close();
 		});
 
 		this.socket.on('message', (msg, rinfo) => {
 
-  			console.log('Message from ' + rinfo.address + ':' + rinfo.port);
-			console.log('Lenght: ' + msg.length + ' bytes');
+  			logger.log('info', 'Message from ' + rinfo.address + ':' + rinfo.port);
+			logger.log('info', 'Lenght: ' + msg.length + ' bytes');
 
 			const channelID = rinfo.address + ":" + rinfo.port;
 
-			console.log("ChannelID: " + channelID);
+			logger.log('info', "ChannelID: " + channelID);
 
 			var assignedChannel;
 
@@ -59,7 +60,7 @@ module.exports = class UDPTransceiver extends Transceiver {
 
 				} else {
 
-					console.error("UDPtrx: onNewChannelCallback not defined");
+					logger.error("UDPtrx: onNewChannelCallback not defined");
 
 				}
 			}
@@ -73,7 +74,7 @@ module.exports = class UDPTransceiver extends Transceiver {
 
 			} else {
 
-				console.error("UDPtrx: no messageReceivedCallback defined");
+				logger.error("UDPtrx: no messageReceivedCallback defined");
 
 			}
 
@@ -81,7 +82,7 @@ module.exports = class UDPTransceiver extends Transceiver {
 
 		this.socket.on('listening', () => {
 			const address = this.socket.address();
-			console.log(`server listening ${address.address}:${address.port}`);
+			logger.log('info', `server listening ${address.address}:${address.port}`);
 		});
 
 		this.socket.bind(port);
@@ -103,15 +104,15 @@ module.exports = class UDPTransceiver extends Transceiver {
 
 	send(message, channel) {
 
-		console.log("Message object: " + JSON.stringify(message, message.jsonReplacer));
+		logger.log('info', "Message object: " + JSON.stringify(message, message.jsonReplacer));
 
 		var messageBuffer = JSON.stringify(message, message.jsonReplacer);//message.toBuffer();
 
-		console.log('UDPTrx.send ' + messageBuffer.length + ' bytes to '
+		logger.log('info', 'UDPTrx.send ' + messageBuffer.length + ' bytes to '
 			+ channel.info.address + ':'
 			+ channel.info.port);
 
-		//console.log("Message binary: " + Utils.ab2hex(messageBuffer));
+		//logger.log('info', "Message binary: " + Utils.ab2hex(messageBuffer));
 
 		this.socket.send(messageBuffer,
 				channel.info.port,

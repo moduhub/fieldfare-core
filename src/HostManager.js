@@ -13,6 +13,7 @@ const LocalService = require('./env/LocalService.js');
 
 const ResourcesManager = require('./resources/ResourcesManager.js');
 
+import {logger} from './basic/Log';
 
 module.exports = class HostManager {
 
@@ -79,18 +80,18 @@ module.exports = class HostManager {
 
 		}
 
-		// console.log('host pubkey data: ' + JSON.stringify(pubKeyData));
+		// logger.log('info', 'host pubkey data: ' + JSON.stringify(pubKeyData));
 
 		//Calculate host ID from pubkey
 		//var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', pubKeyData));
 
 		this.id = await this.storeResourceObject(pubKeyData);
 
-		// console.log('HOST ID: ' + this.id);
+		// logger.log('info', 'HOST ID: ' + this.id);
 
 		setInterval(() => {
 
-			// console.log("Host is announcing to "
+			// logger.log('info', "Host is announcing to "
 			// 	+ this.remoteHosts.size + " remote hosts and "
 			// 	+ this.bootChannels.size + ' boot channels');
 
@@ -105,10 +106,10 @@ module.exports = class HostManager {
 
 		this.environments.add(env);
 
-		// console.log("Registered enviroments: ");
+		// logger.log('info', "Registered enviroments: ");
 
 		for(const env of this.environments) {
-			console.log(env.uuid);
+			logger.log('info', env.uuid);
 		}
 
 	}
@@ -127,7 +128,7 @@ module.exports = class HostManager {
 		if(serviceState) {
 			newService.setState(serviceState);
 		} else {
-            console.log("Service state is null, this can be a first setup");
+            logger.log('info', "Service state is null, this can be a first setup");
         }
 
 		return newService;
@@ -168,11 +169,11 @@ module.exports = class HostManager {
 
 				var assignedRequest = this.requests.get(response.data.hash);
 
-				//console.log("remoteHost.onResponseReceived(" + JSON.stringify(response));
+				//logger.log('info', "remoteHost.onResponseReceived(" + JSON.stringify(response));
 
 				if(assignedRequest) {
 
-					//console.log("assignedRequest " + JSON.stringify(assignedRequest));
+					//logger.log('info', "assignedRequest " + JSON.stringify(assignedRequest));
 
 					if(response.data.error) {
 						assignedRequest.reject(response.data.error);
@@ -193,18 +194,18 @@ module.exports = class HostManager {
 
 						if(env.version !== version) {
 
-							console.log("remoteHost: " + remoteHost.id + " updated environment to version " + version);
+							logger.log('info', "remoteHost: " + remoteHost.id + " updated environment to version " + version);
 
 							try {
 
 								await env.update(version, remoteHost.id);
 
 							} catch (error) {
-								console.error("Failed to update environment to version " + version
+								logger.log('error', "Failed to update environment to version " + version
 								+ ": " + error);
 								var iError = error.cause;
 								while(iError) {
-									console.error("Cause: " + iError.stack);
+									logger.log('error', "Cause: " + iError.stack);
 									iError = iError.cause;
 								}
 							}
@@ -223,7 +224,7 @@ module.exports = class HostManager {
 
 		var base64hash = await this.storeResource(base64data);
 
-//		console.log("------------------------------\n"
+//		logger.log('info', "------------------------------\n"
 //			+ "Storing: " + base64hash
 //			+ "->" + JSON.stringify(object, null, 2)
 //			+ "\n------------------------------\n");
@@ -281,7 +282,7 @@ module.exports = class HostManager {
 			} catch (error) {
 
 				if(error.name === 'NOT_FOUND_ERROR') {
-					// console.log('Manager ' + manager + ' does not have ' + hash);
+					// logger.log('info', 'Manager ' + manager + ' does not have ' + hash);
 				} else {
 					throw Error('getResource failed: ', {cause: error});
 				}
@@ -290,7 +291,7 @@ module.exports = class HostManager {
 
 		}
 
-		//console.log("res.fetch: Not found locally. Owner: " + owner);
+		//logger.log('info', "res.fetch: Not found locally. Owner: " + owner);
 
 		//not found locally, attemp to find on remote host
 
@@ -315,7 +316,7 @@ module.exports = class HostManager {
 			if(request === undefined) {
 
 				if(attempts > 0) {
-					console.log('get resource request retry ' + attempts + ' of ' + retryCount-1);
+					logger.log('info', 'get resource request retry ' + attempts + ' of ' + retryCount-1);
 				}
 
 				request = new Request('resource', 10000, {
@@ -339,12 +340,12 @@ module.exports = class HostManager {
 				var remoteBase64hash = response.data.hash;
 				var remoteBase64data = response.data.data;
 
-				//console.log ("Received remote resource response:" + JSON.stringify(response.data.data));
+				//logger.log 'info', ("Received remote resource response:" + JSON.stringify(response.data.data));
 				const verifyHash = await this.storeResource(remoteBase64data);
 
 				if(verifyHash !== remoteBase64hash) {
 
-					//console.log("[+RES] (" + hash + "):(" + response.data.data + ")");
+					//logger.log('info', "[+RES] (" + hash + "):(" + response.data.data + ")");
 					throw Error('corrupted resource received from remote host');
 
 				}
@@ -353,7 +354,7 @@ module.exports = class HostManager {
 
 			} catch (error) {
 
-				// console.error('Get resource request failed: ' + error.stack);
+				// logger.error('info','Get resource request failed: ' + error.stack);
 
 			} finally {
 
@@ -374,7 +375,7 @@ module.exports = class HostManager {
 
 	onNewRequest(request) {
 
-		//console.log("Forwarding request to request.destination")
+		//logger.log('info', "Forwarding request to request.destination")
 
 		var destinationHost = this.remoteHosts.get(request.destination);
 
@@ -399,12 +400,12 @@ module.exports = class HostManager {
 
 		channel.onMessageReceived = (message) => {
 
-			// console.log("Received message from boot channel: " + JSON.stringify(message));
+			// logger.log('info', "Received message from boot channel: " + JSON.stringify(message));
 
 			if(message.service == 'announce') {
 
-//				console.log("message.source: " + message.source);
-//				console.log("message.destination: " + message.destination);
+//				logger.log('info', "message.source: " + message.source);
+//				logger.log('info', "message.destination: " + message.destination);
 
 				// Reject indirect announce in boot channel
 //				if(!message.hasOwnProperty('source')
@@ -412,14 +413,14 @@ module.exports = class HostManager {
 
 					var remoteId = message.data.id;
 
-					// console.log("Received direct announce from boot channel. Host ID: " + remoteId);
+					// logger.log('info', "Received direct announce from boot channel. Host ID: " + remoteId);
 
 					var remoteHost = this.remoteHosts.get(remoteId);
 
 					//register channel to remote host
 					if(remoteHost == undefined) {
 
-						// console.log("Host was not registered. Creating new... ");
+						// logger.log('info', "Host was not registered. Creating new... ");
 
 						remoteHost = this.registerRemoteHost(remoteId);
 
@@ -434,11 +435,11 @@ module.exports = class HostManager {
 
 //				} else {
 //
-//					console.log("Message is not direct, reject from boot channel:" + JSON.stringify(message));
+//					logger.log('info', "Message is not direct, reject from boot channel:" + JSON.stringify(message));
 //				}
 
 			} else {
-				// console.log("Message service not announce! Service: " + message.service);
+				// logger.log('info', "Message service not announce! Service: " + message.service);
 			}
 
 		};
@@ -472,14 +473,14 @@ module.exports = class HostManager {
 			this.privateKey,
 			utf8ArrayBuffer);
 
-//		console.log("Correct Message signature: " + Utils.arrayBufferToBase64(signatureBuffer));
+//		logger.log('info', "Correct Message signature: " + Utils.arrayBufferToBase64(signatureBuffer));
 //
 //		var bufview = new Uint8Array(signatureBuffer);
 //		bufview[1] = 0;
 
 		message.signature = Utils.arrayBufferToBase64(signatureBuffer);
 
-//		console.log("Message signature added: " + message.signature);
+//		logger.log('info', "Message signature added: " + message.signature);
 	}
 
 	async announce(destination) {
@@ -532,7 +533,7 @@ module.exports = class HostManager {
 
 		}
 
-		console.log("Remote host " + snapshotProviderID + " is active");
+		logger.log('info', "Remote host " + snapshotProviderID + " is active");
 
 		return remoteHost;
 	}
