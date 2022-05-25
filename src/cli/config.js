@@ -7,8 +7,12 @@ import {v4 as uuidv4 } from 'uuid';
 
 import {initHost, initEnvironment, initWebports} from './cliCommon';
 
+import {inputWebport} from './menuCommon';
+
 //const chalk = require('chalk.js');
 import chalk from 'chalk';
+
+const title = chalk.bold.blue;
 
 const Utils = require('../basic/Utils.js');
 
@@ -184,7 +188,7 @@ async function servicesMenu() {
       choices: ['Add new', 'Back'],
     };
 
-    console.log('__________ Environment Services configuration __________');
+    console.log(title('__________ Environment Services configuration __________'));
 
     var servicesList = []
 
@@ -277,6 +281,9 @@ async function selectServiceMenu() {
       message: 'Choose one service from the list: ',
       choices: [],
       filter(value) {
+          if(value === 'Back') {
+              return '';
+          }
           const parts = value.split(': ');
           return parts[1].slice(0,-1);
       }
@@ -293,7 +300,7 @@ async function selectServiceMenu() {
 
     menu.choices.push('Back');
 
-    console.log('__________ Service Providers configuration __________');
+    console.log(title('__________ Service Providers configuration __________'));
 
     const {choice} = await inquirer.prompt(menu);
 
@@ -310,7 +317,7 @@ async function providersMenu(serviceUUID) {
         choices: ['Add', 'Back']
     }
 
-    console.log('__________ Service <'+serviceUUID+'> Providers configuration __________');
+    console.log(title('__________ Service <'+serviceUUID+'> Providers configuration __________'));
 
     var providersList = [];
 
@@ -347,6 +354,62 @@ async function providersMenu(serviceUUID) {
 
 }
 
+async function webportsMenu() {
+
+    const menu = {
+        type: 'list',
+        name: 'action',
+        message: 'Please select an action below: ',
+        choices: ['Add', 'Back']
+    }
+
+    console.log(title('__________ Enviroment Webports configuration __________'));
+
+    var list = [];
+
+    const webports = env.elements.get('webports');
+
+    for await(const key of webports) {
+        const webport = await host.getResourceObject(key);
+        list.push(webport);
+    }
+
+    if(list.length > 0) {
+        console.table(list);
+    } else {
+        console.log('<No webports defined>');
+    }
+
+    const {action} = await inquirer.prompt(menu);
+
+    switch(action) {
+        case 'Add':{
+
+            var newWebport = await inquirer.prompt(inputWebport);
+
+            newWebport.hostid = host.id;
+
+            console.log("Review webport data: " + JSON.stringify(newWebport));
+
+            const {confirm} = await inquirer.prompt({
+                type: 'confirm',
+                name: 'confirm',
+                message: 'Confirm Webport data inclusion?'
+            });
+
+            if(confirm) {
+                await env.addWebport(newWebport);
+            }
+
+            webportsMenu();
+        }break;
+
+        default:
+            mainMenu();
+    }
+
+}
+
 async function mainMenu() {
 
     const menu = {
@@ -356,7 +419,7 @@ async function mainMenu() {
       choices: ['Admins', 'Services', 'Providers', 'Webports', 'Exit'],
     };
 
-    console.log('__________ ModuHub mhlib.js Environment configuration __________');
+    console.log(title('__________ ModuHub mhlib.js Environment configuration __________'));
 
     const {submenu} = await inquirer.prompt(menu);
 
@@ -372,6 +435,10 @@ async function mainMenu() {
         case 'Providers':
             const serviceUUID = await selectServiceMenu();
             providersMenu(serviceUUID);
+            break;
+
+        case 'Webports':
+            webportsMenu();
             break;
 
         default:
