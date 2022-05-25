@@ -434,7 +434,11 @@ async function mainMenu() {
 
         case 'Providers':
             const serviceUUID = await selectServiceMenu();
-            providersMenu(serviceUUID);
+            if(serviceUUID !== '') {
+                providersMenu(serviceUUID);
+            } else {
+                mainMenu();
+            }
             break;
 
         case 'Webports':
@@ -464,30 +468,6 @@ export async function main(args) {
             await mainMenu();
         } break;
 
-        case 'addServedWebport' : {
-
-            try {
-                await addServedWebport(options);
-            } catch (error) {
-                console.log("Failed to add served webport: " + error);
-            } finally {
-                process.exit(0);
-            }
-
-        } break;
-
-        case 'removeServedWebports': {
-
-            try {
-                await removeServedWebports(options);
-            } catch (error) {
-                console.log("Failed to remove served webports: " + error);
-            } finally {
-                process.exit(0);
-            }
-
-        } break;
-
         case 'getChanges': {
 
             const localChain = new VersionChain(env.version, host.id, 50);
@@ -495,7 +475,9 @@ export async function main(args) {
             const localChanges = await localChain.getChanges();
 
             for await (const [issuer, method, params] of localChanges) {
-                console.log('issuer:\"' + issuer + '\" method:' + method + ' params:\n'+ JSON.stringify(params, null, 2));
+                console.log('issuer:\"' + issuer
+                    + '\" method:' + chalk.blue(method)
+                    + ' params:\n'+ JSON.stringify(params, null, 2));
             }
 
             process.exit(0);
