@@ -312,7 +312,7 @@ module.exports = class Environment extends VersionedData {
 
 		const listName = serviceUUID + '.providers';
 
-		if(this.elements.has(listName) == false) {
+		if(this.elements.has(listName) === false) {
 			throw Error('Service '+serviceUUID+' providers list does not exist');
 		}
 
@@ -345,7 +345,7 @@ module.exports = class Environment extends VersionedData {
 
 		await this.auth(issuer);
 
-		const providers = this.getProviders(params.uuid);
+		const providers = await this.getProviders(params.uuid);
 
 		if(await providers.has(params.host)) {
 			if(merge) {
@@ -372,7 +372,7 @@ module.exports = class Environment extends VersionedData {
 			addProvider: params
 		});
 
-		nvdata.save(this.uuid, this.version);
+		await nvdata.save(this.uuid, this.version);
 
 	}
 

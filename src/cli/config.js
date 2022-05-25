@@ -2,9 +2,13 @@
 import inquirer from 'inquirer';
 import arg from 'arg';
 import fs from 'fs';
+
 import {v4 as uuidv4 } from 'uuid';
 
 import {initHost, initEnvironment, initWebports} from './cliCommon';
+
+//const chalk = require('chalk.js');
+import chalk from 'chalk';
 
 const Utils = require('../basic/Utils.js');
 
@@ -17,25 +21,7 @@ function hasSpecialChars(value) {
     return !(regex.test(value));
 }
 
-const inputHostID = {
-    type: 'input',
-    name: 'hostid',
-    message: "Please enter a Host ID (leave blank to cancel): ",
-    validate(value) {
-        if(value == '') {
-            return true;
-        }
-
-        if (Utils.isBase64(value)
-        && value.length === 44) {
-            return true;
-        }
-
-        return 'Please enter a valid Host ID in base64 format';
-    }
-};
-
-const inputServiceUUID = {
+export const inputServiceUUID = {
     type: 'input',
     name: 'uuid',
     message: 'Enter service UUID or leave blank to generate a UUIDv4: ',
@@ -45,8 +31,40 @@ const inputServiceUUID = {
             return true;
         }
         return 'Please enter a valid UUID';
+    },
+    filter(value) {
+        if(value === '') {
+            return uuidv4();
+        }
+        return value;
     }
 }
+
+const inputHostID = {
+    type: 'input',
+    name: 'hostid',
+    message: "Please enter a Host ID (leave blank to cancel or 'this' to use local host ID): ",
+    validate(value) {
+        if(value == ''
+        || value == 'this') {
+            return true;
+        }
+
+        if (Utils.isBase64(value)
+        && value.length === 44) {
+            return true;
+        }
+
+        return 'Please enter a valid Host ID in base64 format';
+    },
+    filter(value) {
+        if(value === 'this') {
+            return host.id;
+        }
+        return value;
+    }
+};
+
 
 const inputServiceName = {
     type: 'input',
@@ -137,9 +155,10 @@ async function adminsMenu() {
 
         case 'Add new':
 
-            const {hostid} = await inquirer.prompt(inputHostID);
+            var {hostid} = await inquirer.prompt(inputHostID);
 
             if(hostid !== '') {
+
                 try {
                     await env.addAdmin(hostid);
                 } catch (error) {
@@ -192,10 +211,6 @@ async function servicesMenu() {
                 await env.auth(host.id);
 
                 var {uuid} = await inquirer.prompt(inputServiceUUID);
-
-                if(uuid === '') {
-                    uuid = uuidv4();
-                }
 
                 const {serviceName} = await inquirer.prompt(inputServiceName);
 
@@ -254,6 +269,84 @@ async function servicesMenu() {
 
 }
 
+async function selectServiceMenu() {
+
+    const menu = {
+      type: 'list',
+      name: 'choice',
+      message: 'Choose one service from the list: ',
+      choices: [],
+      filter(value) {
+          const parts = value.split(': ');
+          return parts[1].slice(0,-1);
+      }
+    };
+
+    var servicesList = []
+
+    const services = await env.elements.get('services');
+
+    for await (const key of services) {
+        const definition = await host.getResourceObject(key);
+        menu.choices.push(definition.name + ' (uuid: ' + definition.uuid + ')');
+    }
+
+    menu.choices.push('Back');
+
+    console.log('__________ Service Providers configuration __________');
+
+    const {choice} = await inquirer.prompt(menu);
+
+    return choice;
+
+}
+
+async function providersMenu(serviceUUID) {
+
+    const menu = {
+        type: 'list',
+        name: 'action',
+        message: 'Please select an action below: ',
+        choices: ['Add', 'Back']
+    }
+
+    console.log('__________ Service <'+serviceUUID+'> Providers configuration __________');
+
+    var providersList = [];
+
+    const providers = await env.getProviders(serviceUUID);
+
+    for await(const provider of providers) {
+        providersList.push(provider);
+    }
+
+    if(providersList.length > 0) {
+        console.table(providersList);
+    } else {
+        console.log('<No providers defined>');
+    }
+
+    const {action} = await inquirer.prompt(menu);
+
+    switch(action) {
+        case 'Add':{
+            const { hostid } = await inquirer.prompt(inputHostID);
+            if(hostid != '') {
+                try {
+                    await env.addProvider(serviceUUID, hostid);
+                } catch(error) {
+                    console.log(chalk.bgRed("FAILED: " + error));
+                }
+            }
+            providersMenu(serviceUUID);
+        }break;
+
+        default:
+            mainMenu();
+    }
+
+}
+
 async function mainMenu() {
 
     const menu = {
@@ -277,7 +370,8 @@ async function mainMenu() {
             break;
 
         case 'Providers':
-            mainMenu();
+            const serviceUUID = await selectServiceMenu();
+            providersMenu(serviceUUID);
             break;
 
         default:
