@@ -1,6 +1,9 @@
 
 const ResourcesManager = require('./ResourcesManager.js');
 
+import {logger} from '../basic/Log'
+
+
 module.exports = class VolatileResourcesManager extends ResourcesManager {
 
     constructor() {
@@ -9,7 +12,7 @@ module.exports = class VolatileResourcesManager extends ResourcesManager {
         this.hashmap = new Map;
 
         setInterval(() => {
-            console.log("Volatile Resources Manager: " + this.hashmap.size + " resources stored.");
+            logger.log('info', "Volatile Resources Manager: " + this.hashmap.size + " resources stored.");
         }, 30000);
 
     }
@@ -20,7 +23,7 @@ module.exports = class VolatileResourcesManager extends ResourcesManager {
 
 		this.hashmap.set(base64hash, base64data);
 
-		// console.log("res.store("
+		// logger.log('info', "res.store("
 		// 	+ base64hash
 		// 	+ ", "
 		// 	+ base64data

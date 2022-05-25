@@ -7,6 +7,7 @@
 const Transceiver = require('./Transceiver.js');
 const WebSocketServer  = require('websocket').server;
 const http = require('http');
+import {logger} from './basic/Log'
 
 module.exports = class WebServerTransceiver extends Transceiver {
 
@@ -31,7 +32,7 @@ module.exports = class WebServerTransceiver extends Transceiver {
 
 		this.wsServer.on('request', (request) => {
 
-			console.log("wsServer onRequest");
+			logger.log('info', "wsServer onRequest");
 
 			this.treatWsRequest(request);
 		});
@@ -40,14 +41,14 @@ module.exports = class WebServerTransceiver extends Transceiver {
 	open() {
 
 		this.server.listen(this.port, () => {
-			console.log((new Date()) + ' WS Server is listening on port ' + this.port);
+			logger.log('info', (new Date()) + ' WS Server is listening on port ' + this.port);
 		});
 
 	}
 
 	treatHttpRequest(request, response) {
 
-		console.log((new Date()) + ' Received request for ' + request.url);
+		logger.log('info', (new Date()) + ' Received request for ' + request.url);
 		response.writeHead(404);
 		response.end();
 
@@ -59,12 +60,12 @@ module.exports = class WebServerTransceiver extends Transceiver {
 
 	treatWsRequest(request) {
 
-		console.log("Entered treatWsRequest");
+		logger.log('info', "Entered treatWsRequest");
 
 		if (!this.originIsAllowed(request.origin)) {
 			// Make sure we only accept requests from an allowed origin
 			request.reject();
-			console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
+			logger.log('info', (new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
 			return;
 		}
 
@@ -72,7 +73,7 @@ module.exports = class WebServerTransceiver extends Transceiver {
 		try {
 
 			var connection = request.accept('mhnet', request.origin);
-			console.log((new Date()) + ' Connection from ' + request.origin + 'accepted.');
+			logger.log('info', (new Date()) + ' Connection from ' + request.origin + 'accepted.');
 
 			var newChannel = {
 				type: 'wsServer',
@@ -87,7 +88,7 @@ module.exports = class WebServerTransceiver extends Transceiver {
 			};
 
 			newChannel.onMessageReceived = (message) => {
-				console.log("WS connection callback undefined. Message droped: " + message);
+				logger.log('info', "WS connection callback undefined. Message droped: " + message);
 			}
 
 			connection.on('message', (message) => {
@@ -97,7 +98,7 @@ module.exports = class WebServerTransceiver extends Transceiver {
 					if(newChannel.onMessageReceived) {
 
 						try {
-							//console.log('WS: Message from client: ' + message.utf8Data);
+							//logger.log('info', 'WS: Message from client: ' + message.utf8Data);
 
 							var messageObject = JSON.parse(message.utf8Data);
 
@@ -105,7 +106,7 @@ module.exports = class WebServerTransceiver extends Transceiver {
 
 						} catch (error) {
 
-							console.log("Failed to treat WS message: " + error);
+							logger.log('info', "Failed to treat WS message: " + error);
 
 						}
 
@@ -120,7 +121,7 @@ module.exports = class WebServerTransceiver extends Transceiver {
 			});
 
 			connection.on('close', function(reasonCode, description) {
-				console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
+				logger.log('info', (new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
 			});
 
 			if(this.onNewChannel) {
@@ -129,7 +130,7 @@ module.exports = class WebServerTransceiver extends Transceiver {
 
 		} catch (error) {
 
-			console.log("Failed to accept connection: " + error);
+			logger.log('info', "Failed to accept connection: " + error);
 
 		}
 	}

@@ -7,6 +7,8 @@
 
 const Utils = require('../basic/Utils.js');
 
+import {logger} from '../basic/Log'
+
 
 module.exports = class HashLinkedList {
 
@@ -18,12 +20,12 @@ module.exports = class HashLinkedList {
 		&& lastHash !== '') {
 
 			if(Utils.isBase64(lastHash) === false) {
-				throw 'invalid HLL initialization parameter';
+				throw Error('invalid HLL initialization parameter');
 			}
 
 			this.lastHash = lastHash;
 
-			console.log("WARNING: HLT num elements is wrong");
+			logger.log('warning', "WARNING: HLT num elements is wrong");
 			this.numElements = undefined;
 
 		} else {
@@ -69,13 +71,13 @@ module.exports = class HashLinkedList {
 			obj: element
 		};
 
-		// console.log("Hash Linked List append: " + JSON.stringify(newListElement));
+		// logger.log('info', "Hash Linked List append: " + JSON.stringify(newListElement));
 
 		this.lastHash = await host.storeResourceObject(newListElement);
 
 		this.numElements++;
 
-		// console.log("hash after append: " + this.lastHash);
+		// logger.log('info', "hash after append: " + this.lastHash);
 
 	}
 

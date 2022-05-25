@@ -6,6 +6,8 @@
 
 const Transceiver = require('./Transceiver.js');
 
+import {logger} from './basic/Log'
+
 module.exports = class WebClientTransceiver extends Transceiver {
 
 	constructor() {
@@ -25,7 +27,7 @@ module.exports = class WebClientTransceiver extends Transceiver {
 				type: 'wsClient',
 				send: (message) => {
 					var stringifiedMessage = JSON.stringify(message, message.jsonReplacer);
-					//console.log("calling ws socket send, with message: " + stringifiedMessage);
+					//logger.log('info', "calling ws socket send, with message: " + stringifiedMessage);
 					socket.send(stringifiedMessage);
 				},
 				info: {
@@ -40,7 +42,7 @@ module.exports = class WebClientTransceiver extends Transceiver {
 
 				if(rNewChannel.onMessageReceived) {
 
-					//console.log('WS: Message from server: ' + message);
+					//logger.log('info', 'WS: Message from server: ' + message);
 
 					try {
 						//Convert to object
@@ -49,7 +51,7 @@ module.exports = class WebClientTransceiver extends Transceiver {
 						rNewChannel.onMessageReceived(messageObject);
 
 					} catch (error) {
-						console.log("Failed to parse message: " + error);
+						logger.log('info', "Failed to parse message: " + error);
 					}
 
 				}
@@ -57,20 +59,20 @@ module.exports = class WebClientTransceiver extends Transceiver {
 			});
 
 			rNewChannel.onMessageReceived = (message) => {
-				console.log('WS channel onMessageReceived: no message parser assigned, discarding');
+				logger.log('info', 'WS channel onMessageReceived: no message parser assigned, discarding');
 			};
 
 			// Connection opened
 			socket.addEventListener('open', (event) => {
 
-				console.log('WebSocket client opened: ' + event);
+				logger.log('info', 'WebSocket client opened: ' + event);
 				resolve(rNewChannel);
 
 			});
 
 			socket.addEventListener('error', (event) => {
 
-				console.log('WebSocket client error!');
+				logger.log('info', 'WebSocket client error!');
 				reject(event);
 
 			});

@@ -4,6 +4,9 @@
  * and open the template in the editor.
  */
 
+import {logger} from '../basic/Log'
+
+
 module.exports = class VersionStatement {
 
 	constructor() {
@@ -17,22 +20,22 @@ module.exports = class VersionStatement {
 	static validate(message) {
 
 		if(!message) {
-			throw 'message is null';
+			throw Error('message is null');
 		}
 
 		if('signature' in message === false
 		|| 'source' in message === false
 		|| 'data' in message === false) {
 
-			console.log("Update message validate failed: " + JSON.stringify(message));
+			logger.log('info', "Update message validate failed: " + JSON.stringify(message));
 
-			throw 'malformed update message';
+			throw Error('malformed update message');
 		}
 
 		if('prev' in message.data === false
 		|| 'state' in message.data === false
 		|| 'changes' in message.data === false) {
-			throw 'malformed update message data';
+			throw Error('malformed update message data');
 		}
 
 	}

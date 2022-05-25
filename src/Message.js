@@ -6,6 +6,8 @@
 
 const Utils = require('./basic/Utils.js');
 
+import {logger} from './basic/Log'
+
 const SERVICE_ID_ANNOUNCE = 1;
 const SERVICE_ID_RESOURCE = 2;
 
@@ -54,7 +56,7 @@ module.exports = class Message {
 		var serviceId = sServiceIdMap.get(this.service);
 
 		if(serviceId == 'undefined') {
-			throw 'undefined service';
+			throw Error('undefined service');
 		}
 
 		var direct = false;
@@ -65,7 +67,7 @@ module.exports = class Message {
 		} else {
 			//Indirect message withou source
 			if(this.source == 'undefined') {
-				throw 'undefined source address';
+				throw Error('undefined source address');
 			}
 		}
 
@@ -123,13 +125,13 @@ module.exports = class Message {
 					offset += 32;
 
 				} else {
-					throw 'resource data.hash missing';
+					throw Error('resource data.hash missing');
 				}
 
 			} break;
 
 			default: {
-				throw 'invalid service id';
+				throw Error('invalid service id');
 			} break;
 		}
 
@@ -143,21 +145,21 @@ module.exports = class Message {
 		var destAddress = buffer.slice(1,32);
 		var sourceAddress = buffer.slice(32,64);
 
-		console.log("Destination: " + destAddress.toString('hex'));
-		console.log("Source: " + sourceAddress.toString('hex'));
+		logger.log('info', "Destination: " + destAddress.toString('hex'));
+		logger.log('info', "Source: " + sourceAddress.toString('hex'));
 
 		if(serviceID == SERVICE_ID_ANNOUNCE) {
 
 			//resource copy or provide
-			console.log("Service: Announce");
+			logger.log('info', "Service: Announce");
 
 			var hostID = buffer.slice(1,32);
 			var envID = buffer.slice(33,64);
 			//var signature = message.slice(64,96);
 
-			console.log("Host ID: " + hostID.toString('hex'));
-			console.log("Env ID: " + envID.toString('hex'));
-			//console.log("Signature: " + signature.toString('hex'));
+			logger.log('info', "Host ID: " + hostID.toString('hex'));
+			logger.log('info', "Env ID: " + envID.toString('hex'));
+			//logger.log('info', "Signature: " + signature.toString('hex'));
 
 			//ask for pubkey resource
 			//resources.getResource(hostID)
@@ -171,15 +173,15 @@ module.exports = class Message {
 		if(serviceID == SERVICE_ID_RESOURCE_REQUEST) {
 
 			//resource copy or provide
-			console.log("Service: Resource Request");
+			logger.log('info', "Service: Resource Request");
 
 			var hash = buffer.slice(64,96);
 
-			console.log("Hash: " + hash.toString('hex'));
+			logger.log('info', "Hash: " + hash.toString('hex'));
 
 		} else {
 
-			console.log("Service: Invalid");
+			logger.log('info', "Service: Invalid");
 
 		}
 	}

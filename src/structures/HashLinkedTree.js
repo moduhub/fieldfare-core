@@ -8,6 +8,9 @@ const Utils = require('../basic/Utils.js');
 
 const ResourcesManager = require('../resources/ResourcesManager.js');
 
+import {logger} from '../basic/Log'
+
+
 class TreeContainer {
 
 	constructor(leftChild) {
@@ -23,7 +26,7 @@ class TreeContainer {
 		} else {
 			if(leftChild !== ''
 			&& Utils.isBase64(leftChild) === false) {
-				throw 'invalid right child - not base64';
+				throw Error('invalid right child - not base64');
 			}
 
 			this.children[0] = leftChild;
@@ -40,7 +43,7 @@ class TreeContainer {
 
 		if(resourceObject === null
 		|| resourceObject === undefined) {
-			throw 'failed to fetch container resorce';
+			throw Error('failed to fetch container resorce');
 		}
 
 		Object.assign(newContainer, resourceObject);
@@ -52,7 +55,7 @@ class TreeContainer {
 
 		//Parameters validation
 		if(Utils.isBase64(hash) === false) {
-			throw 'invalid element hash';
+			throw Error('invalid element hash');
 		}
 
 		if(rightChild === null
@@ -61,7 +64,7 @@ class TreeContainer {
 		} else
 		if(rightChild !== ''
 		&& Utils.isBase64(rightChild) === false) {
-			throw 'invalid right child - not base64';
+			throw Error('invalid right child - not base64');
 		}
 
 		if(this.numElements == 0) {
@@ -98,7 +101,7 @@ class TreeContainer {
 
 		var index = undefined;
 
-//		console.log(">>> Updating child " + prev + "->" + current);
+//		logger.log('info', ">>> Updating child " + prev + "->" + current);
 
 		for(var i=0; i<this.numElements+1; i++) {
 			if(this.children[i] === prev) {
@@ -109,7 +112,7 @@ class TreeContainer {
 		}
 
 		if(index === undefined) {
-			throw 'child not found in container';
+			throw Error('child not found in container');
 		}
 
 		return index;
@@ -236,7 +239,7 @@ module.exports = class HashLinkedTree {
 		|| degree > 10
 		|| degree === undefined
 		|| degree === null) {
-			throw 'invalid tree order value';
+			throw Error('invalid tree order value');
 		}
 
 		this.degree = degree;
@@ -255,7 +258,7 @@ module.exports = class HashLinkedTree {
 		} else {
 
 			if(Utils.isBase64(state) === false) {
-				throw 'root is not base64';
+				throw Error('root is not base64');
 			}
 
 			//TODO: root element structure validation?
@@ -286,7 +289,7 @@ module.exports = class HashLinkedTree {
 
 		this.rootHash = await host.storeResourceObject(newRoot);
 
-//		console.log("New tree root: \'" + this.rootHash + "\'");
+//		logger.log('info', "New tree root: \'" + this.rootHash + "\'");
 
 	}
 
@@ -311,7 +314,7 @@ module.exports = class HashLinkedTree {
 			elementHash = element;
 
 		} else {
-			throw 'invalid element type';
+			throw Error('invalid element type');
 		}
 
 		return elementHash;
@@ -321,12 +324,12 @@ module.exports = class HashLinkedTree {
 
 		var elementHash = await this.validate(element);
 
-//		console.log("tree.add(" + JSON.stringify(element, null, 2) + ") -> " + elementHash);
+//		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + elementHash);
 
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
 
-			//console.log("First insert, init root with \'" + elementHash + "\'");
+			//logger.log('info', "First insert, init root with \'" + elementHash + "\'");
 
 			await this.init(elementHash);
 
@@ -337,7 +340,7 @@ module.exports = class HashLinkedTree {
 
 			var iContainer = await TreeContainer.fromResource(this.rootHash);
 
-//			console.log('root->' + JSON.stringify(iContainer, null, 2));
+//			logger.log('info', 'root->' + JSON.stringify(iContainer, null, 2));
 
 			var depth = 0;
 			prevBranchHashes[0] = this.rootHash;//root hash
@@ -352,16 +355,16 @@ module.exports = class HashLinkedTree {
 					throw Error('element already in set');
 				}
 
-//				console.log('follow->' + nextContainerHash);
+//				logger.log('info', 'follow->' + nextContainerHash);
 
 				iContainer = await TreeContainer.fromResource(nextContainerHash);
 				depth++;
 
-//				console.log('depth[' + depth + ']->' + JSON.stringify(iContainer, null, 2));
+//				logger.log('info', 'depth[' + depth + ']->' + JSON.stringify(iContainer, null, 2));
 
 				if(iContainer == null
 				|| iContainer == undefined) {
-					throw 'iContainer object not found';
+					throw Error('iContainer object not found');
 				}
 
 				prevBranchHashes.push(nextContainerHash);
@@ -371,18 +374,18 @@ module.exports = class HashLinkedTree {
 
 			}
 
-			//console.log("Destination container prev state: " + JSON.stringify(iContainer, null, 2));
+			//logger.log('info', "Destination container prev state: " + JSON.stringify(iContainer, null, 2));
 
 			//Leaf add
 			iContainer.addElement(elementHash);
 
-//			console.log("Inserted new at depth=" + depth
+//			logger.log('info', "Inserted new at depth=" + depth
 //				+ " -> Container: "  + JSON.stringify(iContainer, null, 2));
 
 			//Perform split if numElements == degree
 			while(iContainer.numElements === this.degree) {
 
-//				console.log("SPLIT! Depth:" + depth);
+//				logger.log('info', "SPLIT! Depth:" + depth);
 
 				var rightContainer = new TreeContainer();
 
@@ -393,9 +396,9 @@ module.exports = class HashLinkedTree {
 				var leftContainerHash = await host.storeResourceObject(leftContainer);
 				var rightContainerHash = await host.storeResourceObject(rightContainer);
 
-//				console.log("Mean element: " + meanElement);
-//				console.log("Left (" + leftContainerHash + "): "  + JSON.stringify(leftContainer, null, 2));
-//				console.log("Right (" + rightContainerHash + "): "  + JSON.stringify(rightContainer, null, 2));
+//				logger.log('info', "Mean element: " + meanElement);
+//				logger.log('info', "Left (" + leftContainerHash + "): "  + JSON.stringify(leftContainer, null, 2));
+//				logger.log('info', "Right (" + rightContainerHash + "): "  + JSON.stringify(rightContainer, null, 2));
 
 				// After split:
 				// * Mean element is inserted in upper container
@@ -410,7 +413,7 @@ module.exports = class HashLinkedTree {
 
 					branch.unshift(newRoot);
 
-//					console.log("New tree root: " + JSON.stringify(newRoot, null , 2)
+//					logger.log('info', "New tree root: " + JSON.stringify(newRoot, null , 2)
 //						+ " -> " + branch[0]);
 
 					break;
@@ -421,17 +424,17 @@ module.exports = class HashLinkedTree {
 					// continue split check
 					iContainer = branch[depth-1];
 
-//					console.log("Updating branch at depth=" + depth
+//					logger.log('info', "Updating branch at depth=" + depth
 //						+ "\n>prevHash: " + prevBranchHashes[depth]
 //						+ "\n>currentHash: " + leftContainerHash);
 
-//					console.log(">>> Depth lowered to: " + depth);
-//					console.log(">>> iContainer prev state: " + JSON.stringify(iContainer, null, 2));
+//					logger.log('info', ">>> Depth lowered to: " + depth);
+//					logger.log('info', ">>> iContainer prev state: " + JSON.stringify(iContainer, null, 2));
 
 					iContainer.updateChild(prevBranchHashes[depth], leftContainerHash);
 					iContainer.addElement(meanElement, rightContainerHash);
 
-//					console.log(">>> iContainer after state: " + JSON.stringify(iContainer, null, 2));
+//					logger.log('info', ">>> iContainer after state: " + JSON.stringify(iContainer, null, 2));
 
 					depth--;
 				}
@@ -443,7 +446,7 @@ module.exports = class HashLinkedTree {
 			// and branch must now update everything down to root
 			// with new hash linkage
 
-//			console.log("Branch length: " + branch.length
+//			logger.log('info', "Branch length: " + branch.length
 //				+ " Starting branch update at depth="+depth);
 
 			//Update branch down (up?) to root
@@ -451,7 +454,7 @@ module.exports = class HashLinkedTree {
 
 				const currentContainerHash = await host.storeResourceObject(branch[depth]);
 
-//				console.log(  "depth: " + depth
+//				logger.log('info',   "depth: " + depth
 //					+ "current: " + currentContainerHash
 //					+ " prev: " + prevBranchHashes[depth]);
 
@@ -463,7 +466,7 @@ module.exports = class HashLinkedTree {
 
 				} else {
 					//this shoould never happen?
-					throw 'this was unexpected, check code';
+					throw Error('this was unexpected, check code');
 				}
 
 				depth--;
@@ -475,7 +478,7 @@ module.exports = class HashLinkedTree {
 
 			//Dump previous root?
 
-//			console.log(">>> Tree.add finished, new root is " + this.rootHash);
+//			logger.log('info', ">>> Tree.add finished, new root is " + this.rootHash);
 		}
 
 		return this.rootHash;
@@ -485,7 +488,7 @@ module.exports = class HashLinkedTree {
 
 		const elementHash = await this.validate(element, false);
 
-//		console.log("tree.has(" + elementHash + ")");
+//		logger.log('info', "tree.has(" + elementHash + ")");
 
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
@@ -502,21 +505,21 @@ module.exports = class HashLinkedTree {
 
 				iContainer = await TreeContainer.fromResource(nextContainerHash);
 
-//				console.log("search["+depth+"]: " + JSON.stringify(iContainer, null, 2));
+//				logger.log('info', "search["+depth+"]: " + JSON.stringify(iContainer, null, 2));
 
 				nextContainerHash = iContainer.follow(elementHash);
 				depth++;
 
-//				console.log("follow->" + nextContainerHash);
+//				logger.log('info', "follow->" + nextContainerHash);
 
 				if(nextContainerHash === true) {
-//					console.log("Element found");
+//					logger.log('info', "Element found");
 					return true;
 				}
 
 			} while(nextContainerHash !== '');
 
-//			console.log("Element NOT found");
+//			logger.log('info', "Element NOT found");
 
 			return false;
 

@@ -1,6 +1,8 @@
 
 const VersionStatement = require('./VersionStatement.js');
 
+import {logger} from '../basic/Log'
+
 class ChangesIterator {
 
     constructor() {
@@ -24,21 +26,21 @@ class ChangesIterator {
 
         const numKeys = this.keys.length;
 
-        //console.log('ChangesIterator enter, num keys: ' + numKeys);
+        //logger.log('info', 'ChangesIterator enter, num keys: ' + numKeys);
 
         for(var i=0; i<numKeys; i++) {
 
             const key = this.keys[i];
             const issuer = this.issuers[i];
 
-            //console.log('Iteration ' + i + '>  key:' + key + ' issuer: ' + issuer);
+            //logger.log('info', 'Iteration ' + i + '>  key:' + key + ' issuer: ' + issuer);
 
             const changes = await host.getResourceObject(key, this.chain.owner);
 
 			for(const prop in changes) {
 				const value = changes[prop];
 
-                // console.log("Apply method: " + prop
+                // logger.log('info', "Apply method: " + prop
                 // + ' from issuer: ' + issuer);
                 // + ' with params: ' + JSON.stringify(value)
 
@@ -112,8 +114,8 @@ module.exports = class VersionChain {
 
             for await (const [versionB, statementB] of chainB) {
 
-                // console.log("A("+depthA+"): " + versionA);
-                // console.log("B("+depthB+"): " + versionB);
+                // logger.log('info', "A("+depthA+"): " + versionA);
+                // logger.log('info', "B("+depthB+"): " + versionB);
 
                 if(versionA === versionB) {
                     return versionA;
@@ -144,11 +146,11 @@ module.exports = class VersionChain {
 
         if(this.head !== prevVersion) {
 
-            //console.log("this.head: " + this.head + " prevVersion: " + prevVersion);
+            //logger.log('info', "this.head: " + this.head + " prevVersion: " + prevVersion);
 
             for await(const [version, statement] of this) {
 
-                //console.log("iversion: " + version);
+                //logger.log('info', "iversion: " + version);
 
                 if(++count>this.maxDepth) throw Error('max depth exceeded');
 

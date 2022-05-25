@@ -1,6 +1,8 @@
 
 const Utils = require('../basic/Utils.js');
 
+import {logger} from '../basic/Log'
+
 const dataTypes = {
     'list': require('../structures/HashLinkedList.js'),
     'set': require('../structures/HashLinkedTree.js'),
@@ -18,7 +20,7 @@ module.exports = class Service {
 
     static validate(definition) {
 
-        // console.log("validate:" + JSON.stringify(definition));
+        // logger.log('info', "validate:" + JSON.stringify(definition));
 
         if('uuid' in definition === false) {
             throw 'missing uuid in service definition';
@@ -57,11 +59,11 @@ module.exports = class Service {
 
         newService.definition = definition;
 
-        console.log('definition.data: ' + JSON.stringify(definition));
+        logger.log('info', 'definition.data: ' + JSON.stringify(definition));
 
         for(const entry of definition.data) {
 
-            console.log("Processing entry " + JSON.stringify(entry));
+            logger.log('info', "Processing entry " + JSON.stringify(entry));
 
             const typeClass = dataTypes[entry.type];
 
@@ -85,14 +87,14 @@ module.exports = class Service {
 
         for(const prop in this.data) {
 
-            console.log("data.name: " + prop);
-            console.log("stateId: " + this.data[prop].getState());
+            logger.log('info', "data.name: " + prop);
+            logger.log('info', "stateId: " + this.data[prop].getState());
             newState[prop] = this.data[prop].getState();
         }
 
         if(this.prevState !== newState) {
             const uuid = this.definition.uuid;
-            console.log("Storing service state " + uuid + '->' + JSON.stringify(newState, null, 2));
+            logger.log('info', "Storing service state " + uuid + '->' + JSON.stringify(newState, null, 2));
             nvdata.save(uuid, newState);
             this.prevState = newState;
         }
@@ -102,11 +104,11 @@ module.exports = class Service {
 
     setState(state) {
 
-        // console.log("Service " + this.definition.name + "setState()");
+        // logger.log('info', "Service " + this.definition.name + "setState()");
 
         for(const prop in state) {
 
-            // console.log("entry state: " + state[prop]);
+            // logger.log('info', "entry state: " + state[prop]);
 
             if(prop in this.data === false) {
                 throw Error('state data mismatch');
@@ -127,7 +129,7 @@ module.exports = class Service {
 
     treatRequest(remoteHost, payload) {
 
-        console.log('Service UUID: ' + this.definition.uuid
+        logger.log('info', 'Service UUID: ' + this.definition.uuid
             + ' received payload:' + JSON.stringify(payload));
 
         for(const prop in payload) {

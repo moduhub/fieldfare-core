@@ -28,8 +28,10 @@ module.exports = class Request extends Message {
 
 		//Add propertires to be ignored or transformed
 		// when stringifying the message for tansmission here
-		if(key === 'listeners') return undefined;
-		if(key === 'state') return undefined;
+		if(key === 'resolveCallbacks') return undefined;
+		if(key === 'rejectCallbacks') return undefined;
+		if(key === 'error') return undefined;
+		if(key === 'response') return undefined;
 		if(key === 'timeout') return undefined;
 
 		return super.jsonReplacer(key, value);

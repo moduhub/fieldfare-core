@@ -7,6 +7,7 @@
 const Message = require('./Message.js');
 const Utils = require('./basic/Utils.js');
 
+import { logger } from './basic/Log'
 
 module.exports = class RemoteHost {
 
@@ -30,7 +31,7 @@ module.exports = class RemoteHost {
 
 		for(const channel of this.channels) {
 
-			// console.log("Dispatching message to "
+			// logger.log('info', "Dispatching message to "
 			// 	+ channel.type
 			// 	+ ' channel ('
 			// 	+ '-'//JSON.stringify(channel.info)
@@ -51,7 +52,7 @@ module.exports = class RemoteHost {
 
 		};
 
-		console.log("Assigning channel to " + this.id
+		logger.log('info', "Assigning channel to " + this.id
 			+ ". Now there are " + this.channels.size
 			+ " channels assigned to this remote host.");
 
@@ -60,7 +61,7 @@ module.exports = class RemoteHost {
 	async treatMessage(message, channel) {
 
 		try {
-//		console.log("Message redirected to "
+//		logger.log('info', "Message redirected to "
 //			+ this.id + ": "
 //			+ JSON.stringify(message));
 
@@ -71,7 +72,7 @@ module.exports = class RemoteHost {
 			} else
 			if(message.service == 'resource') {
 
-				//console.log("treating resource message (request/response)");
+				//logger.log('info', "treating resource message (request/response)");
 				await this.treatResourceMessage(message, channel);
 
 			} else {
@@ -92,14 +93,14 @@ module.exports = class RemoteHost {
 			}
 
 		} catch(error) {
-			console.log("Message parse failed: " + error);
-			console.error("Message parse failed: " + error.stack);
+			logger.log('info', "Message parse failed: " + error);
+			logger.error('info', "Message parse failed: " + error.stack);
 		}
 	}
 
 	async treatAnnounce(message, channel) {
 
-		console.log("Received announce message: " + JSON.stringify(message, null, 2));
+		logger.log('info', "Received announce message: " + JSON.stringify(message, null, 2));
 
 		if('id' in message.data === false) {
 			throw Error('malformed announce, missing host id');
@@ -110,7 +111,7 @@ module.exports = class RemoteHost {
 			//Get host pubkey
 			var remotePubKeyData = await host.getResourceObject(message.data.id, message.data.id);
 
-			console.log("Remote host pubkey: " + JSON.stringify(remotePubKeyData));
+			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyData));
 
 			this.pubKey = await crypto.subtle.importKey(
 				'jwk',
@@ -132,7 +133,7 @@ module.exports = class RemoteHost {
 		//Get host state
 		if('state' in message.data === false) {
 
-			console.log("Announce from "
+			logger.log('info', "Announce from "
 				+ this.id
 				+ " rejected due to invalid signature.");
 
@@ -244,10 +245,10 @@ module.exports = class RemoteHost {
 				signatureBuffer,
 				dataBuffer);
 
-			console.log("Signature verify result: " + result);
+			logger.log('info', "Signature verify result: " + result);
 
 		} else {
-			console.log('missing signature inside message: ' + JSON.stringify(message));
+			logger.log('info', 'missing signature inside message: ' + JSON.stringify(message));
 		}
 
 		return result;

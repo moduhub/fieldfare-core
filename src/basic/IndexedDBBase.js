@@ -1,4 +1,6 @@
 
+import {logger} from '../basic/Log'
+
 const dbname = 'mhlib';
 const dbversion = 1;
 
@@ -8,7 +10,7 @@ module.exports = class IndexedDBBase {
 
         if(IndexedDBBase.stores === null
         || IndexedDBBase.stores === undefined) {
-            console.log("IndexedDBBase.stores = new Set();");
+            logger.log('info', "IndexedDBBase.stores = new Set();");
             IndexedDBBase.stores = new Set();
         }
 
@@ -24,7 +26,7 @@ module.exports = class IndexedDBBase {
             request.onupgradeneeded = IndexedDBBase.upgrade;
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
-            request.onblocked = () => console.warn('pending till unblocked');
+            request.onblocked = () => logger.log('warning', 'pending till unblocked');
         });
     }
 
@@ -32,14 +34,14 @@ module.exports = class IndexedDBBase {
 
         //indexedDB.deleteDatabase(this.dbname);
 
-        console.log("Upgrading DB: " + dbname + ' Version: ' + dbversion);
+        logger.log('info', "Upgrading DB: " + dbname + ' Version: ' + dbversion);
 
         var db = event.target.result;
 
         // Stops Store Init
         for(const storeName of IndexedDBBase.stores) {
 
-            console.log("Creating store: " + storeName);
+            logger.log('info', "Creating store: " + storeName);
             db.createObjectStore(storeName);
 
         }
