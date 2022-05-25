@@ -4,6 +4,7 @@ import {initHost, initEnvironment, initWebports} from './cliCommon';
 import winston from 'winston';
 import {logger} from '../basic/Log'
 import chalk from 'chalk';
+import {dashboard} from './dashboard';
 
 function parseArgumentsIntoOptions(rawArgs) {
     const args = arg(
@@ -37,8 +38,16 @@ export async function main(args) {
     const env = await initEnvironment();
     await initWebports(env);
 
-    if(options.dashboard === false
-    && options.daemon === false) {
+    if(options.dashboard) {
+
+        try {
+            dashboard(env);
+        } catch (error) {
+            logger.error('Failed to start dashboard');
+        }
+
+    } else
+    if(options.daemon === false) {
         logger.add(new winston.transports.Console({
            format: winston.format.simple(),
         }));

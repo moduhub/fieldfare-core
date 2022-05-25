@@ -31,15 +31,22 @@ module.exports = class Environment extends VersionedData {
 
 		//report periodically
 		// setInterval(() => {
-		// 	logger.log('info', "REPORT: Active hosts of env " + this.uuid + ": " + this.activeHosts.size);
-		// 	for(const [id, info] of this.activeHosts) {
-		// 		const timeDiff = Date.now() - info.lastEnvUpdate;
-		// 		logger.log('info', "HOST: " + id
-		// 			+ 'at version ' + info.latestVersion
-		// 			+ ' updated ' + timeDiff + 'ms ago.');
-		// 	}
+		//	logger.info(this.report());
 		// }, 10000);
 
+	}
+
+	report() {
+
+		var content = 'Active hosts: ' + this.activeHosts.size + '\n';
+
+		for(const [id, info] of this.activeHosts) {
+			const timeDiff = Date.now() - info.lastEnvUpdate;
+			content += "HOST: " + id
+				+ 'at version ' + info.latestVersion
+				+ ' updated ' + timeDiff + 'ms ago.';
+		}
+		return content;
 	}
 
 	async init(uuid) {
