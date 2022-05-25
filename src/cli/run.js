@@ -2,6 +2,7 @@
 import {initHost, initEnvironment, initWebports} from './cliCommon';
 
 import winston from 'winston';
+import {logger} from '../basic/Log'
 
 export async function main(args) {
 
