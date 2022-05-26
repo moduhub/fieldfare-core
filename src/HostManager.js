@@ -104,12 +104,11 @@ module.exports = class HostManager {
 
 	addEnvironment(env) {
 
-		this.environments.add(env);
-
-		// logger.log('info', "Registered enviroments: ");
-
-		for(const env of this.environments) {
-			logger.log('info', env.uuid);
+		if(this.environments.has(env) === false) {
+			this.environments.add(env);
+			logger.log('info', 'New env registered: ' + env.uuid);
+		} else {
+			logger.warn('Env already registered ' + env.uuid);
 		}
 
 	}
@@ -154,7 +153,9 @@ module.exports = class HostManager {
 		return hostState;
 	}
 
-	registerRemoteHost(hostid) {
+	async registerRemoteHost(hostid) {
+
+		logger.log('info', 'registerRemoteHost');
 
 		var remoteHost = this.remoteHosts.get(hostid);
 
@@ -163,6 +164,15 @@ module.exports = class HostManager {
 
 			remoteHost = new RemoteHost(hostid);
 			this.remoteHosts.set(hostid, remoteHost);
+
+			for(const env of this.environments) {
+				const servicesList = await env.getServicesForHost(hostid);
+				if(servicesList.length > 0) {
+					await remoteHost.updateServices(servicesList);
+				} else {
+					logger.log('info', 'no services assigned to host ' + hostid);
+				}
+			}
 
 		}
 
@@ -361,11 +371,11 @@ module.exports = class HostManager {
 
 		this.bootChannels.add(channel);
 
-		channel.onMessageReceived = (message) => {
+		channel.onMessageReceived = async (message) => {
 
 			// logger.log('info', "Received message from boot channel: " + JSON.stringify(message));
 
-			if(message.service == 'announce') {
+			if(message.service === 'announce') {
 
 //				logger.log('info', "message.source: " + message.source);
 //				logger.log('info', "message.destination: " + message.destination);
@@ -381,11 +391,11 @@ module.exports = class HostManager {
 					var remoteHost = this.remoteHosts.get(remoteId);
 
 					//register channel to remote host
-					if(remoteHost == undefined) {
+					if(remoteHost === undefined) {
 
 						// logger.log('info', "Host was not registered. Creating new... ");
 
-						remoteHost = this.registerRemoteHost(remoteId);
+						remoteHost = await this.registerRemoteHost(remoteId);
 
 					}
 

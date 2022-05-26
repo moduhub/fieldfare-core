@@ -1,83 +1,26 @@
 
-const Utils = require('../basic/Utils.js');
-
 import {logger} from '../basic/Log'
 
-const dataTypes = {
-    'list': require('../structures/HashLinkedList.js'),
-    'set': require('../structures/HashLinkedTree.js'),
-    'map': require('../structures/HashLinkedTree.js'),
-    'obj': Object
-};
+import {ServiceDefinition} from './ServiceDefinition';
 
-module.exports = class Service {
+
+module.exports = class LocalService {
 
     constructor() {
 
         this.methods = new Map();
-        this.data = new Object;
-
-    }
-
-    static validate(definition) {
-
-        // logger.log('info', "validate:" + JSON.stringify(definition));
-
-        if('uuid' in definition === false) {
-            throw 'missing uuid in service definition';
-        }
-
-        if(Utils.isUUID(definition.uuid) == false) {
-            throw 'service definition uuid invalid';
-        }
-
-        if('name' in definition === false) {
-            throw 'missing name in ervice definition';
-        }
-
-        if(definition.name instanceof String === false
-        && typeof definition.name !== 'string') {
-            throw 'service definition name is not a string';
-        }
-
-        //Do more verifications here
-
-    }
-
-    static customDataType(name, type) {
-
-        if(name in dataTypes) {
-            throw Error('customDataType name already used');
-        }
-
-        dataTypes[name] = type;
 
     }
 
     static fromDefinition(definition) {
 
-        var newService = new Service();
+        var newService = new LocalService();
 
         newService.definition = definition;
 
+        ServiceDefinition.buildData(definition, newService);
+
         logger.log('info', 'definition.data: ' + JSON.stringify(definition));
-
-        for(const entry of definition.data) {
-
-            logger.log('info', "Processing entry " + JSON.stringify(entry));
-
-            const typeClass = dataTypes[entry.type];
-
-            if(typeClass) {
-                var newEntry = new typeClass;
-            } else {
-                throw Error('unknown service data type: ' + entry.type);
-            }
-
-            newEntry.name = entry.name; //is this a bad practice?
-            newService.data[entry.name] = newEntry;
-
-        }
 
         return newService;
     }

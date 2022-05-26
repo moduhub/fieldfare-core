@@ -7,6 +7,8 @@
 const Message = require('./Message.js');
 const Utils = require('./basic/Utils.js');
 
+import {RemoteService} from './env/RemoteService'
+
 import { logger } from './basic/Log'
 
 module.exports = class RemoteHost {
@@ -130,19 +132,7 @@ module.exports = class RemoteHost {
 			throw Error('invalid message signature');
 		}
 
-		//Get host state
-		if('state' in message.data === false) {
-			throw Error('malformed announce packet, missing state data');
-		}
-
-		if(message.data.state instanceof Object === false) {
-			throw Error('Message state object is not an object');
-		}
-
-		for(const prop in message.data.state) {
-			logger.log('info', prop + ' state update:' + message.data.state[prop]);
-		}
-
+		//Env update
 		if('env' in message.data) {
 
 			for(const uuid in message.data.env) {
@@ -166,6 +156,39 @@ module.exports = class RemoteHost {
 			}
 		}
 
+		//Get host state
+		if('state' in message.data === false) {
+			throw Error('malformed announce packet, missing state data');
+		}
+
+		if(message.data.state instanceof Object === false) {
+			throw Error('Message state object is not an object');
+		}
+
+		for(const prop in message.data.state) {
+			const service = this.services.get(prop);
+			if(service) {
+				service.setState(message.data.state[prop]);
+			} else {
+				logger.info('Message service in state not found in env: ' + prop);
+			}
+		}
+
+	}
+
+	updateServices(serviceList) {
+
+		for(const definition of serviceList) {
+			logger.info('definition: ' + JSON.stringify(definition));
+			if(this.services.has(definition.uuid) === false) {
+				const newService = RemoteService.fromDefinition(definition);
+				this.services.set(definition.uuid, newService);
+				logger.info('new service: ' + JSON.stringify(this.services.get(definition.uuid)));
+			}
+		}
+
+		logger.log('info', this.id + ' services update:' + JSON.stringify(this.services));
+
 	}
 
 	async updateEnvironment(uuid, version) {
@@ -182,17 +205,9 @@ module.exports = class RemoteHost {
 
 				await env.update(version, this.id);
 
-				//Update host listed services
-				const serviceList = await env.getServicesForHost(this.id);
+				const updatedServicesList = await env.getServicesForHost(this.id);
 
-				for(const definition of serviceList) {
-					if(this.services.has(definition.uuid) == false) {
-						const newService = RemoteService.setup(definition);
-						this.services.set(definition.uuid, newService);
-					}
-				}
-
-				logger.log('info', this.id + ' services update:' + JSON.stringify(this.services));
+				await this.updateServices(updatedServicesList);
 
 			} catch (error) {
 				logger.log('error', "Failed to update environment to version " + version
@@ -311,7 +326,9 @@ module.exports = class RemoteHost {
 
 	async accessService(uuid) {
 
-		throw Error('RemoteHost.accessService method still in development');
+		logger.info('accessService('+uuid+'): ' + JSON.stringify(this.services.get(uuid)));
+
+		return this.services.get(uuid);
 
 	}
 

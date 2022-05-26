@@ -10,7 +10,7 @@ const VersionStatement = require('./versioning/VersionStatement.js');
 
 const HashLinkedTree = require('./structures/HashLinkedTree.js');
 
-const LocalService = require('./env/LocalService.js');
+import {ServiceDefinition} from './env/ServiceDefinition';
 
 import {logger} from './basic/Log'
 
@@ -162,7 +162,6 @@ module.exports = class Environment extends VersionedData {
 	}
 
 	numActiveProviders(serviceUUID) {
-
 		var count = 0;
 		for (const [id, info] of this.activeHosts) {
 			const remoteHost = info.remoteHostObj;
@@ -179,7 +178,7 @@ module.exports = class Environment extends VersionedData {
 
 		for (const [id, info] of this.activeHosts) {
 			const remoteHost = info.remoteHostObj;
-			if(remoteHost.hasService(serviceUUID)) {
+			if(remoteHost.services.has(serviceUUID)) {
 				activeProviders.push(remoteHost);
 				if(howMany !== -1) {
 					if(activeProviders.size >= howMany) {
@@ -223,7 +222,7 @@ module.exports = class Environment extends VersionedData {
 
 		for await(const key of services) {
 			const definition = await host.getResourceObject(key);
-			const uuid = definition.uuid;
+			// logger.info('iteration - definition: ' + JSON.stringify(definition));
 			const providerListName = definition.uuid + '.providers';
 			const providers = this.elements.get(providerListName);
 			if(await providers.has(hostid)) {
@@ -231,6 +230,7 @@ module.exports = class Environment extends VersionedData {
 			}
 		}
 
+		// logger.info('getServicesForHost return with list: ' + JSON.stringify(list));
 		return list;
 	}
 
@@ -242,7 +242,7 @@ module.exports = class Environment extends VersionedData {
 
 		const definition = params.definition;
 
-		LocalService.validate(definition);
+		ServiceDefinition.validate(definition);
 
 		const services = this.elements.get('services');
 

@@ -19,7 +19,7 @@ async function update() {
     for(const [id, info] of env.activeHosts) {
         const timeDiff = Date.now() - info.lastEnvUpdate;
         hostsListContent += ">>" + id
-            + ' (updated ' + timeDiff + 'ms ago)';
+            + ' (updated ' + timeDiff + 'ms ago)\n';
     }
 
     activeHostsList.setContent(hostsListContent);
