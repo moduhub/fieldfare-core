@@ -164,58 +164,21 @@ module.exports = class HostManager {
 			remoteHost = new RemoteHost(hostid);
 			this.remoteHosts.set(hostid, remoteHost);
 
-			//Assign callbacks
-			remoteHost.onResponseReceived = (response) => {
-
-				var assignedRequest = this.requests.get(response.data.hash);
-
-				//logger.log('info', "remoteHost.onResponseReceived(" + JSON.stringify(response));
-
-				if(assignedRequest) {
-
-					//logger.log('info', "assignedRequest " + JSON.stringify(assignedRequest));
-
-					if(response.data.error) {
-						assignedRequest.reject(response.data.error);
-					} else {
-						assignedRequest.resolve(response);
-					}
-
-				}
-			};
-
-			remoteHost.onEnvironmentUpdate = async (uuid, version) => {
-
-				for(const env of this.environments) {
-
-					if(env.uuid === uuid) {
-
-						env.updateActiveHost(remoteHost, version);
-
-						if(env.version !== version) {
-
-							logger.log('info', "remoteHost: " + remoteHost.id + " updated environment to version " + version);
-
-							try {
-
-								await env.update(version, remoteHost.id);
-
-							} catch (error) {
-								logger.log('error', "Failed to update environment to version " + version
-								+ ": " + error);
-								var iError = error.cause;
-								while(iError) {
-									logger.log('error', "Cause: " + iError.stack);
-									iError = iError.cause;
-								}
-							}
-						}
-					}
-				}
-			}
 		}
 
 		return remoteHost;
+	}
+
+	getEnvironment(uuid) {
+
+		for(const env of this.environments) {
+
+			if(env.uuid === uuid) {
+				return env;
+			}
+		}
+
+		return null;
 	}
 
 	async storeResourceObject(object) {

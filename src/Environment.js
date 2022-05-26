@@ -161,19 +161,12 @@ module.exports = class Environment extends VersionedData {
 		});
 	}
 
-	updateProviderState(providerID, stateHash) {
-
-		//provider state is a versioned state structure
-		var currentStateObjectHash = this.getCurrentHostState(providerID);
-
-	}
-
 	numActiveProviders(serviceUUID) {
 
 		var count = 0;
 		for (const [id, info] of this.activeHosts) {
 			const remoteHost = info.remoteHostObj;
-			if(remoteHost.hasService(serviceUUID)) {
+			if(remoteHost.services.has(serviceUUID)) {
 				count++;
 			}
 		}
@@ -220,6 +213,25 @@ module.exports = class Environment extends VersionedData {
 		//throw Error('Unable to find a provider for service ' + serviceUUID);
 
 		return newProviders;
+	}
+
+	async getServicesForHost(hostid) {
+
+		var list = [];
+
+		const services = this.elements.get('services');
+
+		for await(const key of services) {
+			const definition = await host.getResourceObject(key);
+			const uuid = definition.uuid;
+			const providerListName = definition.uuid + '.providers';
+			const providers = this.elements.get(providerListName);
+			if(await providers.has(hostid)) {
+				list.push(definition);
+			}
+		}
+
+		return list;
 	}
 
 	async applyAddService(issuer, params, merge=false) {

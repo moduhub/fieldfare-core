@@ -10,7 +10,8 @@ module.exports = class ResourcesManager {
     }
 
     static validateKey(key) {
-        if(Utils.isBase64(key) == false) {
+        if(Utils.isBase64(key) == false
+        || key.length !== 44) {
             throw Error('Invalid resource key: ' + JSON.stringify(key));
         }
     }

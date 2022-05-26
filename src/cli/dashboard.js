@@ -30,7 +30,9 @@ async function update() {
 
     for await(const key of services) {
         const definition = await host.getResourceObject(key);
-        servicesListContent += definition.name + '\n';
+        servicesListContent += definition.name
+            + '(' + env.numActiveProviders(definition.uuid) + ' active providers)'
+            + '\n';
     }
 
     servicesList.setContent(servicesListContent);
@@ -50,7 +52,7 @@ export function dashboard(pEnv) {
         smartCSR: true
     });
 
-    screen.title = 'Environment ' + env.uuid;
+    screen.title = 'mhHost-' + host.id.substring(0,8);
 
     // Create a box perfectly centered horizontally and vertically.
     activeHostsList = blessed.box({

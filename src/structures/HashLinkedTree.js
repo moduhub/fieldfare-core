@@ -233,7 +233,7 @@ class TreeContainer {
 
 module.exports = class HashLinkedTree {
 
-	constructor(degree, rootHash) {
+	constructor(degree=5, rootHash) {
 
 		if(degree <= 0
 		|| degree > 10
@@ -257,9 +257,7 @@ module.exports = class HashLinkedTree {
 
 		} else {
 
-			if(Utils.isBase64(state) === false) {
-				throw Error('root is not base64');
-			}
+			ResourcesManager.validateKey(state);
 
 			//TODO: root element structure validation?
 

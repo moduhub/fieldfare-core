@@ -32,6 +32,8 @@ function parseArgumentsIntoOptions(rawArgs) {
 
 export async function main(args) {
 
+    logger.log('info', "===== System started at " + Date.now());
+
     const options = parseArgumentsIntoOptions(args);
 
     await initHost();
@@ -69,7 +71,7 @@ export async function main(args) {
                 throw Error('File not found');
             }
         } catch (error) {
-            console.log(chalk.red("Failed to setup service module at \'" + options.path + '\': ' + error));
+            logger.error(chalk.red("Failed to setup service module at \'" + options.path + '\': ' + error.stack));
             process.exit(1);
         }
     } else {

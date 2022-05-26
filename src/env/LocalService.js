@@ -6,6 +6,7 @@ import {logger} from '../basic/Log'
 const dataTypes = {
     'list': require('../structures/HashLinkedList.js'),
     'set': require('../structures/HashLinkedTree.js'),
+    'map': require('../structures/HashLinkedTree.js'),
     'obj': Object
 };
 
@@ -123,7 +124,7 @@ module.exports = class Service {
 
     assignMethod(name, callback) {
 
-        this.methods.add(callback);
+        this.methods.set(name, callback);
 
     }
 

@@ -94,7 +94,7 @@ module.exports = class RemoteHost {
 
 		} catch(error) {
 			logger.log('info', "Message parse failed: " + error);
-			logger.error('info', "Message parse failed: " + error.stack);
+			logger.error("Message parse failed: " + error.stack);
 		}
 	}
 
@@ -132,22 +132,15 @@ module.exports = class RemoteHost {
 
 		//Get host state
 		if('state' in message.data === false) {
-
-			logger.log('info', "Announce from "
-				+ this.id
-				+ " rejected due to invalid signature.");
-
 			throw Error('malformed announce packet, missing state data');
 		}
 
-		if(this.state !== message.data.state) {
+		if(message.data.state instanceof Object === false) {
+			throw Error('Message state object is not an object');
+		}
 
-			this.state = message.data.state;
-
-			if(this.onStateUpdate) {
-				this.onStateUpdate(message.data.state);
-			}
-
+		for(const prop in message.data.state) {
+			logger.log('info', prop + ' state update:' + message.data.state[prop]);
 		}
 
 		if('env' in message.data) {
@@ -164,12 +157,74 @@ module.exports = class RemoteHost {
 					throw Error('Invalid env version inside announce');
 				}
 
-				if(this.onEnvironmentUpdate) {
-					this.onEnvironmentUpdate(uuid, version);
+				try {
+					await this.updateEnvironment(uuid, version);
+				} catch(error) {
+					logger.error('Environment update failed: ' + error);
+				}
+
+			}
+		}
+
+	}
+
+	async updateEnvironment(uuid, version) {
+
+		const env = host.getEnvironment(uuid);
+
+		env.updateActiveHost(this, version);
+
+		if(env.version !== version) {
+
+			logger.log('info', "remoteHost: " + this.id + " updated environment to version " + version);
+
+			try {
+
+				await env.update(version, this.id);
+
+				//Update host listed services
+				const serviceList = await env.getServicesForHost(this.id);
+
+				for(const definition of serviceList) {
+					if(this.services.has(definition.uuid) == false) {
+						const newService = RemoteService.setup(definition);
+						this.services.set(definition.uuid, newService);
+					}
+				}
+
+				logger.log('info', this.id + ' services update:' + JSON.stringify(this.services));
+
+			} catch (error) {
+				logger.log('error', "Failed to update environment to version " + version
+					+ ": " + error);
+				var iError = error.cause;
+				while(iError) {
+					logger.log('error', "Cause: " + iError.stack);
+					iError = iError.cause;
 				}
 			}
 		}
 
+	}
+
+	//Assign callbacks
+	onResponseReceived(response) {
+
+		var assignedRequest = host.requests.get(response.data.hash);
+
+		//logger.log('info', "remoteHost.onResponseReceived(" + JSON.stringify(response));
+
+		if(assignedRequest) {
+
+			//logger.log('info', "assignedRequest " + JSON.stringify(assignedRequest));
+
+			if(response.data.error) {
+				assignedRequest.reject(response.data.error);
+			} else {
+				assignedRequest.resolve(response);
+			}
+
+		}
 	}
 
 	async treatResourceMessage(message, channel) {
