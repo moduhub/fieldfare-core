@@ -1,5 +1,6 @@
 
 import {ServiceDefinition} from './ServiceDefinition';
+import ResourcesManager from '../resources/ResourcesManager';
 import {Request} from '../Request';
 import {logger} from '../basic/Log';
 import chalk from 'chalk';
@@ -33,6 +34,10 @@ export class RemoteService {
                 request.setDestinationAddress(newService.owner);
 
                 await host.signMessage(request);
+
+                const requestKey = await ResourcesManager.generateKeyForObject(request.data);
+
+                newService.owner.pendingRequests.set(requestKey, request);
 
                 newService.owner.send(request);
 

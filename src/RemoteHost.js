@@ -11,6 +11,8 @@ import {RemoteService} from './env/RemoteService'
 
 import { logger } from './basic/Log'
 
+import chalk from 'chalk';
+
 module.exports = class RemoteHost {
 
 	constructor(id) {
@@ -18,6 +20,7 @@ module.exports = class RemoteHost {
 		this.channels = new Set();
 		this.definedServices = new Map();
 		this.implementedServices = new Map();
+		this.pendingRequests = new Map();
 	}
 
 	send(message) {
@@ -77,6 +80,26 @@ module.exports = class RemoteHost {
 
 				//logger.log('info', "treating resource message (request/response)");
 				await this.treatResourceMessage(message, channel);
+			} else
+			if(message.service == 'response') {
+
+				if('hash' in message.data === false) {
+					throw Error('Malformed reponse data');
+				}
+
+				console.log(chalk.red('Reponse received: ' + message.data.hash));
+
+				if(this.pendingRequests.has(message.data.hash)) {
+
+					const request = this.pendingRequests.get(message.data.hash);
+
+					console.log(chalk.green('Reponse resolved ' + message.data.hash));
+
+					request.resolve(message);
+
+				} else {
+					throw Error('Response does not have an assigend request');
+				}
 
 			} else {
 

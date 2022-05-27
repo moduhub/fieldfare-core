@@ -103,7 +103,7 @@ module.exports = class LocalService {
 
                 try {
 
-                    responseData.result = await callback(remoteHost, payload);
+                    responseData.result = await callback(remoteHost, payload.params);
 
                 } catch (error) {
                     responseData.status = 'error';
@@ -120,12 +120,12 @@ module.exports = class LocalService {
 
         }
 
-        response = new Message('response', {
+        const response = new Message('response', {
             hash: requestKey,
             data: responseData
         });
 
-        await remoteHost.send(responseData);
+        await remoteHost.send(response);
 
     }
 
