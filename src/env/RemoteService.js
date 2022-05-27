@@ -50,8 +50,7 @@ export class RemoteService {
 
     setState(state) {
 
-       logger.log('info', 'SERVICE: ' + this.uuid + ' set state:' + JSON.stringify(state));
-
+       logger.log('info', 'SERVICE: ' + this.definition.uuid + ' set state:' + JSON.stringify(state));
 
        for(const prop in state) {
 

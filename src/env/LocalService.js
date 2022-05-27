@@ -3,12 +3,17 @@ import {logger} from '../basic/Log'
 
 import {ServiceDefinition} from './ServiceDefinition';
 
+import ResourcesManager from '../resources/ResourcesManager';
+
 
 module.exports = class LocalService {
 
     constructor() {
 
         this.methods = new Map();
+
+        this.numRequests = 0;
+        this.numErrors = 0;
 
     }
 
@@ -71,7 +76,17 @@ module.exports = class LocalService {
 
     }
 
-    treatRequest(remoteHost, payload) {
+    async treatRequest(remoteHost, request) {
+
+        this.numRequests++;
+
+        const payload = request.data;
+
+        const requestKey = await ResourcesManager.generateKeyForObject(payload);
+
+        var responseData = {
+            status: 'done'
+        };
 
         logger.log('info', 'Service UUID: ' + this.definition.uuid
             + ' received payload:' + JSON.stringify(payload));
@@ -83,11 +98,32 @@ module.exports = class LocalService {
             if(callback
             && callback !== null
             && callback !== undefined) {
-                callback(remoteHost, payload);
+
+                try {
+
+                    responseData.result = await callback(remoteHost, payload);
+
+                } catch (error) {
+                    responseData.status = 'error';
+                    responseData.error = error;
+                    this.numErrors++;
+                }
+
             } else {
-                throw Error('undefined method \"'+prop+'\" requested from service ' + this.uuid);
+                responseData.status = 'error';
+                responseData.error = ('undefined method ' + prop);
+                this.numErrors++;
+                break;
             }
+
         }
+
+        response = new Message('response', {
+            hash: requestKey,
+            data: responseData
+        });
+
+        await remoteHost.send(responseData);
 
     }
 

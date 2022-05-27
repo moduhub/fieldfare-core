@@ -91,7 +91,7 @@ module.exports = class RemoteHost {
 					throw Error('invalid message signature');
 				}
 
-				localService.treatRequest(remoteHost, message.data);
+				await localService.treatRequest(this, message);
 
 			}
 
