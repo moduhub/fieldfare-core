@@ -4,7 +4,8 @@ import {logger} from '../basic/Log'
 
 var screen;
 var activeHostsList;
-var servicesList;
+var envServicesList;
+var localServicesList;
 
 var count = 0;
 var env;
@@ -24,18 +25,29 @@ async function update() {
 
     activeHostsList.setContent(hostsListContent);
 
-    //Services List
-    var servicesListContent = 'Services: \n';
-    const services = env.elements.get('services');
+    //Env Services List
+    var envServicesListContent = 'Environment Services: \n';
+    const envServices = env.elements.get('services');
 
-    for await(const key of services) {
+    for await(const key of envServices) {
         const definition = await host.getResourceObject(key);
-        servicesListContent += definition.name
+        envServicesListContent += definition.name
             + '(' + env.numActiveProviders(definition.uuid) + ' active providers)'
             + '\n';
     }
 
-    servicesList.setContent(servicesListContent);
+    envServicesList.setContent(envServicesListContent);
+
+    //Local services status
+    var localServicesListContent = 'Local Services: \n';
+
+    for(const [uuid, service] of host.services) {
+        localServicesListContent += service.definition.name;
+        localServicesListContent += '(' + service.numRequests + ' requests/'
+            + service.numErrors + ' errors)';
+    }
+
+    localServicesList.setContent(localServicesListContent);
 
     // Render the screen.
     screen.render();
@@ -77,8 +89,20 @@ export function dashboard(pEnv) {
       // }
     });
 
-    servicesList = blessed.box({
+    envServicesList = blessed.box({
         top: '0',
+        left: '60%',
+        width: '40%',
+        height: '50%',
+        content: 'Services',
+        tags: true,
+        border: {
+            type: 'line'
+        }
+    });
+
+    localServicesList = blessed.box({
+        top: '50%',
         left: '60%',
         width: '40%',
         height: '50%',
@@ -91,7 +115,8 @@ export function dashboard(pEnv) {
 
     // Append our box to the screen.
     screen.append(activeHostsList);
-    screen.append(servicesList);
+    screen.append(envServicesList);
+    screen.append(localServicesList);
 
     // Quit on Escape, q, or Control-C.
     screen.key(['escape', 'q', 'C-c'], function(ch, key) {
