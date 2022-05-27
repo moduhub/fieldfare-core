@@ -6,7 +6,7 @@
 
 const Utils = require('./basic/Utils.js');
 
-const Message = require('./Message.js');
+import {Message} from './Message';
 const RemoteHost = require('./RemoteHost.js');
 const Request = require('./Request.js');
 const LocalService = require('./env/LocalService.js');

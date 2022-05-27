@@ -3,6 +3,8 @@ import {logger} from '../basic/Log'
 
 import {ServiceDefinition} from './ServiceDefinition';
 
+import {Message} from '../Message';
+
 import ResourcesManager from '../resources/ResourcesManager';
 
 

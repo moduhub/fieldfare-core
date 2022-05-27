@@ -21,7 +21,7 @@ const SERVICE_FIELD_ID_ANNOUNCE_ID = 1;
 const SERVICE_FIELD_ID_ANNOUNCE_STATE = 2;
 const SERVICE_FIELD_ID_ANNOUNCE_ENV = 3;
 
-module.exports = class Message {
+export class Message {
 
 	constructor(service, data) {
 

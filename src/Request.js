@@ -4,7 +4,8 @@
  * and open the template in the editor.
  */
 
-const Message = require('./Message.js');
+import {Message} from './Message';
+
 
 export class Request extends Message {
 
