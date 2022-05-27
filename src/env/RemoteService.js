@@ -32,6 +32,8 @@ export class RemoteService {
 
                 request.setDestinationAddress(newService.owner);
 
+                await host.signMessage(request);
+
                 newService.owner.send(request);
 
                 const response = await request.complete();

@@ -167,11 +167,11 @@ module.exports = class RemoteHost {
 		}
 
 		for(const prop in message.data.state) {
-			const service = this.services.get(prop);
+			const service = this.implementedServices.get(prop);
 			if(service) {
 				service.setState(message.data.state[prop]);
 			} else {
-				logger.info('Message service in state not found in env: ' + prop);
+				logger.info('Service not implemented: ' + prop);
 			}
 		}
 
@@ -182,7 +182,9 @@ module.exports = class RemoteHost {
 		for(const definition of serviceList) {
 			logger.info('definition: ' + JSON.stringify(definition));
 			if(this.definedServices.has(definition.uuid) === false) {
-
+				this.definedServices.set(definition.uuid, definition);
+				logger.info('New service defined for host ' + this.id
+					+ ': serviceUUID: ' + definition.uuid);
 			}
 		}
 
@@ -325,23 +327,27 @@ module.exports = class RemoteHost {
 
 	async accessService(uuid) {
 
-		logger.info('accessService('+uuid+'): ' + JSON.stringify(this.services.get(uuid)));
-
 		if(this.definedServices.has(uuid) === false) {
 			throw Error('Service '+ uuid +' is not defined for this host');
 		}
 
 		if(this.implementedServices.has(uuid) === false) {
 			try {
+				const definition = this.definedServices.get(uuid);
 				const newService = RemoteService.fromDefinition(definition);
 				newService.owner = this;
 				this.implementedServices.set(definition.uuid, newService);
-				logger.info('Implemented new RemoteService: ' + uuid + ' for RemoteHost ' + this.definition.uuid);
+				logger.info('Implemented new RemoteService ' + uuid + ' for RemoteHost ' + this.id);
 			} catch(error) {
-				throw Error("Failed to setup RemoteService: " + error);
+				throw Error('Failed to setup RemoteService ' + uuid, {cause: error});
 			}
 		}
-		return this.implementedServices.get(uuid);
+
+		const service = this.implementedServices.get(uuid);
+
+		logger.info('accessService('+uuid+') result: ' + JSON.stringify(service));
+
+		return service;
 	}
 
 };

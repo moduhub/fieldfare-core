@@ -165,7 +165,7 @@ module.exports = class Environment extends VersionedData {
 		var count = 0;
 		for (const [id, info] of this.activeHosts) {
 			const remoteHost = info.remoteHostObj;
-			if(remoteHost.services.has(serviceUUID)) {
+			if(remoteHost.definedServices.has(serviceUUID)) {
 				count++;
 			}
 		}
