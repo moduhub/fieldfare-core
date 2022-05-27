@@ -6,7 +6,7 @@
 
 const Message = require('./Message.js');
 
-module.exports = class Request extends Message {
+export class Request extends Message {
 
 	constructor(service, timeout, data) {
 

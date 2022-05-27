@@ -16,7 +16,8 @@ module.exports = class RemoteHost {
 	constructor(id) {
 		this.id = id;
 		this.channels = new Set();
-		this.services = new Map();
+		this.definedServices = new Map();
+		this.implementedServices = new Map();
 	}
 
 	send(message) {
@@ -180,10 +181,8 @@ module.exports = class RemoteHost {
 
 		for(const definition of serviceList) {
 			logger.info('definition: ' + JSON.stringify(definition));
-			if(this.services.has(definition.uuid) === false) {
-				const newService = RemoteService.fromDefinition(definition);
-				this.services.set(definition.uuid, newService);
-				logger.info('new service: ' + JSON.stringify(this.services.get(definition.uuid)));
+			if(this.definedServices.has(definition.uuid) === false) {
+
 			}
 		}
 
@@ -328,8 +327,21 @@ module.exports = class RemoteHost {
 
 		logger.info('accessService('+uuid+'): ' + JSON.stringify(this.services.get(uuid)));
 
-		return this.services.get(uuid);
+		if(this.definedServices.has(uuid) === false) {
+			throw Error('Service '+ uuid +' is not defined for this host');
+		}
 
+		if(this.implementedServices.has(uuid) === false) {
+			try {
+				const newService = RemoteService.fromDefinition(definition);
+				newService.owner = this;
+				this.implementedServices.set(definition.uuid, newService);
+				logger.info('Implemented new RemoteService: ' + uuid + ' for RemoteHost ' + this.definition.uuid);
+			} catch(error) {
+				throw Error("Failed to setup RemoteService: " + error);
+			}
+		}
+		return this.implementedServices.get(uuid);
 	}
 
 };
