@@ -5,12 +5,14 @@
  */
 
 const dgram = require('dgram');
-const Transceiver = require('./Transceiver.js');
-const Utils = require('./basic/Utils.js');
 
-import { logger } from './basic/Log';
+import {
+	Transceiver,
+	Utils,
+	logger
+} from 'mhlib';
 
-module.exports = class UDPTransceiver extends Transceiver {
+export class UDPTransceiver extends Transceiver {
 
 	constructor(port) {
 		super();

@@ -4,9 +4,7 @@
  * and open the template in the editor.
  */
 
-const Utils = require('./basic/Utils.js');
-
-import {logger} from './basic/Log'
+import {Utils, logger} from 'mhlib';
 
 const SERVICE_ID_ANNOUNCE = 1;
 const SERVICE_ID_RESOURCE = 2;

@@ -4,16 +4,14 @@
  * and open the template in the editor.
  */
 
-const Message = require('./Message.js');
-const Utils = require('./basic/Utils.js');
+import {
+	RemoteService,
+	Message,
+	Utils,
+	logger
+} from 'mhlib';
 
-import {RemoteService} from './env/RemoteService'
-
-import { logger } from './basic/Log'
-
-import chalk from 'chalk';
-
-module.exports = class RemoteHost {
+export class RemoteHost {
 
 	constructor(id) {
 		this.id = id;
@@ -87,13 +85,9 @@ module.exports = class RemoteHost {
 					throw Error('Malformed reponse data');
 				}
 
-				console.log(chalk.red('Reponse received: ' + message.data.hash));
-
 				if(this.pendingRequests.has(message.data.hash)) {
 
 					const request = this.pendingRequests.get(message.data.hash);
-
-					console.log(chalk.green('Reponse resolved ' + message.data.hash));
 
 					request.resolve(message);
 

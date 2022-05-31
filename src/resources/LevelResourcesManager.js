@@ -1,12 +1,12 @@
 
 const { Level } = require('level');
 
-const ResourcesManager = require('./ResourcesManager.js');
+import {
+    ResourcesManager,
+    logger
+} from 'mhlib';
 
-import { logger } from '../basic/Log'
-
-
-module.exports = class LevelResourcesManager extends ResourcesManager {
+export class LevelResourcesManager extends ResourcesManager {
 
     constructor() {
         super();

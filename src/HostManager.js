@@ -4,18 +4,17 @@
  * and open the template in the editor.
  */
 
-const Utils = require('./basic/Utils.js');
+import {
+	Utils,
+	Message,
+	Request,
+	RemoteHost,
+	LocalService,
+	ResourcesManager,
+	logger
+} from 'mhlib';
 
-import {Message} from './Message';
-const RemoteHost = require('./RemoteHost.js');
-const Request = require('./Request.js');
-const LocalService = require('./env/LocalService.js');
-
-const ResourcesManager = require('./resources/ResourcesManager.js');
-
-import {logger} from './basic/Log';
-
-module.exports = class HostManager {
+export class HostManager {
 
 	constructor() {
 

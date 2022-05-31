@@ -4,10 +4,9 @@
  * and open the template in the editor.
  */
 
-import {logger} from '../basic/Log'
+import {logger} from 'mhlib';
 
-
-module.exports = class VersionStatement {
+export class VersionStatement {
 
 	constructor() {
 		this.signature = '';

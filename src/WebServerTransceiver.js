@@ -4,12 +4,16 @@
  * and open the template in the editor.
  */
 
-const Transceiver = require('./Transceiver.js');
-const WebSocketServer  = require('websocket').server;
-const http = require('http');
-import {logger} from './basic/Log'
+ const WebSocketServer = require('websocket').server;
+ const http = require('http');
 
-module.exports = class WebServerTransceiver extends Transceiver {
+import {
+	Transceiver,
+	logger
+} from 'mlhib';
+
+
+export class WebServerTransceiver extends Transceiver {
 
 	constructor(port) {
 		super();

@@ -4,11 +4,12 @@
  * and open the template in the editor.
  */
 
-const Transceiver = require('./Transceiver.js');
+import {
+	Transceiver,
+	logger
+} from 'mhlib';
 
-import {logger} from './basic/Log'
-
-module.exports = class WebClientTransceiver extends Transceiver {
+export class WebClientTransceiver extends Transceiver {
 
 	constructor() {
 		super();

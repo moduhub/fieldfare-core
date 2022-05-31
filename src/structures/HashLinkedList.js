@@ -5,12 +5,9 @@
 
  */
 
-const Utils = require('../basic/Utils.js');
+import {Utils, logger} from 'mhlib';
 
-import {logger} from '../basic/Log'
-
-
-module.exports = class HashLinkedList {
+export class HashLinkedList {
 
 	constructor(lastHash) {
 

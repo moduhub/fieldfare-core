@@ -1,8 +1,8 @@
 {
-  "name": "mhlib-js",
+  "name": "mhlib",
   "version": "1.0.0",
   "description": "Javascript functions to access the MH network",
-  "main": "index.js",
+  "main": "src/index.js",
   "bin": {
     "mhsetup": "bin/mhsetup",
     "mhconfig": "bin/mhconfig",
@@ -31,7 +31,20 @@
     "level": "^8.0.0",
     "protobufjs": "^6.11.2",
     "uuid": "^8.3.2",
-    "websocket": "^1.0.34",
-    "winston": "^3.7.2"
+    "websocket": "^1.0.34"
+  },
+  "exports": {
+      ".": {
+          "require": "./src/exports/common.js",
+          "import": "./src/exports/common"
+      },
+      "./web": {
+          "require": "./src/exports/web.js",
+          "import": "./src/exports/web"
+      },
+      "./node": {
+          "require": "./src/exports/node.js",
+          "import": "./src/exports/node"
+      }
   }
 }

@@ -1,7 +1,7 @@
 
 const { Level } = require('level');
 
-module.exports = class LevelNVData {
+export class LevelNVData {
 
     constructor() {
 

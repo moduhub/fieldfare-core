@@ -1,5 +1,5 @@
 
-const Utils = require('../basic/Utils.js');
+import {Utils} from 'mhlib';
 
 const dataTypes = {
     'list': require('../structures/HashLinkedList.js'),
@@ -70,4 +70,4 @@ export class ServiceDefinition {
 
     }
 
-}
+};

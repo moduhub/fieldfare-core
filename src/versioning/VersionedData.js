@@ -4,18 +4,16 @@
  * and open the template in the editor.
  */
 
-const HashLinkedList = require('../structures/HashLinkedList.js');
-const HashLinkedTree = require('../structures/HashLinkedTree.js');
+import {
+	HashLinkedList,
+	HashLinkedTree,
+	VersionStatement,
+	VersionChain,
+	Utils,
+	logger
+} from 'mhlib';
 
-const VersionStatement = require('./VersionStatement.js');
-const VersionChain = require('./VersionChain.js');
-
-const Utils = require('../basic/Utils.js');
-
-import {logger} from '../basic/Log'
-
-
-module.exports = class VersionedData {
+export class VersionedData {
 
 	constructor() {
 

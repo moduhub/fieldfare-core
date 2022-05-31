@@ -5,7 +5,7 @@
  */
 
 
-module.exports = {
+export const Utils = {
 
 	ab2str: function (buf) {
 

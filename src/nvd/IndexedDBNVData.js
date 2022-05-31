@@ -1,7 +1,7 @@
 
-const IndexedDBBase = require('../basic/IndexedDBBase.js');
+import {IndexedDBBase} from '../basic/IndexedDBBase';
 
-module.exports = class IndexedDBNVData {
+export class IndexedDBNVData {
 
     constructor() {
 

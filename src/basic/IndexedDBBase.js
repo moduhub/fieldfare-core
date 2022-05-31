@@ -1,10 +1,10 @@
 
-import {logger} from '../basic/Log'
+import {logger} from 'mhlib';
 
 const dbname = 'mhlib';
 const dbversion = 1;
 
-module.exports = class IndexedDBBase {
+export class IndexedDBBase {
 
     constructor(storeName) {
 

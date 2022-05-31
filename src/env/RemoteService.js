@@ -1,9 +1,10 @@
 
-import {ServiceDefinition} from './ServiceDefinition';
-import ResourcesManager from '../resources/ResourcesManager';
-import {Request} from '../Request';
-import {logger} from '../basic/Log';
-import chalk from 'chalk';
+import {
+    ServiceDefinition,
+    ResourcesManager,
+    Request,
+    logger
+} from 'mhlib';
 
 export class RemoteService {
 
@@ -11,8 +12,6 @@ export class RemoteService {
     }
 
     static fromDefinition(definition) {
-
-        logger.log('info', chalk.green('setup remote service from definition' + JSON.stringify(definition)));
 
         var newService = new RemoteService();
 

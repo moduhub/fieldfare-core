@@ -1,9 +1,9 @@
 
-const ResourcesManager = require('./ResourcesManager.js');
+import {ResourcesManager} from 'mhlib';
 
-const IndexedDBBase = require('../basic/IndexedDBBase.js');
+import {IndexedDBBase} from '../basic/IndexedDBBase';
 
-module.exports = class IndexedDBResourcesManager extends ResourcesManager {
+export class IndexedDBResourcesManager extends ResourcesManager {
 
     constructor() {
         super();

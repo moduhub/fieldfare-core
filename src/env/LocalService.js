@@ -1,14 +1,12 @@
 
-import {logger} from '../basic/Log'
+import {
+    ResourcesManager,
+    ServiceDefinition,
+    Message,
+    logger
+} from 'mhlib';
 
-import {ServiceDefinition} from './ServiceDefinition';
-
-import {Message} from '../Message';
-
-import ResourcesManager from '../resources/ResourcesManager';
-
-
-module.exports = class LocalService {
+export class LocalService {
 
     constructor() {
 
@@ -100,7 +98,7 @@ module.exports = class LocalService {
 
                 try {
 
-                    responseData.result = await callback(remoteHost, request.data.params);
+                    responseData.result = await callback(remoteHost, request.data[prop].params);
 
                 } catch (error) {
                     responseData.status = 'error';

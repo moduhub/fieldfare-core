@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-import {Message} from './Message';
+import {Message} from 'mhlib'
 
 
 export class Request extends Message {

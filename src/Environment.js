@@ -4,18 +4,15 @@
  * and open the template in the editor.
  */
 
-const VersionedData = require('./versioning/VersionedData.js');
+import {
+	VersionedData,
+	VersionStatement,
+	HashLinkedTree,
+	ServiceDefinition,
+	logger
+} from 'mhlib';
 
-const VersionStatement = require('./versioning/VersionStatement.js');
-
-const HashLinkedTree = require('./structures/HashLinkedTree.js');
-
-import {ServiceDefinition} from './env/ServiceDefinition';
-
-import {logger} from './basic/Log'
-
-
-module.exports = class Environment extends VersionedData {
+export class Environment extends VersionedData {
 
 	constructor() {
 		super();

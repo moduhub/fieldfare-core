@@ -3,6 +3,8 @@ import inquirer from 'inquirer';
 
 import * as actions from './setupFunctions'
 
+import {importPrivateKey, generatePrivateKey} from '../basic/keyManagement';
+
 const Utils = require('../basic/Utils.js');
 
 import {inputWebport} from './menuCommon';

@@ -4,12 +4,7 @@
  * and open the template in the editor.
  */
 
-const Utils = require('../basic/Utils.js');
-
-const ResourcesManager = require('../resources/ResourcesManager.js');
-
-import {logger} from '../basic/Log'
-
+import {Utils, ResourcesManager, logger} from 'mhlib';
 
 class TreeContainer {
 
@@ -231,7 +226,7 @@ class TreeContainer {
 
 };
 
-module.exports = class HashLinkedTree {
+export class HashLinkedTree {
 
 	constructor(degree=5, rootHash) {
 

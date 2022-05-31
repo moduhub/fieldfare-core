@@ -1,7 +1,8 @@
 
-const VersionStatement = require('./VersionStatement.js');
-
-import {logger} from '../basic/Log'
+import {
+    VersionStatement,
+    logger
+} from 'mhlib';
 
 class ChangesIterator {
 
@@ -50,7 +51,7 @@ class ChangesIterator {
     }
 }
 
-module.exports = class VersionChain {
+export class VersionChain {
 
     constructor(head, owner, maxDepth) {
 

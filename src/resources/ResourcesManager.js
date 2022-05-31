@@ -1,7 +1,7 @@
 
-const Utils = require('../basic/Utils.js');
+import {Utils} from 'mhlib';
 
-module.exports = class ResourcesManager {
+export class ResourcesManager {
 
     constructor() {
 

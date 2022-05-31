@@ -1,10 +1,10 @@
 
-const ResourcesManager = require('./ResourcesManager.js');
+import {
+    ResourcesManager,
+    logger
+} from 'mhlib';
 
-import {logger} from '../basic/Log'
-
-
-module.exports = class VolatileResourcesManager extends ResourcesManager {
+export class VolatileResourcesManager extends ResourcesManager {
 
     constructor() {
         super();
