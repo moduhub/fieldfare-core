@@ -45,7 +45,7 @@ export class RemoteService {
 
                 const response = await request.complete();
 
-                if(data in response === false) {
+                if('data' in response === false) {
                     throw Error('Missing response data');
                 }
 
@@ -53,9 +53,8 @@ export class RemoteService {
                     throw Error('Request failed, error:' + response.data.error);
                 }
 
-                if(response.data.status !== 'done'
-                || 'result' in response.data === false) {
-                    throw Error('Unexpected response structure');
+                if(response.data.status !== 'done') {
+                    throw Error('Unexpected response status');
                 }
 
                 return response.data.result;
