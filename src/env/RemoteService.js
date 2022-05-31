@@ -28,7 +28,9 @@ export class RemoteService {
                 logger.log('info', methodName + 'called with params: ' + JSON.stringify(params));
 
                 const request = new Request(newService.definition.uuid, 10000, {
-                    params: params
+                    [methodName]: {
+                        params: params
+                    }
                 });
 
                 request.setDestinationAddress(newService.owner);
@@ -43,7 +45,20 @@ export class RemoteService {
 
                 const response = await request.complete();
 
-                return response;
+                if(data in response === false) {
+                    throw Error('Missing response data');
+                }
+
+                if(response.data.status === 'error') {
+                    throw Error('Request failed, error:' + response.data.error);
+                }
+
+                if(response.data.status !== 'done'
+                || 'result' in response.data === false) {
+                    throw Error('Unexpected response structure');
+                }
+
+                return response.data.result;
             };
         }
 

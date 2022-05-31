@@ -82,18 +82,15 @@ module.exports = class LocalService {
 
         this.numRequests++;
 
-        const payload = request.data;
-
-        const requestKey = await ResourcesManager.generateKeyForObject(payload);
-
         var responseData = {
+            hash: await ResourcesManager.generateKeyForObject(request.data),
             status: 'done'
         };
 
         logger.log('info', 'Service UUID: ' + this.definition.uuid
-            + ' received payload:' + JSON.stringify(payload));
+            + ' received payload:' + JSON.stringify(request.data));
 
-        for(const prop in payload) {
+        for(const prop in request.data) {
 
             const callback = this.methods.get(prop);
 
@@ -103,7 +100,7 @@ module.exports = class LocalService {
 
                 try {
 
-                    responseData.result = await callback(remoteHost, payload.params);
+                    responseData.result = await callback(remoteHost, request.data.params);
 
                 } catch (error) {
                     responseData.status = 'error';
@@ -120,10 +117,7 @@ module.exports = class LocalService {
 
         }
 
-        const response = new Message('response', {
-            hash: requestKey,
-            data: responseData
-        });
+        const response = new Message('response', responseData);
 
         await remoteHost.send(response);
 
