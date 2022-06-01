@@ -9,7 +9,7 @@ import {
     generatePrivateKey
 } from '../basic/keyManagement';
 
-import Utils from '../basic/Utils';
+import {Utils} from '../basic/Utils';
 
 import {inputWebport} from './menuCommon';
 

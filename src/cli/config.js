@@ -417,6 +417,16 @@ async function mainMenu() {
 
     console.log(title('__________ ModuHub mhlib.js Environment configuration __________'));
 
+    if(env) {
+        console.table({
+            uuid: env.uuid,
+            version: env.version
+        })
+        //console.log('Current env UUID: ' + env.uuid + ' at version: ' + env.version);
+    } else {
+        console.log('<No Enviroment configured>');
+    }
+
     const {submenu} = await inquirer.prompt(menu);
 
     switch (submenu) {
@@ -469,13 +479,7 @@ export async function main(args) {
 
             const localChain = new VersionChain(env.version, host.id, 50);
 
-            const localChanges = await localChain.getChanges();
-
-            for await (const [issuer, method, params] of localChanges) {
-                console.log('issuer:\"' + issuer
-                    + '\" method:' + chalk.blue(method)
-                    + ' params:\n'+ JSON.stringify(params, null, 2));
-            }
+            await localChain.print();
 
             process.exit(0);
 

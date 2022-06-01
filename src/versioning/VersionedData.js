@@ -97,6 +97,31 @@ export class VersionedData {
 		}
 	}
 
+	async applyChain(chain, merge=false) {
+
+		//just accept remote changes
+		const changes = await chain.getChanges();
+
+		// logger.log('info', "remoteChanges:" + JSON.stringify(remoteChanges));
+
+		for await (const [issuer, method, params] of changes) {
+
+			if(method === 'merge') {
+
+				const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
+				mergeChain.limit(params.base);
+
+				await this.applyChain(mergeChain, true);
+
+			} else {
+				logger.debug('info', 'await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
+				await this.apply(issuer, method, params, merge);
+			}
+
+		}
+
+	}
+
 	async apply(issuer, methodName, params, merge=false) {
 
 		const methodCallback = this.methods.get(methodName);
@@ -178,25 +203,7 @@ export class VersionedData {
 
 			try {
 
-				//just accept remote changes
-				const remoteChanges = await remoteChain.getChanges();
-
-				// logger.log('info', "remoteChanges:" + JSON.stringify(remoteChanges));
-
-				for await (const [issuer, method, params] of remoteChanges) {
-
-					// const stateBefore = await host.storeResourceObject(await this.getState());
-					// logger.log('info', "State before apply: " + JSON.stringify(this.getState(), null, 2)
-					// 	+ ' => ' + stateBefore);
-					//
-					// logger.log('info', 'await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
-					await this.apply(issuer, method, params);
-					//
-					// const stateAfter = await host.storeResourceObject(await this.getState());
-					// logger.log('info', "State after apply: " + JSON.stringify(this.getState(), null, 2)
-					// 	+ ' => ' + stateAfter);
-
-				}
+				await this.applyChain(remoteChain);
 
 				const stateKey = await host.storeResourceObject(await this.getState());
 				const expectedState = await remoteChain.getHeadState();

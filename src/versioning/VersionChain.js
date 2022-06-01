@@ -1,7 +1,7 @@
 
 import {VersionStatement} from '../versioning/VersionStatement';
 import {logger} from '../basic/Log';
-
+import chalk from 'chalk';
 
 class ChangesIterator {
 
@@ -168,6 +168,35 @@ export class VersionChain {
             throw Error('prev version not in chain');
         }
         return count;
+    }
+
+    async print(mergeDepth=0) {
+
+        const localChanges = await this.getChanges();
+
+        for await (const [issuer, method, params] of localChanges) {
+
+            var string;
+            var prepend = '';
+
+            for(var i=0; i<mergeDepth; i++) {
+                prepend += ' |';
+            }
+
+            if(method === 'merge') {
+                const mergeChain = new VersionChain(params.head, issuer, 50);
+                mergeChain.limit(params.base);
+                mergeChain.print(mergeDepth+1);
+            } else {
+                string = 'method: ' + chalk.red(method)
+                    + ' issuer:\"' + issuer
+                    + ' \n params: '+ JSON.stringify(params, null, 2);
+
+                string.replace('\n', prepend + '\n');
+                console.log(string);
+            }
+
+        }
     }
 
 };
