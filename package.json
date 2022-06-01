@@ -2,7 +2,7 @@
   "name": "mhlib",
   "version": "1.0.0",
   "description": "Javascript functions to access the MH network",
-  "main": "src/index.js",
+  "main": "src/exports/common.js",
   "bin": {
     "mhsetup": "bin/mhsetup",
     "mhconfig": "bin/mhconfig",

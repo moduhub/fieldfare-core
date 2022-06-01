@@ -1,5 +1,6 @@
 import fs from 'fs';
 import arg from 'arg';
+import path from 'path';
 import {initHost, initEnvironment, initWebports} from './cliCommon';
 import {logger} from '../basic/Log'
 import {dashboard} from './dashboard';
@@ -55,11 +56,13 @@ export async function main(args) {
 
     if(options.path !== '') {
 
-        const fullpath = process.cwd() + '\\' + options.path;
+        const fullpath = path.join(process.cwd(), options.path);
 
         try {
 
             if(fs.existsSync(fullpath)) {
+
+                logger.info("Loading service from path " + fullpath);
 
                 const {setup} = await import(fullpath);
 
