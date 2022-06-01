@@ -1,10 +1,9 @@
 
-import {
-    ResourcesManager,
-    ServiceDefinition,
-    Message,
-    logger
-} from 'mhlib';
+import {ResourcesManager} from '../resources/ResourcesManager';
+import {ServiceDefinition} from '../env/ServiceDefinition';
+import {Message} from '../Message';
+import {logger} from '../basic/Log';
+
 
 export class LocalService {
 

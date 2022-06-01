@@ -1,8 +1,7 @@
 
-import {
-    VersionStatement,
-    logger
-} from 'mhlib';
+import {VersionStatement} from '../versioning/VersionStatement';
+import {logger} from '../basic/Log';
+
 
 class ChangesIterator {
 

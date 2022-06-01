@@ -6,11 +6,10 @@
 
 const dgram = require('dgram');
 
-import {
-	Transceiver,
-	Utils,
-	logger
-} from 'mhlib';
+import {Transceiver} from './Transceiver';
+import {Utils} from './basic/Utils';
+import {logger} from './basic/Log';
+
 
 export class UDPTransceiver extends Transceiver {
 

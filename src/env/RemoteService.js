@@ -1,10 +1,9 @@
 
-import {
-    ServiceDefinition,
-    ResourcesManager,
-    Request,
-    logger
-} from 'mhlib';
+import {ServiceDefinition} from '../env/ServiceDefinition';
+import {ResourcesManager} from '../resources/ResourcesManager';
+import {Request} from '../Request';
+import {logger} from '../basic/Log';
+
 
 export class RemoteService {
 

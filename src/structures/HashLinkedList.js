@@ -5,7 +5,9 @@
 
  */
 
-import {Utils, logger} from 'mhlib';
+import {Utils} from '../basic/Utils';
+import {logger} from '../basic/Log';
+
 
 export class HashLinkedList {
 

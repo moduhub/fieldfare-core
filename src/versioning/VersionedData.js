@@ -4,14 +4,13 @@
  * and open the template in the editor.
  */
 
-import {
-	HashLinkedList,
-	HashLinkedTree,
-	VersionStatement,
-	VersionChain,
-	Utils,
-	logger
-} from 'mhlib';
+import {HashLinkedList} from '../structures/HashLinkedList';
+import {HashLinkedTree} from '../structures/HashLinkedTree';
+import {VersionStatement} from './VersionStatement';
+import {VersionChain} from './VersionChain';
+import {Utils} from '../basic/Utils';
+import {logger} from '../basic/Log';
+
 
 export class VersionedData {
 

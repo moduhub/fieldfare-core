@@ -1,4 +1,26 @@
 
+var privateKeyData;
+var pubKeyData;
+
+export async function getHostID() {
+
+    if(privateKeyData === undefined) {
+        privateKeyData = await nvdata.load('privateKey');
+
+        if(privateKeyData) {
+            await importPrivateKey(privateKeyData);
+        } else {
+            return '<undefined>';
+        }
+    }
+
+    const id = await ResourcesManager.generateKeyForObject(pubKeyData);
+
+    console.log("host.id: " + id);
+
+    return id;
+}
+
 export async function importPrivateKey(privateKeyData) {
 
     console.log("importing privateKeyData: " + privateKeyData);

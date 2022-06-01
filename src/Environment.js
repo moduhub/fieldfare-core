@@ -4,13 +4,12 @@
  * and open the template in the editor.
  */
 
-import {
-	VersionedData,
-	VersionStatement,
-	HashLinkedTree,
-	ServiceDefinition,
-	logger
-} from 'mhlib';
+import {HashLinkedTree} from './structures/HashLinkedTree';
+import {VersionedData} from './versioning/VersionedData';
+import {VersionStatement} from './versioning/VersionStatement';
+import {ServiceDefinition} from './env/ServiceDefinition';
+import {logger} from './basic/Log';
+
 
 export class Environment extends VersionedData {
 

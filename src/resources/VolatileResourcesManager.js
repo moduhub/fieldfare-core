@@ -1,8 +1,7 @@
 
-import {
-    ResourcesManager,
-    logger
-} from 'mhlib';
+import {ResourcesManager} from './ResourcesManager';
+import {logger} from '../basic/Log';
+
 
 export class VolatileResourcesManager extends ResourcesManager {
 

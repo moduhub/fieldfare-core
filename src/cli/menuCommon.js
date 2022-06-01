@@ -1,5 +1,5 @@
 
-const Utils = require('../basic/Utils.js');
+import {Utils} from '../basic/Utils';
 
 export const inputWebport = [
     {

@@ -1,5 +1,6 @@
 
-import {Utils} from 'mhlib';
+import {Utils} from '../basic/Utils';
+
 
 export class ResourcesManager {
 

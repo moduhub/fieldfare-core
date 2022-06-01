@@ -1,10 +1,8 @@
 
-const { Level } = require('level');
+import {ResourcesManager} from './ResourcesManager';
+import {logger} from '../basic/Log';
 
-import {
-    ResourcesManager,
-    logger
-} from 'mhlib';
+const { Level } = require('level');
 
 export class LevelResourcesManager extends ResourcesManager {
 

@@ -1,5 +1,5 @@
 
-import {logger} from 'mhlib';
+import {logger} from '../basic/Log';
 
 const dbname = 'mhlib';
 const dbversion = 1;

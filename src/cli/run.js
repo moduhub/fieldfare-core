@@ -1,10 +1,9 @@
 import fs from 'fs';
 import arg from 'arg';
 import {initHost, initEnvironment, initWebports} from './cliCommon';
-import winston from 'winston';
 import {logger} from '../basic/Log'
-import chalk from 'chalk';
 import {dashboard} from './dashboard';
+import chalk from 'chalk';
 
 function parseArgumentsIntoOptions(rawArgs) {
     const args = arg(
@@ -43,16 +42,15 @@ export async function main(args) {
     if(options.dashboard) {
 
         try {
+            logger.disable();
             dashboard(env);
         } catch (error) {
             logger.error('Failed to start dashboard');
         }
 
     } else
-    if(options.daemon === false) {
-        logger.add(new winston.transports.Console({
-           format: winston.format.simple(),
-        }));
+    if(options.daemon) {
+        logger.disable();
     }
 
     if(options.path !== '') {

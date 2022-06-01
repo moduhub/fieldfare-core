@@ -4,10 +4,8 @@
  * and open the template in the editor.
  */
 
-import {
-	Transceiver,
-	logger
-} from 'mhlib';
+import {Transceiver} from './Transceiver';
+import {logger} from './basic/Log';
 
 export class WebClientTransceiver extends Transceiver {
 
@@ -22,7 +20,7 @@ export class WebClientTransceiver extends Transceiver {
 		return new Promise((resolve, reject) => {
 
 			// Create WebSocket connection.
-			const socket = new WebSocket(address + ':' + port, 'mhnet');
+			 const socket = new WebSocket('ws://' + address + ':' + port, 'mhnet');
 
 			var rNewChannel = {
 				type: 'wsClient',
@@ -66,7 +64,7 @@ export class WebClientTransceiver extends Transceiver {
 			// Connection opened
 			socket.addEventListener('open', (event) => {
 
-				logger.log('info', 'WebSocket client opened: ' + event);
+				logger.log('info', 'WebSocket client opened: ' + JSON.stringify(event));
 				resolve(rNewChannel);
 
 			});
@@ -74,7 +72,7 @@ export class WebClientTransceiver extends Transceiver {
 			socket.addEventListener('error', (event) => {
 
 				logger.log('info', 'WebSocket client error!');
-				reject(event);
+				reject(JSON.stringify(event));
 
 			});
 

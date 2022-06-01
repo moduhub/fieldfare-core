@@ -4,7 +4,8 @@
  * and open the template in the editor.
  */
 
-import {Utils, logger} from 'mhlib';
+import {Utils} from './basic/Utils';
+import {logger} from './basic/Log';
 
 const SERVICE_ID_ANNOUNCE = 1;
 const SERVICE_ID_RESOURCE = 2;

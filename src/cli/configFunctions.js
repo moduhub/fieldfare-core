@@ -1,5 +1,5 @@
 
-import logger from '../basic/Log'
+import {logger} from '../basic/Log'
 
 export async function addServedWebport(options) {
 

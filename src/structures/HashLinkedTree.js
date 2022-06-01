@@ -4,7 +4,9 @@
  * and open the template in the editor.
  */
 
-import {Utils, ResourcesManager, logger} from 'mhlib';
+ import {ResourcesManager} from '../resources/ResourcesManager';
+ import {Utils} from '../basic/Utils';
+ import {logger} from '../basic/Log';
 
 class TreeContainer {
 

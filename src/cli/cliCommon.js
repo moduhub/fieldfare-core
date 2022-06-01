@@ -1,20 +1,13 @@
 
-const HostManager = require('../HostManager.js');
-//import HostManager from '../HostManager';
-
-const Environment = require('../Environment.js');
-
-const LevelResourcesManager = require('../resources/LevelResourcesManager.js');
-
-const LevelNVData = require('../nvd/LevelNVData.js');
-
-const WebServerTransceiver = require('../WebServerTransceiver.js');
-//const WebClientTransceiver = require('../WebClientTransceiver.js');
-const UDPTransceiver = require('../UDPTransceiver.js');
-
+import {HostManager} from '../HostManager'
+import {Environment} from '../Environment'
+import {LevelResourcesManager} from '../resources/LevelResourcesManager';
+import {LevelNVData} from '../nvd/LevelNVData';
+import {WebServerTransceiver} from '../WebServerTransceiver';
+import {UDPTransceiver} from '../UDPTransceiver';
 import {logger} from '../basic/Log';
 
-var webClientTransceiver;
+var webServerTransceiver;
 var udpTransceiver;
 
 const minUDPPort = 10000;
@@ -72,15 +65,21 @@ export async function initWebports(env) {
 
             case 'ws': {
 
-                if(wsServerTransceiver) {
+                if(webServerTransceiver) {
                     throw Error('Cannot serve more than one WS port');
                 }
 
-                // if(wsClientTransceiver) {
+                // if(webClientTransceiver) {
                 //     throw Error('Cannot serve WS port while operating as a WS client');
                 // }
 
-                wsServerTransceiver = new WebServerTransceiver(webport.port);
+                logger.info('Opening WS server port: ' + webport.port)
+                webServerTransceiver = new WebServerTransceiver(webport.port);
+                webServerTransceiver.open();
+                webServerTransceiver.onNewChannel = (newChannel) => {
+                    logger.debug('WS server onNewChannel');
+                    host.bootChannel(newChannel);
+                };
 
             } break;
 

@@ -1,7 +1,7 @@
 
-import {ResourcesManager} from 'mhlib';
-
+import {ResourcesManager} from './ResourcesManager';
 import {IndexedDBBase} from '../basic/IndexedDBBase';
+
 
 export class IndexedDBResourcesManager extends ResourcesManager {
 

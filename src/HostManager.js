@@ -4,15 +4,14 @@
  * and open the template in the editor.
  */
 
-import {
-	Utils,
-	Message,
-	Request,
-	RemoteHost,
-	LocalService,
-	ResourcesManager,
-	logger
-} from 'mhlib';
+import {ResourcesManager} from './resources/ResourcesManager';
+import {LocalService} from './env/LocalService';
+import {RemoteHost} from './RemoteHost';
+import {Message} from './Message';
+import {Request} from './Request';
+import {Utils} from './basic/Utils';
+import {logger} from './basic/Log';
+
 
 export class HostManager {
 

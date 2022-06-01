@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-import {logger} from 'mhlib';
+import {logger} from '../basic/Log';
 
 export class VersionStatement {
 

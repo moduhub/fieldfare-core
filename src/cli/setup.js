@@ -3,9 +3,13 @@ import inquirer from 'inquirer';
 
 import * as actions from './setupFunctions'
 
-import {importPrivateKey, generatePrivateKey} from '../basic/keyManagement';
+import {
+    getHostID,
+    importPrivateKey,
+    generatePrivateKey
+} from '../basic/keyManagement';
 
-const Utils = require('../basic/Utils.js');
+import Utils from '../basic/Utils';
 
 import {inputWebport} from './menuCommon';
 

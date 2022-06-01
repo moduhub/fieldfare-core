@@ -4,7 +4,8 @@
  * and open the template in the editor.
  */
 
-import {Message} from 'mhlib'
+import {Message} from './Message';
+import {logger} from './basic/Log';
 
 
 export class Request extends Message {
@@ -17,7 +18,7 @@ export class Request extends Message {
 		this.rejectCallbacks = new Set();
 
 		this.timeout = setTimeout(() => {
-			console.log('request timeout');
+			logger.info('request timeout');
 			const error = Error('Request ' + JSON.stringify(this.data) + ' timed out');
 			error.name = 'TIMEOUT_ERROR';
 			this.reject(error);

@@ -2,21 +2,17 @@
 import inquirer from 'inquirer';
 import arg from 'arg';
 import fs from 'fs';
-
 import {v4 as uuidv4 } from 'uuid';
 
+import {VersionChain} from '../versioning/VersionChain';
+import {Utils} from '../basic/Utils';
 import {initHost, initEnvironment, initWebports} from './cliCommon';
-
 import {inputWebport} from './menuCommon';
+import {logger} from '../basic/Log';
 
-//const chalk = require('chalk.js');
 import chalk from 'chalk';
 
 const title = chalk.bold.blue;
-
-const Utils = require('../basic/Utils.js');
-
-const VersionChain = require('../versioning/VersionChain.js');
 
 var env;
 
@@ -456,7 +452,8 @@ async function mainMenu() {
 export async function main(args) {
 
     const options = parseArgumentsIntoOptions(args);
-    // console.log(options);
+
+    logger.disable();
 
     await initHost();
     env = await initEnvironment();

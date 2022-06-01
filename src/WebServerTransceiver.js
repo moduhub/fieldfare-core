@@ -4,13 +4,11 @@
  * and open the template in the editor.
  */
 
- const WebSocketServer = require('websocket').server;
- const http = require('http');
+const WebSocketServer = require('websocket').server;
+const http = require('http');
 
-import {
-	Transceiver,
-	logger
-} from 'mlhib';
+import {Transceiver} from './Transceiver';
+import {logger} from './basic/Log';
 
 
 export class WebServerTransceiver extends Transceiver {

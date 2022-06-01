@@ -1,12 +1,7 @@
 
-const LevelNVData = require('../nvd/LevelNVData.js');
-
-const Utils = require('../basic/Utils.js');
-
-import ResourcesManager from '../resources/ResourcesManager';
-
-var privateKeyData;
-var pubKeyData;
+import {ResourcesManager} from '../resources/ResourcesManager';
+import {LevelNVData} from '../nvd/LevelNVData';
+import {Utils} from '../basic/Utils';
 
 
 export async function init() {
@@ -39,25 +34,6 @@ export async function setEnvironmentUUID(uuid) {
 
     await nvdata.save('envUUID', uuid);
 
-}
-
-export async function getHostID() {
-
-    if(privateKeyData === undefined) {
-        privateKeyData = await nvdata.load('privateKey');
-
-        if(privateKeyData) {
-            await importPrivateKey(privateKeyData);
-        } else {
-            return '<undefined>';
-        }
-    }
-
-    const id = await ResourcesManager.generateKeyForObject(pubKeyData);
-
-    console.log("host.id: " + id);
-
-    return id;
 }
 
 export async function getBootWebports() {

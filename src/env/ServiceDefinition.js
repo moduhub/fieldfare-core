@@ -1,10 +1,12 @@
 
-import {Utils} from 'mhlib';
+import {HashLinkedList} from '../structures/HashLinkedList';
+import {HashLinkedTree} from '../structures/HashLinkedTree';
+import {Utils} from '../basic/Utils';
 
 const dataTypes = {
-    'list': require('../structures/HashLinkedList.js'),
-    'set': require('../structures/HashLinkedTree.js'),
-    'map': require('../structures/HashLinkedTree.js'),
+    'list': HashLinkedList,
+    'set': HashLinkedTree,
+    'map': HashLinkedTree,
     'obj': Object
 };
 
@@ -40,20 +42,20 @@ export class ServiceDefinition {
         // logger.log('info', "validate:" + JSON.stringify(definition));
 
         if('uuid' in definition === false) {
-            throw 'missing uuid in service definition';
+            throw Error('missing uuid in service definition');
         }
 
         if(Utils.isUUID(definition.uuid) == false) {
-            throw 'service definition uuid invalid';
+            throw Error('service definition uuid invalid');
         }
 
         if('name' in definition === false) {
-            throw 'missing name in ervice definition';
+            throw Error('missing name in ervice definition');
         }
 
         if(definition.name instanceof String === false
         && typeof definition.name !== 'string') {
-            throw 'service definition name is not a string';
+            throw Error('service definition name is not a string');
         }
 
         //Do more verifications here
