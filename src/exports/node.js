@@ -8,4 +8,3 @@ export * from '../resources/LevelResourcesManager';
 
 export * from '../nvd/LevelNVData';
 export * from '../nvd/NodeNVData';
-export * from '../nvd/LevelUpNVData';
