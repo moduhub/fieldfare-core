@@ -45,6 +45,10 @@
       "./node": {
           "require": "./src/exports/node.js",
           "import": "./src/exports/node"
+      },
+      "./reactnative":{
+          "require": "./src/exports/reactnative.js",
+          "import": "./src/exports/reactnative"
       }
   }
 }
