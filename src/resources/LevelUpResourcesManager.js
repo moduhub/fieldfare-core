@@ -11,8 +11,8 @@ export class LevelUpResourcesManager extends ResourcesManager{
   constructor(){
     super();
 
-    //check stopsdb if necessary for the next lines 👇
-    this.db = new levelup('./stops', {
+    //check stopsdb.js if necessary for the next lines 👇
+    this.db = new levelup('./resources', {
       db: location => asyncstorageDown(location, { AsyncStorage })
     });
   }
@@ -35,7 +35,7 @@ export class LevelUpResourcesManager extends ResourcesManager{
     var base64data;
 
     try {
-      
+
       base64data = await this.db.get(base64hash);
 
     } catch (error) {
