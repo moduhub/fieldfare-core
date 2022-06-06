@@ -2,6 +2,8 @@
 var privateKeyData;
 var pubKeyData;
 
+import {ResourcesManager} from '../resources/ResourcesManager';
+
 export async function getHostID() {
 
     if(privateKeyData === undefined) {
