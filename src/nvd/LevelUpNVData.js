@@ -1,4 +1,6 @@
+import asyncstorageDown from 'asyncstorage-down';
 import levelup from 'levelup';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export class LevelUpNVData{
 
