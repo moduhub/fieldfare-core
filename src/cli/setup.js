@@ -80,7 +80,7 @@ async function localHostMenu() {
     };
 
     console.log("__________ Local Host Configuration __________");
-    console.log("| Current Host ID: " + await actions.getHostID());
+    console.log("| Current Host ID: " + await getHostID());
 
     const answer = await inquirer.prompt(prompt);
 
