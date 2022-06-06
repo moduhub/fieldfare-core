@@ -1,6 +1,6 @@
 import { HostManager } from '../HostManager';
 import { LevelUpNVData } from '../nvd/LevelUpNVData';
-import { LevelUpResourcesManager } from '..resources/LevelUpResourcesManager';
+import { LevelUpResourcesManager } from '../resources/LevelUpResourcesManager';
 import { logger } from '../basic/Log';
 
 var reactNativeClientTransceiver;
@@ -46,7 +46,7 @@ export async function setupEnvironment(uuid){
 
   await env.init(uuid);
 
-  // TODO: implement the environment setup 
+  // TODO: implement the environment setup
 
   host.addEnvironment(env);
 
