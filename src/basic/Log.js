@@ -16,6 +16,9 @@ if(logger === undefined) {
         error(message) {
             console.error(message);
         },
+        warn(message) {
+            console.warn(message);
+        },
         disable() {
             this.log = () => {};
             this.debug = () => {};
