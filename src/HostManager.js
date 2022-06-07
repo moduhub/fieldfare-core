@@ -153,8 +153,6 @@ export class HostManager {
 
 	async registerRemoteHost(hostid) {
 
-		logger.log('info', 'registerRemoteHost');
-
 		var remoteHost = this.remoteHosts.get(hostid);
 
 		//Check if host exists
@@ -488,6 +486,8 @@ export class HostManager {
 	}
 
 	async establish(remoteHostID) {
+
+		logger.debug("host.establish: " + remoteHostID);
 
 		const remoteHost = this.remoteHosts.get(snapshotProviderID);
 

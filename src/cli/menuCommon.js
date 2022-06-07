@@ -1,6 +1,27 @@
 
 import {Utils} from '../basic/Utils';
 
+import {v4 as uuidv4 } from 'uuid';
+
+export const inputUUID = {
+    type: 'input',
+    name: 'uuid',
+    message: 'Enter service UUID or leave blank to generate a UUIDv4: ',
+    validate(value) {
+        if(value == ''
+        || Utils.isUUID(value)) {
+            return true;
+        }
+        return 'Please enter a valid UUID';
+    },
+    filter(value) {
+        if(value === '') {
+            return uuidv4();
+        }
+        return value;
+    }
+}
+
 export const inputWebport = [
     {
         type: 'list',

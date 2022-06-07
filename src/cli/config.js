@@ -2,12 +2,14 @@
 import inquirer from 'inquirer';
 import arg from 'arg';
 import fs from 'fs';
-import {v4 as uuidv4 } from 'uuid';
 
 import {VersionChain} from '../versioning/VersionChain';
 import {Utils} from '../basic/Utils';
 import {initHost, initEnvironment, initWebports} from './cliCommon';
-import {inputWebport} from './menuCommon';
+import {
+    inputWebport,
+    inputUUID
+} from './menuCommon';
 import {logger} from '../basic/Log';
 
 import chalk from 'chalk';
@@ -19,25 +21,6 @@ var env;
 function hasSpecialChars(value) {
     const regex = /^[a-zA-Z0-9!@#\$%\^\&*\)\(+=._-]+$/g;
     return !(regex.test(value));
-}
-
-export const inputServiceUUID = {
-    type: 'input',
-    name: 'uuid',
-    message: 'Enter service UUID or leave blank to generate a UUIDv4: ',
-    validate(value) {
-        if(value == ''
-        || Utils.isUUID(value)) {
-            return true;
-        }
-        return 'Please enter a valid UUID';
-    },
-    filter(value) {
-        if(value === '') {
-            return uuidv4();
-        }
-        return value;
-    }
 }
 
 const inputHostID = {
@@ -210,7 +193,7 @@ async function servicesMenu() {
 
                 await env.auth(host.id);
 
-                var {uuid} = await inquirer.prompt(inputServiceUUID);
+                var {uuid} = await inquirer.prompt(inputUUID);
 
                 const {serviceName} = await inquirer.prompt(inputServiceName);
 

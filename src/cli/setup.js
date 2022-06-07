@@ -11,23 +11,11 @@ import {
 
 import {Utils} from '../basic/Utils';
 
-import {inputWebport} from './menuCommon';
+import {
+    inputWebport,
+    inputUUID
+} from './menuCommon';
 
-
-const uuidInputQuestion = {
-    type: 'input',
-    name: 'uuid',
-    message: "Please enter an UUID (leave blank to cancel)",
-    validate(value) {
-
-        if (Utils.isUUID(value)
-        || value === '') {
-            return true;
-        }
-
-        return 'Please enter a valid UUID';
-    }
-};
 
 async function environmentMenu() {
 
@@ -35,7 +23,7 @@ async function environmentMenu() {
       type: 'list',
       name: 'action',
       message: 'Choose one action: ',
-      choices: ['Set Enviroment UUID', 'Generate Random UUID', 'Back'],
+      choices: ['Set Enviroment UUID', 'Back'],
     };
 
     console.log("__________ Environment Configuration __________");
@@ -53,7 +41,7 @@ async function environmentMenu() {
             });
 
             if(confirm) {
-                const answer = await inquirer.prompt(uuidInputQuestion);
+                const answer = await inquirer.prompt(inputUUID);
                 if(answer.uuid !== '')  {
                     await actions.setEnvironmentUUID(answer.uuid);
                 }
@@ -94,7 +82,7 @@ async function localHostMenu() {
             });
 
             if(confirm) {
-                await actions.generatePrivateKey();
+                await generatePrivateKey();
             }
 
             localHostMenu();
