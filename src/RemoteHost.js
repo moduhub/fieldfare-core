@@ -61,7 +61,26 @@ export class RemoteHost {
 
 	}
 
+	isActive() {
+
+		if(this.lastMessageTime !== undefined
+		&& this.lastMessageTime !== null) {
+
+			var timeSinceLastMessage = Date.now() - this.lastMessageTime;
+
+			logger.log("time since last message: " + timeSinceLastMessage);
+
+			if(timeSinceLastMessage < 10000) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	async treatMessage(message, channel) {
+
+		this.lastMessageTime = Date.now();
 
 		try {
 //		logger.log('info', "Message redirected to "
@@ -194,18 +213,14 @@ export class RemoteHost {
 	}
 
 	updateServices(serviceList) {
-
 		for(const definition of serviceList) {
-			logger.info('definition: ' + JSON.stringify(definition));
 			if(this.definedServices.has(definition.uuid) === false) {
 				this.definedServices.set(definition.uuid, definition);
-				logger.info('New service defined for host ' + this.id
-					+ ': serviceUUID: ' + definition.uuid);
+				// logger.info('New service defined for host ' + this.id
+				// 	+ ': serviceUUID: ' + definition.uuid);
 			}
 		}
-
-		logger.log('info', this.id + ' services update:' + JSON.stringify(this.services));
-
+		// logger.log('info', this.id + ' services update:' + JSON.stringify(this.services));
 	}
 
 	async updateEnvironment(uuid, version) {
