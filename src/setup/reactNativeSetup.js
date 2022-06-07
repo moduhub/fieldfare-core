@@ -11,7 +11,7 @@ export async function setupHost(){
 
   global.host = new HostManager();
 
-  global.host = new LevelUpNVData();
+  global.nvdata = new LevelUpNVData();
 
   host.addResourcesManager(new LevelUpResourcesManager());
 
