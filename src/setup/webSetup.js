@@ -52,6 +52,8 @@ export async function setupEnvironment(uuid) {
 
 	await env.init(uuid);
 
+	host.addEnvironment(env);
+
 	logger.debug("Iterating env webports");
 
 	for await (const resource of env.elements.get('webports')) {
@@ -83,8 +85,6 @@ export async function setupEnvironment(uuid) {
 			}
 		}
 	}
-
-	host.addEnvironment(env);
 
     return env;
 }
