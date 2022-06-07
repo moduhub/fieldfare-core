@@ -94,7 +94,7 @@ async function localHostMenu() {
             });
 
             if(confirm) {
-                await actions.generatePrivateKey();
+                await generatePrivateKey();
             }
 
             localHostMenu();
