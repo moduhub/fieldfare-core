@@ -1,6 +1,8 @@
 import { HostManager } from '../HostManager';
 import { LevelUpNVData } from '../nvd/LevelUpNVData';
 import { LevelUpResourcesManager } from '../resources/LevelUpResourcesManager';
+
+import {generatePrivateKey} from '../basic/keyManagement';
 import { logger } from '../basic/Log';
 
 var reactNativeClientTransceiver;

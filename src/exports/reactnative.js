@@ -5,4 +5,8 @@ export * from '../resources/LevelUpResourcesManager'
 
 export * from '../nvd/LevelUpNVData';
 
-export * as MHsetup from '../setup/reactNativeSetup'
+import * as MHsetup from '../setup/reactNativeSetup'
+
+export {
+  MHsetup,
+}
