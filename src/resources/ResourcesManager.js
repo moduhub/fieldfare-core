@@ -34,7 +34,7 @@ export class ResourcesManager {
 
     static async generateKeyForData(base64data) {
 
-        var dataBuffer = Utils.strToUtf8Array(base64data);
+        var dataBuffer = Utils.base64ToArrayBuffer(base64data);
 
         var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', dataBuffer));
 
