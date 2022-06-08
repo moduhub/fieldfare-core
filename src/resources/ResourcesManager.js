@@ -19,8 +19,8 @@ export class ResourcesManager {
 
     static convertObjectToData(object) {
 
-        var utf8ArrayBuffer = Utils.base64ToUtf8Array(object);
-		
+        var utf8ArrayBuffer = Utils.strToUtf8Array(JSON.stringify(object));
+
 		var base64data = Utils.arrayBufferToBase64(utf8ArrayBuffer);
 
         return base64data;
@@ -34,7 +34,7 @@ export class ResourcesManager {
 
     static async generateKeyForData(base64data) {
 
-        var dataBuffer = Utils.strToUtf8Array(JSON.stringify(base64data));
+        var dataBuffer = Utils.strToUtf8Array(base64data);
 
         var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', dataBuffer));
 

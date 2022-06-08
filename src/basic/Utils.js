@@ -124,15 +124,15 @@ export const Utils = {
   		}
   		return typeof obj[Symbol.iterator] === 'function';
 	},
-	
+
 	strToUtf8Array(str){
-		
-		var utf8ArrayBuffer = new Uint8Array(obj.length);
-		
-		for (var i = 0; i < obj.length; i++) {
-			utf8ArrayBuffer[i] = obj.charCodeAt(i);
+
+		var utf8ArrayBuffer = new Uint8Array(str.length);
+
+		for (var i = 0; i < str.length; i++) {
+			utf8ArrayBuffer[i] = str.charCodeAt(i);
 		}
-		
+
 		return utf8ArrayBuffer;
 	}
 
