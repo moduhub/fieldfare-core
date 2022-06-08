@@ -295,7 +295,7 @@ export class VersionedData {
 
 		logger.log('info', "applyAddAdmin params: " + JSON.stringify(params));
 
-		VersionedData.validateParameters(params, ['id']);
+		Utils.validateParameters(params, ['id']);
 
 		const newAdminID = params.id;
 
