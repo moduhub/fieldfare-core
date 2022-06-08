@@ -123,6 +123,17 @@ export const Utils = {
     		return false;
   		}
   		return typeof obj[Symbol.iterator] === 'function';
+	},
+	
+	strToUtf8Array(str){
+		
+		var utf8ArrayBuffer = new Uint8Array(obj.length);
+		
+		for (var i = 0; i < obj.length; i++) {
+			utf8ArrayBuffer[i] = obj.charCodeAt(i);
+		}
+		
+		return utf8ArrayBuffer;
 	}
 
 };

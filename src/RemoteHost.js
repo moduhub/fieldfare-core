@@ -336,8 +336,8 @@ export class RemoteHost {
 
 			var signatureBuffer = Utils.base64ToArrayBuffer(message.signature);
 
-			var dataBuffer = new TextEncoder().encode(JSON.stringify(message.data));
-
+			var dataBuffer = Utils.strToUtf8Array(JSON.stringify(message.data));
+			
 			result = await crypto.subtle.verify(
 				{
 					name: "ECDSA",
