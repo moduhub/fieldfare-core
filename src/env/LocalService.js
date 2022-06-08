@@ -75,6 +75,35 @@ export class LocalService {
 
     }
 
+    async pushRequest(remoteHost, request) {
+
+        const newRequest = {
+            remoteHost: remoteHost,
+            request: request
+        };
+
+        if(this.currentRequest === null
+        || this.currentRequest === undefined) {
+
+            this.currentRequest = newRequest;
+            await this.treatRequest(newRequest.remoteHost, newRequest.request);
+            this.currentRequest = null;
+
+            while(this.pendingRequests.length > 0) {
+
+                const queuedRequest = this.pendingRequests.shift();
+
+                this.currentRequest = queuedRequest;
+                await this.treatRequest(queuedRequest.remoteHost, queuedRequest.request);
+                this.currentRequest = null;
+            }
+
+        } else {
+            this.pendingRequests.push(newRequest);
+        }
+
+    }
+
     async treatRequest(remoteHost, request) {
 
         this.numRequests++;

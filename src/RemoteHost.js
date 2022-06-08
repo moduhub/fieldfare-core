@@ -110,7 +110,7 @@ export class RemoteHost {
 					request.resolve(message);
 
 				} else {
-					throw Error('Response does not have an assigend request');
+					throw Error('Response does not have an assigned request');
 				}
 
 			} else {
@@ -126,7 +126,7 @@ export class RemoteHost {
 					throw Error('invalid message signature');
 				}
 
-				await localService.treatRequest(this, message);
+				await localService.pushRequest(this, message);
 
 			}
 
