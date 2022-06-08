@@ -432,8 +432,8 @@ export class HostManager {
 			throw Error('failed to sign message, private key undefined');
 		}
 
-		var utf8ArrayBuffer = new TextEncoder().encode(JSON.stringify(message.data));
-
+		var utf8ArrayBuffer = Utils.strToUtf8Array(JSON.stringify(message.data));
+		
 		var signatureBuffer = await crypto.subtle.sign(
 			{
 				name: "ECDSA",
