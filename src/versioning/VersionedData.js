@@ -82,21 +82,6 @@ export class VersionedData {
 		}
 	}
 
-	static validateParameters(params, expectedNames) {
-
-		for(const prop in params) {
-			if(expectedNames.includes(prop) === false) {
-				throw Error('unxpected parameter: ' + prop);
-			}
-		}
-
-		for(const name of expectedNames) {
-			if(name in params === false) {
-				throw Error('missing parameter: ' + name);
-			}
-		}
-	}
-
 	async applyChain(chain, merge=false) {
 
 		//just accept remote changes

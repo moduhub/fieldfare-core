@@ -87,6 +87,21 @@ export const Utils = {
 		}
 	},
 
+	validateParameters(params, expectedNames) {
+
+		for(const prop in params) {
+			if(expectedNames.includes(prop) === false) {
+				throw Error('unxpected parameter: ' + prop);
+			}
+		}
+
+		for(const name of expectedNames) {
+			if(name in params === false) {
+				throw Error('missing parameter: ' + name);
+			}
+		}
+	},
+
 	isUUID(uuid) {
 
         var pattern = new RegExp('^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$', 'i');

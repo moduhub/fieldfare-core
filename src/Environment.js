@@ -8,6 +8,7 @@ import {HashLinkedTree} from './structures/HashLinkedTree';
 import {VersionedData} from './versioning/VersionedData';
 import {VersionStatement} from './versioning/VersionStatement';
 import {ServiceDefinition} from './env/ServiceDefinition';
+import {Utils} from './basic/Utils';
 import {logger} from './basic/Log';
 
 
@@ -244,7 +245,7 @@ export class Environment extends VersionedData {
 
 	async applyAddService(issuer, params, merge=false) {
 
-		VersionedData.validateParameters(params, ['definition']);
+		Utils.validateParameters(params, ['definition']);
 
 		logger.log('info', 'applyAddService params: ' + JSON.stringify(params));
 
@@ -367,7 +368,7 @@ export class Environment extends VersionedData {
 
 	async applyAddProvider(issuer, params, merge=false) {
 
-		VersionedData.validateParameters(params,
+		Utils.validateParameters(params,
 			['uuid', 'host']);
 
 		await this.auth(issuer);
@@ -434,7 +435,7 @@ export class Environment extends VersionedData {
 
 	async applyAddWebport(issuer, params, merge=false) {
 
-		VersionedData.validateParameters(params, ['hostid', 'protocol', 'address', 'port']);
+		Utils.validateParameters(params, ['hostid', 'protocol', 'address', 'port']);
 
 		await this.auth(issuer);
 
