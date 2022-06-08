@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export class LevelUpNVData{
 
   constructor(){
-    const stops_db = levelup('./nvd', {
+    this.db = new levelup('./nvd', {
       db: location => asyncstorageDown(location, { AsyncStorage })
     });
   }
