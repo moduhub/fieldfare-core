@@ -36,7 +36,7 @@ export class ResourcesManager {
 
         var dataBuffer = Utils.base64ToArrayBuffer(base64data);
 
-        var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', dataBuffer));
+        var hash = new Uint8Array(await crypto.subtle.digest({ name: 'SHA-256' }, dataBuffer));
 
         var base64hash = btoa(String.fromCharCode.apply(null, hash));
 
