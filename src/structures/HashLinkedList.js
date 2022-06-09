@@ -19,9 +19,7 @@ export class HashLinkedList {
 		&& lastHash !== 'undefined'
 		&& lastHash !== '') {
 
-			if(Utils.isBase64(lastHash) === false) {
-				throw Error('invalid HLL initialization parameter');
-			}
+			ResourcesManager.validateKey(lastHash);
 
 			this.lastHash = lastHash;
 
