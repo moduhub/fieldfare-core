@@ -55,36 +55,40 @@ export async function setupEnvironment(uuid) {
 
 	logger.debug("Iterating env webports");
   const webports = env.elements.get('webports');
+
   console.log(JSON.stringify(webports));
-	// for await (const resource of webports) {
-  //   console.log('antes do for');
-	// 	const webport = await host.getResourceObject(resource);
-  //
-	// 	logger.debug("webport: " + JSON.stringify(webport));
-  //
-	// 	switch (webport.protocol) {
-  //
-	// 		case 'ws': {
-  //
-	// 			try {
-  //
-	// 				logger.debug('Accessing ws port at ' + webport.address + ':' + webport.port);
-  //
-	// 				var wsChannel = await webClientTransceiver.newChannel(webport.address, webport.port);
-  //
-	// 				host.bootChannel(wsChannel);
-  //
-	// 			} catch (error) {
-	// 				logger.error("Websocket setup failed: " + error);
-	// 			}
-  //
-	// 		} break;
-  //
-	// 		default: {
-	// 			console.log("unsuported webport protocol: " + webport.protocol);
-	// 		}
-	// 	}
-	// }
-  console.log('depois env setup concluido!');
+  console.log('antes do for await webports:');
+
+  for await (const resource of webports) {
+  // for await (const resource of webports) {
+		const webport = await host.getResourceObject(resource);
+
+		logger.debug("webport: " + JSON.stringify(webport));
+
+		switch (webport.protocol) {
+
+			case 'ws': {
+
+				try {
+
+					logger.debug('Accessing ws port at ' + webport.address + ':' + webport.port);
+
+					var wsChannel = await webClientTransceiver.newChannel(webport.address, webport.port);
+
+					host.bootChannel(wsChannel);
+
+				} catch (error) {
+					logger.error("Websocket setup failed: " + error);
+				}
+
+			} break;
+
+			default: {
+				console.log("unsuported webport protocol: " + webport.protocol);
+			}
+		}
+	}
+
+  console.log('depois webports for await concluido!');
     return env;
 }
