@@ -201,6 +201,8 @@ export class RemoteHost {
 			throw Error('Message state object is not an object');
 		}
 
+		this.lastState = message.data.state;
+
 		for(const prop in message.data.state) {
 			const service = this.implementedServices.get(prop);
 			if(service) {
@@ -337,7 +339,7 @@ export class RemoteHost {
 			var signatureBuffer = Utils.base64ToArrayBuffer(message.signature);
 
 			var dataBuffer = Utils.strToUtf8Array(JSON.stringify(message.data));
-			
+
 			result = await crypto.subtle.verify(
 				{
 					name: "ECDSA",
@@ -366,8 +368,14 @@ export class RemoteHost {
 			try {
 				const definition = this.definedServices.get(uuid);
 				const newService = RemoteService.fromDefinition(definition);
-				newService.owner = this;
+				newService.setOwnerID(this.id);
 				this.implementedServices.set(definition.uuid, newService);
+
+				if(this.lastState) {
+					const serviceState = this.lastState[uuid];
+					newService.setState(serviceState);
+				}
+
 				logger.info('Implemented new RemoteService ' + uuid + ' for RemoteHost ' + this.id);
 			} catch(error) {
 				throw Error('Failed to setup RemoteService ' + uuid, {cause: error});
