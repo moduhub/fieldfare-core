@@ -39,8 +39,17 @@ export class RemoteHost {
 			// 	+ ' channel ('
 			// 	+ '-'//JSON.stringify(channel.info)
 			// 	+ ')');
+			try {
+				channel.send(message);
+			} catch(error) {
 
-			channel.send(message);
+				logger.warn("Failed to send message to channel: "
+					+ error
+					+ ' > removing from list');
+
+				this.channels.delete(channel);
+
+			}
 		}
 
 	}
