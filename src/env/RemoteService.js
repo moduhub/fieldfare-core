@@ -84,13 +84,12 @@ export class RemoteService {
 
     }
 
-    setOwnerID(id) {
-        this.owner = id;
+    setOwner(owner) {
 
-        console.table(this.data);
+        this.owner = owner;
 
         for(const prop in this.data) {
-            this.data[prop].setOwnerID(id);
+            this.data[prop].setOwnerID(owner.id);
         }
     }
 

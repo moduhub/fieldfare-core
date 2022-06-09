@@ -377,7 +377,7 @@ export class RemoteHost {
 			try {
 				const definition = this.definedServices.get(uuid);
 				const newService = RemoteService.fromDefinition(definition);
-				newService.setOwnerID(this.id);
+				newService.setOwner(this);
 				this.implementedServices.set(definition.uuid, newService);
 
 				if(this.lastState) {
