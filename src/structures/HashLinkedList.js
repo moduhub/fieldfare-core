@@ -5,6 +5,7 @@
 
  */
 
+import {ResourcesManager} from '../resources/ResourcesManager';
 import {Utils} from '../basic/Utils';
 import {logger} from '../basic/Log';
 
@@ -36,6 +37,17 @@ export class HashLinkedList {
 
 	}
 
+	setOwnerID(id) {
+
+		ResourcesManager.validateKey(id);
+
+		this.ownerID= id;
+
+		if(id !== host.id) {
+			this.readOnly = true;
+		}
+	}
+
 	setState(state) {
 
 		if(state === null
@@ -65,6 +77,10 @@ export class HashLinkedList {
 
 	async append(element) {
 
+		if(this.readOny) {
+			throw Error('Attempt to edit a read only hash linked list');
+		}
+
 		var newListElement = {
 			prev: this.lastHash,
 			obj: element
@@ -86,7 +102,7 @@ export class HashLinkedList {
 
 		while(prevHash !== '') {
 
-			var listElement = await host.getResourceObject(prevHash);
+			var listElement = await host.getResourceObject(prevHash, this.ownerID);
 
 			if(listElement === null
 			|| listElement === undefined) {
