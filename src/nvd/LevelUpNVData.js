@@ -11,23 +11,36 @@ export class LevelUpNVData{
   }
 
 
-  async save(key, object){
-    await this.db.put(key, object);
+  save(key, object){
+    console.log('levelupnvdata save', key, 'Object: ', JSON.stringify(object));
+    return new Promise((resolve, reject) => {
+      this.db.put(key, object, (err) => {
+        if (err) {
+          console.log('Error in levelupnvdata save, error: ' + err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 
 
-  async load(key){
+  load(key){
     var object;
-
-    try {
-      object = await this.db.get(key);
-    } catch (error) {
-      if(error.notFound === true){
-        object = undefined;
-      }
-    }
-
-    return object;
+      console.log('levelupnvdata load\nkey: ' + key);
+      return new Promise((resolve) => {
+        this.db.get(key, function(err, value){
+          if(err){
+            resolve(undefined);
+          } else {
+            console.log('Gotten value: ', JSON.parse(value));
+            console.log('Key: ' + key);
+            object = value;
+            resolve(object);
+          }
+      });
+    });
   }
 
 }
