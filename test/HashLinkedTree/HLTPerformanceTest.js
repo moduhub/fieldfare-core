@@ -1,11 +1,11 @@
 
-const common = require('./HLTTestCommon.js');
+import * as common from './HLTTestCommon.js';
 
-const HashLinkedTree = require('../../src/structures/HashLinkedTree.js');
+import HashLinkedTree from '../../src/structures/HashLinkedTree.js';
 
 const gSalt = 'hlttest';
 
-async function test() {
+export async function test() {
 
 	await common.init(common.privateKeys[0]);
 
@@ -33,5 +33,3 @@ async function test() {
     console.log("Total iteration time: " + (endtime-starttime) + " ms");
 
 }
-
-test();
