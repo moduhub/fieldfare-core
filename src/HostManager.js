@@ -233,7 +233,7 @@ export class HostManager {
 
 	async getResource(hash, owner) {
 
-        ResourcesManager.validateKey(hash);
+        ResourcesManager.validateKey(JSON.parse(hash));
 
 		var base64data;
 

@@ -26,7 +26,7 @@ export async function setupHost(){
 		privateKeyData = await generatePrivateKey();
 	}
 
-	await host.setupId(privateKeyData);
+	await host.setupId(JSON.parse(privateKeyData));
 
   webClientTransceiver = new WebClientTransceiver();
 }
