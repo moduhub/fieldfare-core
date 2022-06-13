@@ -1,11 +1,12 @@
 import { HostManager } from '../HostManager';
 import { LevelUpNVData } from '../nvd/LevelUpNVData';
 import { LevelUpResourcesManager } from '../resources/LevelUpResourcesManager';
-
+import {WebClientTransceiver} from '../WebClientTransceiver';
 import {generatePrivateKey} from '../basic/keyManagement';
 import { logger } from '../basic/Log';
+import { Environment } from '../Environment';
 
-var reactNativeClientTransceiver;
+var webClientTransceiver;
 
 export async function setupHost(){
 
@@ -26,31 +27,65 @@ export async function setupHost(){
 	}
 
 	await host.setupId(privateKeyData);
+
+  webClientTransceiver = new WebClientTransceiver();
 }
 
 
 export async function bootChannels(list){
 
-  for (const reactnativeport of list) {
-    try {
-      var rnsChannel = await reactNativeClientTransceiver.newChannel(reactnativeport.add, reactnativeport.port);
-      host.bootChannel(rnsChannel);
-    } catch (e) {
-      logger.error('Cannot reach ' + reactnativeport.address + ' at port ' + reactnativeport.port + ' cause: ' + e);
-    }
-  }
+  for(const webport of list) {
+		try {
+			var wsChannel = await webClientTransceiver.newChannel(webport.address, webport.port);
+			host.bootChannel(wsChannel);
+		} catch (error) {
+			logger.error("Cannot reach " + webport.address + " at port " + webport.port + ' cause: ' + error);
+		}
+	}
 }
 
 
-export async function setupEnvironment(uuid){
+export async function setupEnvironment(uuid) {
 
-  const env = new Environment();
+	const env = new Environment();
 
-  await env.init(uuid);
+	await env.init(uuid);
 
-  // TODO: implement the environment setup
+	host.addEnvironment(env);
 
-  host.addEnvironment(env);
+	logger.debug("Iterating env webports");
+  const webports = env.elements.get('webports');
 
-  return env;
+  for await (const resource of webports) {
+  // for await (const resource of webports) {
+		const webport = await host.getResourceObject(resource);
+
+		logger.debug("webport: " + JSON.stringify(webport));
+
+		switch (webport.protocol) {
+
+			case 'ws': {
+
+				try {
+
+					logger.debug('Accessing ws port at ' + webport.address + ':' + webport.port);
+
+					var wsChannel = await webClientTransceiver.newChannel(webport.address, webport.port);
+
+					host.bootChannel(wsChannel);
+
+				} catch (error) {
+					logger.error("Websocket setup failed: " + error);
+				}
+
+			} break;
+
+			default: {
+				console.log("unsuported webport protocol: " + webport.protocol);
+			}
+		}
+	}
+
+  console.log('depois webports for await concluido!');
+    return env;
 }

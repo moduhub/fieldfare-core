@@ -117,8 +117,8 @@ export class Environment extends VersionedData {
 	getSyncedHosts() {
 		var numSyncedHosts = 0;
 		for(const [id, info] of this.activeHosts) {
-			// logger.log('info', "this.version: " + this.version
-			// 	+ ' - their.version: ' + info.latestVersion);
+			logger.log('info', "this.version: " + this.version
+				+ ' - their.version: ' + info.latestVersion);
 			if(info.latestVersion === this.version) {
 				numSyncedHosts++;
 			}

@@ -86,18 +86,16 @@ export class VersionedData {
 
 		//just accept remote changes
 		const changes = await chain.getChanges();
-
 		// logger.log('info', "remoteChanges:" + JSON.stringify(remoteChanges));
-
 		for await (const [issuer, method, params] of changes) {
-
+			console.log('------------method: ' + method);
 			if(method === 'merge') {
 
 				const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
 				mergeChain.limit(params.base);
-
+				console.log('mergechain: '+ mergeChain);
 				await this.applyChain(mergeChain, true);
-
+				console.log('after apply chain');
 			} else {
 				logger.debug('info', 'await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
 				await this.apply(issuer, method, params, merge);
@@ -110,7 +108,7 @@ export class VersionedData {
 	async apply(issuer, methodName, params, merge=false) {
 
 		const methodCallback = this.methods.get(methodName);
-
+		console.log('---------------------[apply] method: ' + methodCallback);
 		if(!methodCallback) {
 			throw Error('apply failed: unknown change method ' + methodName);
 		}
@@ -292,14 +290,15 @@ export class VersionedData {
 	}
 
 	async applyAddAdmin(issuer, params, merge=false) {
-
+		console.log('---------------------[applyAddAdmin] entered');
 		logger.log('info', "applyAddAdmin params: " + JSON.stringify(params));
 
 		Utils.validateParameters(params, ['id']);
 
 		const newAdminID = params.id;
-
+		console.log('[applyAddAdmin] newAdmin ID: ' + newAdminID);
 		if(Utils.isBase64(newAdminID) === false) {
+			console.log('[applyAddAdmin] ERROR: ID is not base64')
 			throw Error('invalid admin ID');
 		}
 
@@ -308,7 +307,7 @@ export class VersionedData {
 		 	+ ' from ' + issuer);
 
 		const admins = this.elements.get('admins');
-
+		
 		logger.log('info', "Current admins: ");
 		for await (const admin of admins) {
 			logger.log('info', '> ' + admin);

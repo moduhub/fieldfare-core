@@ -56,9 +56,7 @@ export async function setupEnvironment(uuid) {
 
 	logger.debug("Iterating env webports");
 
-	const webports = env.elements.get('webports');
-
-	for await (const resource of webports) {
+	for await (const resource of env.elements.get('webports')) {
 
 		const webport = await host.getResourceObject(resource);
 

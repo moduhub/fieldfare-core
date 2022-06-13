@@ -32,16 +32,19 @@ export class LocalService {
     }
 
     updateState() {
-        logger.debug('>>CALL: LocalService.updateState()');
+
         var newState = new Object;
 
         for(const prop in this.data) {
+
+            logger.log('info', "data.name: " + prop);
+            logger.log('info', "stateId: " + this.data[prop].getState());
             newState[prop] = this.data[prop].getState();
         }
 
         if(this.prevState !== newState) {
             const uuid = this.definition.uuid;
-            // logger.log('info', "Storing service state " + uuid + '->' + JSON.stringify(newState, null, 2));
+            logger.log('info', "Storing service state " + uuid + '->' + JSON.stringify(newState, null, 2));
             nvdata.save(uuid, newState);
             this.prevState = newState;
         }

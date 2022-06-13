@@ -39,17 +39,8 @@ export class RemoteHost {
 			// 	+ ' channel ('
 			// 	+ '-'//JSON.stringify(channel.info)
 			// 	+ ')');
-			try {
-				channel.send(message);
-			} catch(error) {
 
-				logger.warn("Failed to send message to channel: "
-					+ error
-					+ ' > removing from list');
-
-				this.channels.delete(channel);
-
-			}
+			channel.send(message);
 		}
 
 	}
@@ -210,8 +201,6 @@ export class RemoteHost {
 			throw Error('Message state object is not an object');
 		}
 
-		this.lastState = message.data.state;
-
 		for(const prop in message.data.state) {
 			const service = this.implementedServices.get(prop);
 			if(service) {
@@ -237,7 +226,7 @@ export class RemoteHost {
 	async updateEnvironment(uuid, version) {
 
 		const env = host.getEnvironment(uuid);
-
+		
 		env.updateActiveHost(this, version);
 
 		if(env.version !== version) {
@@ -377,14 +366,8 @@ export class RemoteHost {
 			try {
 				const definition = this.definedServices.get(uuid);
 				const newService = RemoteService.fromDefinition(definition);
-				newService.setOwner(this);
+				newService.owner = this;
 				this.implementedServices.set(definition.uuid, newService);
-
-				if(this.lastState) {
-					const serviceState = this.lastState[uuid];
-					newService.setState(serviceState);
-				}
-
 				logger.info('Implemented new RemoteService ' + uuid + ' for RemoteHost ' + this.id);
 			} catch(error) {
 				throw Error('Failed to setup RemoteService ' + uuid, {cause: error});
