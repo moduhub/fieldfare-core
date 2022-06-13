@@ -31,24 +31,19 @@ export class LevelUpResourcesManager extends ResourcesManager{
   getResource(base64hash) {
 
     // logger.log('info', "LevelUpResourcesManager fetching res: " + base64hash);
-
-    var base64data;
-
     return new Promise((resolve, reject) => {
       this.db.get(base64hash, (error, value) => {
         if (error) {
           var newError = Error('Resource fetch failed: ' + {cause: error});
-          console.log(error);
-          if (error.notFound === true) {
+          //console.log(error);
+          if (error.name === 'NotFoundError') {
             newError.name = 'NOT_FOUND_ERROR';
-            base64data = undefined;
           }
-          reject(error);
+          reject(newError);
         }
         else {
-          base64data = value;
-          // console.log('Base64: ' + base64data);
-          resolve(base64data);
+          // console.log('Base64: ' + value);
+          resolve(value);
         }
       });
     });
