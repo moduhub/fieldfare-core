@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 
+import {ResourcesManager} from '../resources/ResourcesManager';
 import {HashLinkedList} from '../structures/HashLinkedList';
 import {HashLinkedTree} from '../structures/HashLinkedTree';
 import {VersionStatement} from './VersionStatement';
@@ -150,7 +151,18 @@ export class VersionedData {
 
 	async update(version, owner) {
 
+		if(this.updateInProgress === version) {
+			//Already updating to same version, consider success?
+			return;
+		}
+
+		if(this.updateInProgress) {
+			throw Error('another update in progress');
+		}
+
 		logger.log('info', ">> Env update to version: " + version);
+
+		this.updateInProgress = version;
 
 		const receivedMessage = await VersionStatement.fromResource(version, owner);
 
@@ -225,6 +237,8 @@ export class VersionedData {
 				//Save changes permanently
 				await nvdata.save(this.uuid, this.version);
 
+				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.version);
+
 			} catch (error) {
 
 				// Recover previous state
@@ -232,9 +246,13 @@ export class VersionedData {
 
 				throw Error('environment changes apply all failed: ', {cause: error});
 
+			} finally {
+				this.updateInProgress = null;
 			}
 
 		} else {
+
+			this.updateInProgress = null;
 
 			logger.log('info', "Local chain is ahead of remote chain, nothing to do");
 
@@ -290,24 +308,16 @@ export class VersionedData {
 	}
 
 	async applyAddAdmin(issuer, params, merge=false) {
-		console.log('---------------------[applyAddAdmin] entered');
-		logger.log('info', "applyAddAdmin params: " + JSON.stringify(params));
+
+		logger.debug("applyAddAdmin params: " + JSON.stringify(params));
 
 		Utils.validateParameters(params, ['id']);
 
 		const newAdminID = params.id;
-		console.log('[applyAddAdmin] newAdmin ID: ' + newAdminID);
-		if(Utils.isBase64(newAdminID) === false) {
-			console.log('[applyAddAdmin] ERROR: ID is not base64')
-			throw Error('invalid admin ID');
-		}
-
-		//newAdmin must be a valid host ID
-		logger.log('info', "APPLY >> VersionedData.applyAddAdmin ID=" + newAdminID
-		 	+ ' from ' + issuer);
+		ResourcesManager.validateKey(newAdminID);
 
 		const admins = this.elements.get('admins');
-		
+
 		logger.log('info', "Current admins: ");
 		for await (const admin of admins) {
 			logger.log('info', '> ' + admin);

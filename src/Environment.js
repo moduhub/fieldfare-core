@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 
+import {ResourcesManager} from './resources/ResourcesManager'
 import {HashLinkedTree} from './structures/HashLinkedTree';
 import {VersionedData} from './versioning/VersionedData';
 import {VersionStatement} from './versioning/VersionStatement';
@@ -126,7 +127,7 @@ export class Environment extends VersionedData {
 		return numSyncedHosts;
 	}
 
-	async sync() {
+	sync() {
 
 		const preSyncedHosts = this.getSyncedHosts();
 		if(preSyncedHosts > 0) {
@@ -143,12 +144,17 @@ export class Environment extends VersionedData {
 					resolve(syncedHosts);
 				} else {
 					if(this.activeHosts.size === 0) {
-						// logger.log('info', "env.sync waiting for active host");
+						logger.log('info', "env.sync waiting for active host");
 					} else {
-						// logger.log('info', 'env.sync waiting for any of ' + this.activeHosts.size
-						// 	+ ' active hosts to sync');
+						logger.log('info', 'env.sync waiting for any of ' + this.activeHosts.size
+						 	+ ' active hosts to sync');
 					}
-					if(++attempts > 10) {
+					attempts++;
+					if(this.updateInProgress) {
+						logger.info('env.sync waiting for update in progress');
+						attempts = 0;
+					} else
+					if(attempts > 10) {
 						clearInterval(interval);
 						reject(Error('sync timeout'));
 					}
