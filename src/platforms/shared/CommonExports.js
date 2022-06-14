@@ -1,18 +1,18 @@
 
-export * from '../HostManager';
-export * from '../Environment';
-export * from '../RemoteHost';
-export * from '../Message';
-export * from '../Request';
-export * from '../Transceiver';
-
 export * from '../basic/Utils';
 export * from '../basic/Log';
 export * from '../basic/keyManagement'
 
-export * from '../env/LocalService';
-export * from '../env/RemoteService';
-export * from '../env/ServiceDefinition';
+export * from '../../env/HostManager';
+export * from '../../env/Environment';
+export * from '../../env/RemoteHost';
+export * from '../../env/LocalService';
+export * from '../../env/RemoteService';
+export * from '../../env/ServiceDefinition';
+
+export * from '../../trx/Message';
+export * from '../../trx/Request';
+export * from '../../trx/Transceiver';
 
 export * from '../resources/ResourcesManager';
 export * from '../resources/VolatileResourcesManager';

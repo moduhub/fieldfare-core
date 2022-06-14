@@ -1,8 +1,8 @@
 {
-  "name": "mhlib",
+  "name": "drozd",
   "version": "0.0.1",
-  "description": "Javascript functions to access the MH network",
-  "main": "src/exports/common.js",
+  "description": "Backend framework for distributed networks",
+  "main": "src/platform/reactnative/ReactNativeExports.js",
   "bin": {
     "mhsetup": "bin/mhsetup",
     "mhconfig": "bin/mhconfig",
@@ -14,10 +14,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://bitbucket.org/moduhub/mhlib-js/src/master"
+    "url": "https://github.com/moduhub/drozd"
   },
   "keywords": [
-    "mhlib"
+    "backend, framework, distributed"
   ],
   "author": "Adan Kvitschal",
   "license": "ISC",
@@ -38,20 +38,20 @@
   },
   "exports": {
     ".": {
-      "require": "./src/exports/common.js",
-      "import": "./src/exports/common"
+        "require": "./src/platforms/shared/CommonExports.js",
+        "import": "./src/platforms/shared/CommonExports",
     },
-    "./web": {
-      "require": "./src/exports/web.js",
-      "import": "./src/exports/web"
+    "./browser": {
+        "require": "./src/platforms/reactnative/ReactNativeExports.js",
+        "import": "./src/platforms/reactnative/ReactNativeExports"
     },
     "./node": {
-      "require": "./src/exports/node.js",
-      "import": "./src/exports/node"
+        "require": "./src/platforms/node/NodeExports.js",
+        "import": "./src/platforms/node/NodeExports"
     },
     "./reactnative": {
-      "require": "./src/exports/reactnative.js",
-      "import": "./src/exports/reactnative"
+      "require": "./src/platforms/reactnative/ReactNativeExports.js",
+      "import": "./src/platforms/reactnative/ReactNativeExports"
     }
   }
 }

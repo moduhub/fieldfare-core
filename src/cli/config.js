@@ -5,7 +5,8 @@ import fs from 'fs';
 
 import {VersionChain} from '../versioning/VersionChain';
 import {Utils} from '../basic/Utils';
-import {initHost, initEnvironment, initWebports} from './cliCommon';
+import DrozdInit from '../platforms/node';
+
 import {
     inputWebport,
     inputUUID
@@ -448,9 +449,13 @@ export async function main(args) {
 
     logger.disable();
 
-    await initHost();
-    env = await initEnvironment();
-    await initWebports(env);
+    try {
+        await DrozdInit.setupHost();
+        const env = await DrozdInit.setupEnvironment();
+        await DrozdInit.initWebports(env);
+    } catch (error) {
+        logger.error('Drozd initialization failed: ' + error);
+    }
 
     switch(options.operation) {
 

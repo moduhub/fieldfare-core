@@ -1,11 +1,11 @@
 
-import {HostManager} from '../HostManager'
-import {Environment} from '../Environment'
-import {LevelResourcesManager} from '../resources/LevelResourcesManager';
-import {LevelNVData} from '../nvd/LevelNVData';
+import {LocalHost} from '../../env/LocalHost'
+import {Environment} from '../../env/Environment'
+import {LevelResourcesManager} from '../shared/LevelResourcesManager';
+import {LevelNVData} from '../shared/LevelNVData';
 import {WebServerTransceiver} from '../WebServerTransceiver';
 import {UDPTransceiver} from '../UDPTransceiver';
-import {logger} from '../basic/Log';
+import {logger} from '../../basic/Log';
 
 var webServerTransceiver;
 var udpTransceiver;
@@ -13,7 +13,7 @@ var udpTransceiver;
 const minUDPPort = 10000;
 const maxUDPPort = 60000;
 
-export async function initHost() {
+export async function setupHost() {
 
     if(global.nvdata === undefined) {
         global.nvdata = new LevelNVData;
@@ -23,7 +23,7 @@ export async function initHost() {
         global.crypto = require('crypto').webcrypto;
     }
 
-    global.host = new HostManager();
+    LocalHost.init();
 
     host.addResourcesManager(new LevelResourcesManager());
 
@@ -33,7 +33,7 @@ export async function initHost() {
 
 }
 
-export async function initEnvironment() {
+export async function setupEnvironment(envUUID) {
 
     const envUUID = await nvdata.load('envUUID');
 
