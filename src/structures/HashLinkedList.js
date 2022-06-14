@@ -5,6 +5,7 @@
 
  */
 
+import {ResourcesManager} from '../resources/ResourcesManager'
 import {Utils} from '../basic/Utils';
 import {logger} from '../basic/Log';
 
@@ -72,7 +73,7 @@ export class HashLinkedList {
 
 		// logger.log('info', "Hash Linked List append: " + JSON.stringify(newListElement));
 
-		this.lastHash = await host.storeResourceObject(newListElement);
+		this.lastHash = await ResourcesManager.storeResourceObject(newListElement);
 
 		this.numElements++;
 
@@ -86,7 +87,7 @@ export class HashLinkedList {
 
 		while(prevHash !== '') {
 
-			var listElement = await host.getResourceObject(prevHash);
+			var listElement = await ResourcesManager.getResourceObject(prevHash);
 
 			if(listElement === null
 			|| listElement === undefined) {

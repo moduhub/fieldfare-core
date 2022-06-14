@@ -7,8 +7,8 @@
 const WebSocketServer = require('websocket').server;
 const http = require('http');
 
-import {Transceiver} from './Transceiver';
-import {logger} from './basic/Log';
+import {Transceiver} from '../../trx/Transceiver';
+import {logger} from '../../basic/Log';
 
 
 export class WebServerTransceiver extends Transceiver {

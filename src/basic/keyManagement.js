@@ -3,12 +3,13 @@ var privateKeyData;
 var pubKeyData;
 
 import {ResourcesManager} from '../resources/ResourcesManager';
+import {NVD} from '../basic/NVD'
 import {logger} from '../basic/Log'
 
 export async function getHostID() {
 
     if(privateKeyData === undefined) {
-        privateKeyData = await nvdata.load('privateKey');
+        privateKeyData = await NVD.load('privateKey');
 
         if(privateKeyData) {
             await importPrivateKey(privateKeyData);
@@ -49,7 +50,7 @@ export async function importPrivateKey(privateKeyData) {
         alg: "ES256"
     };
 
-    await nvdata.save('privateKey', privateKeyData);
+    await NVD.save('privateKey', privateKeyData);
 }
 
 export async function generatePrivateKey() {
@@ -81,8 +82,8 @@ export async function generatePrivateKey() {
 
     console.log('Public key: ' + pubKeyData);
 
-    logger.debug("Storing privateKey to nvdata: "+ privateKeyData);
-    await nvdata.save('privateKey', privateKeyData);
+    logger.debug("Storing privateKey to NVD: "+ privateKeyData);
+    await NVD.save('privateKey', privateKeyData);
 
     return privateKeyData;
 }

@@ -3,9 +3,11 @@ import inquirer from 'inquirer';
 import arg from 'arg';
 import fs from 'fs';
 
+import {LocalHost} from '../env/LocalHost';
+import {ResourcesManager} from '../resources/ResourcesManager';
 import {VersionChain} from '../versioning/VersionChain';
 import {Utils} from '../basic/Utils';
-import DrozdInit from '../platforms/node';
+import {DrozdInit} from '../platforms/node/NodeExports';
 
 import {
     inputWebport,
@@ -43,7 +45,7 @@ const inputHostID = {
     },
     filter(value) {
         if(value === 'this') {
-            return host.id;
+            return LocalHost.getID();
         }
         return value;
     }
@@ -175,7 +177,7 @@ async function servicesMenu() {
     const services = await env.elements.get('services');
 
     for await (const key of services) {
-        servicesList.push(await host.getResourceObject(key));
+        servicesList.push(await ResourcesManager.getResourceObject(key));
     }
 
     if(servicesList.length > 0) {
@@ -192,7 +194,7 @@ async function servicesMenu() {
 
             try {
 
-                await env.auth(host.id);
+                await env.auth(LocalHost.getID());
 
                 var {uuid} = await inquirer.prompt(inputUUID);
 
@@ -274,7 +276,7 @@ async function selectServiceMenu() {
     const services = await env.elements.get('services');
 
     for await (const key of services) {
-        const definition = await host.getResourceObject(key);
+        const definition = await ResourcesManager.getResourceObject(key);
         menu.choices.push(definition.name + ' (uuid: ' + definition.uuid + ')');
     }
 
@@ -350,7 +352,7 @@ async function webportsMenu() {
     const webports = env.elements.get('webports');
 
     for await(const key of webports) {
-        const webport = await host.getResourceObject(key);
+        const webport = await ResourcesManager.getResourceObject(key);
         list.push(webport);
     }
 
@@ -367,7 +369,7 @@ async function webportsMenu() {
 
             var newWebport = await inquirer.prompt(inputWebport);
 
-            newWebport.hostid = host.id;
+            newWebport.hostid = LocalHost.getID();
 
             console.log("Review webport data: " + JSON.stringify(newWebport));
 
@@ -451,10 +453,11 @@ export async function main(args) {
 
     try {
         await DrozdInit.setupHost();
-        const env = await DrozdInit.setupEnvironment();
+        env = await DrozdInit.setupEnvironment();
         await DrozdInit.initWebports(env);
     } catch (error) {
-        logger.error('Drozd initialization failed: ' + error);
+        console.error('Drozd initialization failed: ' + error.stack);
+        process.exit(1);
     }
 
     switch(options.operation) {
@@ -465,7 +468,7 @@ export async function main(args) {
 
         case 'getChanges': {
 
-            const localChain = new VersionChain(env.version, host.id, 50);
+            const localChain = new VersionChain(env.version, LocalHost.getID(), 50);
 
             await localChain.print();
 
@@ -503,7 +506,7 @@ export async function main(args) {
 
             const webports = await env.elements.get('webports');
             for await (const resource of webports) {
-                const webport = await host.getResourceObject(resource);
+                const webport = await ResourcesManager.getResourceObject(resource);
                 console.log(JSON.stringify(webport));
             }
             process.exit(0);

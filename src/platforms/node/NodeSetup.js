@@ -1,10 +1,11 @@
 
 import {LocalHost} from '../../env/LocalHost'
 import {Environment} from '../../env/Environment'
-import {LevelResourcesManager} from '../shared/LevelResourcesManager';
-import {LevelNVData} from '../shared/LevelNVData';
-import {WebServerTransceiver} from '../WebServerTransceiver';
-import {UDPTransceiver} from '../UDPTransceiver';
+import {LevelResourcesManager} from './LevelResourcesManager';
+import {LevelNVD} from './LevelNVD';
+import {WebServerTransceiver} from './WebServerTransceiver';
+import {UDPTransceiver} from './UDPTransceiver';
+import {NVD} from '../../basic/NVD';
 import {logger} from '../../basic/Log';
 
 var webServerTransceiver;
@@ -15,27 +16,23 @@ const maxUDPPort = 60000;
 
 export async function setupHost() {
 
-    if(global.nvdata === undefined) {
-        global.nvdata = new LevelNVData;
-    }
-
     if(global.crypto === undefined) {
         global.crypto = require('crypto').webcrypto;
     }
 
-    LocalHost.init();
+    LevelNVD.init();
 
-    host.addResourcesManager(new LevelResourcesManager());
+    LevelResourcesManager.init();
 
-    const privateKeyData = await nvdata.load('privateKey');
+    const privateKeyData = await NVD.load('privateKey');
 
-    await host.setupId(privateKeyData);
+    LocalHost.init(privateKeyData);
 
 }
 
-export async function setupEnvironment(envUUID) {
+export async function setupEnvironment() {
 
-    const envUUID = await nvdata.load('envUUID');
+    const envUUID = await NVD.load('envUUID');
 
     if(envUUID === null
     || envUUID === undefined) {
@@ -48,7 +45,7 @@ export async function setupEnvironment(envUUID) {
 
     await env.init(envUUID);
 
-	host.addEnvironment(env);
+	LocalHost.addEnvironment(env);
 
     return env;
 }
@@ -57,7 +54,7 @@ export async function setupEnvironment(envUUID) {
 export async function initWebports(env) {
 
     //Part 1: Serve webports required in env
-    const servedWebports = await env.getWebports(host.id);
+    const servedWebports = await env.getWebports(LocalHost.getID());
 
     for(const webport of servedWebports) {
 
@@ -92,7 +89,7 @@ export async function initWebports(env) {
                 logger.log('info', 'Opening UDP port ' + webport.port);
                 udpTransceiver = new UDPTransceiver(webport.port);
                 udpTransceiver.onNewChannel = (newChannel) => {
-                    host.bootChannel(newChannel);
+                    LocalHost.bootChannel(newChannel);
                 };
 
             } break;
@@ -104,7 +101,7 @@ export async function initWebports(env) {
     }
 
     // Part2: Boot webports
-    const webportsJSON = await nvdata.load('bootWebports');
+    const webportsJSON = await NVD.load('bootWebports');
 
     var webports;
 
@@ -144,7 +141,7 @@ export async function initWebports(env) {
 
                 var udpChannel = udpTransceiver.newChannel(webport.address, webport.port);
 
-                host.bootChannel(udpChannel);
+                LocalHost.bootChannel(udpChannel);
 
             } break;
 

@@ -39,7 +39,7 @@
   "exports": {
     ".": {
         "require": "./src/platforms/shared/CommonExports.js",
-        "import": "./src/platforms/shared/CommonExports",
+        "import": "./src/platforms/shared/CommonExports"
     },
     "./browser": {
         "require": "./src/platforms/reactnative/ReactNativeExports.js",

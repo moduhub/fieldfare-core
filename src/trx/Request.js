@@ -5,7 +5,7 @@
  */
 
 import {Message} from './Message';
-import {logger} from './basic/Log';
+import {logger} from '../basic/Log';
 
 
 export class Request extends Message {

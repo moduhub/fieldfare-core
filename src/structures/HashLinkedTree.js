@@ -38,7 +38,7 @@ class TreeContainer {
 
 		var newContainer = new TreeContainer();
 
-		const resourceObject = await host.getResourceObject(hash);
+		const resourceObject = await ResourcesManager.getResourceObject(hash);
 
 		if(resourceObject === null
 		|| resourceObject === undefined) {
@@ -284,7 +284,7 @@ export class HashLinkedTree {
 
 		}
 
-		this.rootHash = await host.storeResourceObject(newRoot);
+		this.rootHash = await ResourcesManager.storeResourceObject(newRoot);
 
 //		logger.log('info', "New tree root: \'" + this.rootHash + "\'");
 
@@ -302,7 +302,7 @@ export class HashLinkedTree {
 			|| storeFlag == false) {
 				elementHash = await ResourcesManager.generateKeyForObject(element);
 			} else {
-				elementHash = await host.storeResourceObject(element);
+				elementHash = await ResourcesManager.storeResourceObject(element);
 			}
 
 		} else
@@ -390,8 +390,8 @@ export class HashLinkedTree {
 
 				var leftContainer = iContainer;
 
-				var leftContainerHash = await host.storeResourceObject(leftContainer);
-				var rightContainerHash = await host.storeResourceObject(rightContainer);
+				var leftContainerHash = await ResourcesManager.storeResourceObject(leftContainer);
+				var rightContainerHash = await ResourcesManager.storeResourceObject(rightContainer);
 
 //				logger.log('info', "Mean element: " + meanElement);
 //				logger.log('info', "Left (" + leftContainerHash + "): "  + JSON.stringify(leftContainer, null, 2));
@@ -449,7 +449,7 @@ export class HashLinkedTree {
 			//Update branch down (up?) to root
 			while(depth > 0) {
 
-				const currentContainerHash = await host.storeResourceObject(branch[depth]);
+				const currentContainerHash = await ResourcesManager.storeResourceObject(branch[depth]);
 
 //				logger.log('info',   "depth: " + depth
 //					+ "current: " + currentContainerHash
@@ -471,7 +471,7 @@ export class HashLinkedTree {
 			}
 
 			//Update root
-			this.rootHash = await host.storeResourceObject(branch[0]);
+			this.rootHash = await ResourcesManager.storeResourceObject(branch[0]);
 
 			//Dump previous root?
 
@@ -559,7 +559,7 @@ export class HashLinkedTree {
 		&& this.rootHash !== null
 		&& this.rootHash !== undefined) {
 
-			const rootElement = await host.getResourceObject(this.rootHash);
+			const rootElement = await ResourcesManager.getResourceObject(this.rootHash);
 
 			if(rootElement.numElements > 0) {
 				return true;

@@ -124,7 +124,7 @@ export class VersionedData {
 
 		// logger.log('info', "REVERTING TO VERSION: "  + version);
 
-		const statement = await host.getResourceObject(version);
+		const statement = await ResourcesManager.getResourceObject(version);
 
 		const stateKey = statement.data.state;
 
@@ -132,7 +132,7 @@ export class VersionedData {
 
 		if(stateKey !== '') {
 
-			const state = await host.getResourceObject(statement.data.state);
+			const state = await ResourcesManager.getResourceObject(statement.data.state);
 
 			// logger.log('info', "Revert to state object: " + JSON.stringify(state));
 
@@ -168,7 +168,7 @@ export class VersionedData {
 
 		// logger.log('info', "Received update statement " + JSON.stringify(receivedMessage));
 
-		var localChain = new VersionChain(this.version, host.id, 50);
+		var localChain = new VersionChain(this.version, LocalHost.getID(), 50);
 		var remoteChain = new VersionChain(version, owner, 50);
 
 		var commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
@@ -200,7 +200,7 @@ export class VersionedData {
 
 				await this.applyChain(remoteChain);
 
-				const stateKey = await host.storeResourceObject(await this.getState());
+				const stateKey = await ResourcesManager.storeResourceObject(await this.getState());
 				const expectedState = await remoteChain.getHeadState();
 
 				// logger.log('info', "state after apply: " + stateKey);
@@ -221,7 +221,7 @@ export class VersionedData {
 						await this.apply(issuer, method, params, true);
 					}
 
-					const stateAfterMergeKey = await host.storeResourceObject(await this.getState());
+					const stateAfterMergeKey = await ResourcesManager.storeResourceObject(await this.getState());
 
 					//only commit if changes were not redundant
 					if(stateAfterMergeKey !== expectedState) {
@@ -267,19 +267,19 @@ export class VersionedData {
 		//Create update message
 		var versionStatement = new VersionStatement();
 
-		versionStatement.source = host.id;
+		versionStatement.source = localHost.getID();
 
-		const stateResource = await host.storeResourceObject(await this.getState());
+		const stateResource = await ResourcesManager.storeResourceObject(await this.getState());
 
 		versionStatement.data = {
 			prev: this.version,
 			state: stateResource,
-			changes: await host.storeResourceObject(changes)
+			changes: await ResourcesManager.storeResourceObject(changes)
 		};
 
-		await host.signMessage(versionStatement);
+		await LocalHost.signMessage(versionStatement);
 
-		this.version = await host.storeResourceObject(versionStatement);
+		this.version = await ResourcesManager.storeResourceObject(versionStatement);
 
 		logger.log('info', "New version statement: " + JSON.stringify(versionStatement, null, 2)//.replaceAll('\\', '')
 			+ "->" + this.version);
@@ -348,7 +348,7 @@ export class VersionedData {
 		//newAdmin must be a valid host ID
 		logger.log('info', "VersionedData.addAdmin ID="+newAdminID);
 
-		await this.applyAddAdmin(host.id, params);
+		await this.applyAddAdmin(localHost.getID(), params);
 
 		await this.commit({
 			addAdmin: params

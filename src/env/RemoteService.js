@@ -1,7 +1,7 @@
 
-import {ServiceDefinition} from '../env/ServiceDefinition';
+import {ServiceDefinition} from './ServiceDefinition';
 import {ResourcesManager} from '../resources/ResourcesManager';
-import {Request} from '../Request';
+import {Request} from '../trx/Request';
 import {logger} from '../basic/Log';
 
 

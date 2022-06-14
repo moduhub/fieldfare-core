@@ -1,6 +1,6 @@
 
-import {ResourcesManager} from './ResourcesManager';
-import {logger} from '../basic/Log';
+import {ResourcesManager} from '../../resources/ResourcesManager';
+import {logger} from '../../basic/Log';
 
 const { Level } = require('level');
 
@@ -11,8 +11,16 @@ export class LevelResourcesManager extends ResourcesManager {
 
         this.db = new Level('resources', { valueEncoding: 'json' })
 
+    }
+
+    static init() {
+
+        const newInstance = new LevelResourcesManager;
+
+        ResourcesManager.addInstance(newInstance);
+
         setInterval(async () => {
-            logger.log('info', await this.report());
+            logger.debug(await newInstance.report());
         }, 10000);
 
     }

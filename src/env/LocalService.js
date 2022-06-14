@@ -1,7 +1,7 @@
 
 import {ResourcesManager} from '../resources/ResourcesManager';
-import {ServiceDefinition} from '../env/ServiceDefinition';
-import {Message} from '../Message';
+import {ServiceDefinition} from './ServiceDefinition';
+import {Message} from '../trx/Message';
 import {logger} from '../basic/Log';
 
 
@@ -87,8 +87,6 @@ export class LocalService {
         if(this.currentRequest === null
         || this.currentRequest === undefined) {
 
-		logger.debug('Imediate treatment of request from ' + remoteHost.id);
-
             this.currentRequest = newRequest;
             await this.treatRequest(newRequest.remoteHost, newRequest.request);
             this.currentRequest = null;
@@ -97,15 +95,12 @@ export class LocalService {
 
                 const queuedRequest = this.pendingRequests.shift();
 
-		logger.debug('treating a queued request from ' + queuedRequest.remoteHost.id);
-
                 this.currentRequest = queuedRequest;
                 await this.treatRequest(queuedRequest.remoteHost, queuedRequest.request);
                 this.currentRequest = null;
             }
 
         } else {
-		logger.debug('enqueued a request from ' + remoteHost.id);
             this.pendingRequests.push(newRequest);
         }
 

@@ -1,12 +1,18 @@
 
 const { Level } = require('level');
 
+import {NVD} from '../../basic/NVD'
+
 export class LevelNVD {
 
     constructor() {
 
          this.db = new Level('nvd', { valueEncoding: 'json' })
 
+    }
+
+    static init() {
+        NVD.singleton(new LevelNVD);
     }
 
     async save(key, object) {

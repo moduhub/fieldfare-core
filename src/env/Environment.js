@@ -4,13 +4,15 @@
  * and open the template in the editor.
  */
 
-import {ResourcesManager} from './resources/ResourcesManager'
-import {HashLinkedTree} from './structures/HashLinkedTree';
-import {VersionedData} from './versioning/VersionedData';
-import {VersionStatement} from './versioning/VersionStatement';
-import {ServiceDefinition} from './env/ServiceDefinition';
-import {Utils} from './basic/Utils';
-import {logger} from './basic/Log';
+import {LocalHost} from './LocalHost';
+import {ResourcesManager} from '../resources/ResourcesManager';
+import {HashLinkedTree} from '../structures/HashLinkedTree';
+import {VersionedData} from '../versioning/VersionedData';
+import {VersionStatement} from '../versioning/VersionStatement';
+import {ServiceDefinition} from './ServiceDefinition';
+import {NVD} from '../basic/NVD';
+import {Utils} from '../basic/Utils';
+import {logger} from '../basic/Log';
 
 
 export class Environment extends VersionedData {
@@ -51,16 +53,16 @@ export class Environment extends VersionedData {
 
 		this.uuid = uuid;
 
-		if(nvdata === undefined) {
-			throw Error('nvdata was not initialized');
+		if(NVD.available() === false) {
+			throw Error('NVD was not initialized');
 		}
 
-		const latestVersion = await nvdata.load(uuid);
+		const latestVersion = await NVD.load(uuid);
 		// logger.log('info', "Latest Version: " + latestVersion);
 
 		const rootStatement = await VersionStatement.createRoot(uuid);
 
-		const rootVersion = await host.storeResourceObject(rootStatement);
+		const rootVersion = await ResourcesManager.storeResourceObject(rootStatement);
 
 		// logger.log('info', "Root version: " + JSON.stringify(rootStatement, null, 2)
 		// + '=>' + rootVersion);
@@ -213,7 +215,7 @@ export class Environment extends VersionedData {
 			if(this.activeHosts.has(providerID) === false) {
 
 				try {
-					const remoteHost = await host.establish(providerID);
+					const remoteHost = await LocalHost.establish(providerID);
 					newProviders.push(remoteHost);
 				} catch (error) {
 					logger.log('info', "Failed to reach host " + providerID + ' cause: ' + error);
@@ -236,7 +238,7 @@ export class Environment extends VersionedData {
 		const services = this.elements.get('services');
 
 		for await(const key of services) {
-			const definition = await host.getResourceObject(key);
+			const definition = await ResourcesManager.getResourceObject(key);
 			// logger.info('iteration - definition: ' + JSON.stringify(definition));
 			const providerListName = definition.uuid + '.providers';
 			const providers = this.elements.get(providerListName);
@@ -277,7 +279,7 @@ export class Environment extends VersionedData {
 
 		await this.auth(issuer);
 
-		const resource = await host.storeResourceObject(definition);
+		const resource = await ResourcesManager.storeResourceObject(definition);
 
 		await services.add(resource);
 
@@ -289,13 +291,13 @@ export class Environment extends VersionedData {
 
 		const params = {definition: definition};
 
-		await this.applyAddService(host.id, params);
+		await this.applyAddService(LocalHost.getID(), params);
 
 		await this.commit({
 			addService: params
 		});
 
-		nvdata.save(this.uuid, this.version);
+		NVD.save(this.uuid, this.version);
 
 	}
 
@@ -307,7 +309,7 @@ export class Environment extends VersionedData {
 
 		for await(const resource of services) {
 
-			const service = await host.getResourceObject(resource);
+			const service = await ResourcesManager.getResourceObject(resource);
 
 			//logger.log('info', JSON.stringify(service));
 
@@ -326,7 +328,7 @@ export class Environment extends VersionedData {
 
 		for await(const resourceKey of services) {
 
-			const service = await host.getResourceObject(resourceKey);
+			const service = await ResourcesManager.getResourceObject(resourceKey);
 
 			// logger.log('info', 'hasService ' + uuid + ' compare with ' + service.uuid);
 
@@ -400,19 +402,19 @@ export class Environment extends VersionedData {
 			host: providerID
 		}
 
-		await this.applyAddProvider(host.id, params);
+		await this.applyAddProvider(LocalHost.getID(), params);
 
 		await this.commit({
 			addProvider: params
 		});
 
-		await nvdata.save(this.uuid, this.version);
+		await NVD.save(this.uuid, this.version);
 
 	}
 
 	async removeProvider(serviceUUID, providerID) {
 
-		await this.auth(host.id);
+		await this.auth(LocalHost.getID());
 
 		//
 
@@ -426,7 +428,7 @@ export class Environment extends VersionedData {
 
 		for await(const resourceKey of envWebports) {
 
-			const webport = await host.getResourceObject(resourceKey);
+			const webport = await ResourcesManager.getResourceObject(resourceKey);
 
 			// logger.log('info', 'webport info: ' + JSON.stringify(webport));
 
@@ -447,7 +449,7 @@ export class Environment extends VersionedData {
 
 		const webports = this.elements.get('webports');
 
-		const resourceKey = await host.storeResourceObject(params);
+		const resourceKey = await ResourcesManager.storeResourceObject(params);
 
 		if(await webports.has(resourceKey)) {
 			//Exact same information already present
@@ -465,13 +467,13 @@ export class Environment extends VersionedData {
 
 	async addWebport(info) {
 
-		await this.applyAddWebport(host.id, info);
+		await this.applyAddWebport(LocalHost.getID(), info);
 
 		await this.commit({
 			addWebport: info
 		});
 
-		nvdata.save(this.uuid, this.version);
+		NVD.save(this.uuid, this.version);
 	}
 
 };

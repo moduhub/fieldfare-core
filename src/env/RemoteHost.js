@@ -4,10 +4,12 @@
  * and open the template in the editor.
  */
 
-import {RemoteService} from './env/RemoteService';
-import {Message} from './Message';
-import {Utils} from './basic/Utils';
-import {logger} from './basic/Log';
+import {LocalHost} from '../env/LocalHost';
+import {ResourcesManager} from '../resources/ResourcesManager';
+import {RemoteService} from './RemoteService';
+import {Message} from '../trx/Message';
+import {Utils} from '../basic/Utils';
+import {logger} from '../basic/Log';
 
 
 export class RemoteHost {
@@ -115,7 +117,7 @@ export class RemoteHost {
 
 			} else {
 
-				const localService = host.getLocalService(message.service);
+				const localService = LocalHost.getLocalService(message.service);
 
 				if(localService === undefined
 				|| localService === null) {
@@ -147,7 +149,7 @@ export class RemoteHost {
 		if(this.pubKey === undefined) {
 
 			//Get host pubkey
-			var remotePubKeyData = await host.getResourceObject(message.data.id, message.data.id);
+			var remotePubKeyData = await ResourcesManager.getResourceObject(message.data.id, message.data.id);
 
 			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyData));
 
@@ -225,8 +227,8 @@ export class RemoteHost {
 
 	async updateEnvironment(uuid, version) {
 
-		const env = host.getEnvironment(uuid);
-		
+		const env = LocalHost.getEnvironment(uuid);
+
 		env.updateActiveHost(this, version);
 
 		if(env.version !== version) {
@@ -257,7 +259,7 @@ export class RemoteHost {
 	//Assign callbacks
 	onResponseReceived(response) {
 
-		var assignedRequest = host.requests.get(response.data.hash);
+		var assignedRequest = LocalHost.getPendingRequest(response.data.hash);
 
 		//logger.log('info', "remoteHost.onResponseReceived(" + JSON.stringify(response));
 
@@ -297,7 +299,7 @@ export class RemoteHost {
 
 			try {
 
-				var base64data = await host.getResource(message.data.hash);
+				var base64data = await ResourcesManager.getResource(message.data.hash);
 
 				response = new Message('resource', {
 					hash: message.data.hash,

@@ -1,38 +1,36 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
+ * To change localHost license header, choose License Headers in Project Properties.
+ * To change localHost template file, choose Tools | Templates
  * and open the template in the editor.
  */
 
-import {ResourcesManager} from './resources/ResourcesManager';
-import {LocalService} from './env/LocalService';
+import {ResourcesManager} from '../resources/ResourcesManager';
+import {LocalService} from './LocalService';
 import {RemoteHost} from './RemoteHost';
-import {Message} from './Message';
-import {Request} from './Request';
-import {Utils} from './basic/Utils';
-import {logger} from './basic/Log';
+import {Message} from '../trx/Message';
+import {Request} from '../trx/Request';
+import {Utils} from '../basic/Utils';
+import {logger} from '../basic/Log';
 
+export const localHost = {
+	bootChannels: new Set(),
+	resourcesManagers: new Set(),
+	remoteHosts: new Map(),
+	requests: new Map(),
+	services: new Map(),
+	environments: new Set(),
+	stateHash: ''
+};
 
-export class HostManager {
+export const LocalHost = {
 
-	constructor() {
+	getID() {
+		return localHost.id;
+	},
 
-		this.bootChannels = new Set();
-		this.resourcesManagers = new Set();
-		this.remoteHosts = new Map();
-		this.requests = new Map();
+	async init(privateKeyData) {
 
-		this.services = new Map();
-
-		this.environments = new Set();
-
-		this.stateHash = '';
-
-	}
-
-	async setupId(privateKeyData) {
-
-		if(this.resourcesManagers.size == 0) {
+		if(ResourcesManager.available() === false) {
 			throw Error('Cannot setup ID without a resources manager');
 		}
 
@@ -40,7 +38,7 @@ export class HostManager {
 
 		if(privateKeyData) {
 
-			this.privateKey = await crypto.subtle.importKey(
+			localHost.privateKey = await crypto.subtle.importKey(
 				'jwk',
 				privateKeyData,
 				{
@@ -72,7 +70,7 @@ export class HostManager {
 				["sign"]
 			);
 
-			this.privateKey = keypair.privateKey;
+			localHost.privateKey = keypair.privateKey;
 
 			pubKeyData = await crypto.subtle.exportKey('jwk', keypair.publicKey);
 
@@ -83,63 +81,67 @@ export class HostManager {
 		//Calculate host ID from pubkey
 		//var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', pubKeyData));
 
-		this.id = await this.storeResourceObject(pubKeyData);
+		localHost.id = await ResourcesManager.storeResourceObject(pubKeyData);
 
-		// logger.log('info', 'HOST ID: ' + this.id);
+		// logger.log('info', 'HOST ID: ' + localHost.id);
 
 		setInterval(() => {
 
 			// logger.log('info', "Host is announcing to "
-			// 	+ this.remoteHosts.size + " remote hosts and "
-			// 	+ this.bootChannels.size + ' boot channels');
+			// 	+ localHost.remoteHosts.size + " remote hosts and "
+			// 	+ localHost.bootChannels.size + ' boot channels');
 
-			for (const [id,host] of this.remoteHosts) 		this.announce(host);
-			for (const channel of this.bootChannels) 	this.announce(channel);
+			for (const [id,host] of localHost.remoteHosts) 		LocalHost.announce(host);
+			for (const channel of localHost.bootChannels) 	LocalHost.announce(channel);
 
 		}, 10000);
 
-	}
+	},
+
+	getPendingRequest() {
+		return localHost.requests.get(hash);
+	},
 
 	addEnvironment(env) {
 
-		if(this.environments.has(env) === false) {
-			this.environments.add(env);
+		if(localHost.environments.has(env) === false) {
+			localHost.environments.add(env);
 			logger.log('info', 'New env registered: ' + env.uuid);
 		} else {
 			logger.warn('Env already registered ' + env.uuid);
 		}
 
-	}
+	},
 
 	async setupService(definition) {
 
 		var newService = LocalService.fromDefinition(definition);
 
 		//Register service under host mapping
-		this.services.set(definition.uuid, newService);
+		localHost.services.set(definition.uuid, newService);
 
 		//recover last service state
         const stateKey = definition.uuid;
-        const serviceState = await nvdata.load(stateKey);
+        const serviceState = await NVD.load(stateKey);
 
 		if(serviceState) {
 			newService.setState(serviceState);
 		} else {
-            logger.log('info', "Service state is null, this can be a first setup");
+            logger.log('info', "Service state is null, localHost can be a first setup");
         }
 
 		return newService;
-	}
+	},
 
 	getLocalService(uuid) {
-		return this.services.get(uuid);
-	}
+		return localHost.services.get(uuid);
+	},
 
 	updateState() {
 
 		var hostState = new Object;
 
-		for(const [uuid, service] of this.services) {
+		for(const [uuid, service] of localHost.services) {
 
 			// const serviceName = service.definition.name;
 			const serviceState = service.updateState();
@@ -149,19 +151,19 @@ export class HostManager {
 		}
 
 		return hostState;
-	}
+	},
 
 	async registerRemoteHost(hostid) {
 
-		var remoteHost = this.remoteHosts.get(hostid);
+		var remoteHost = localHost.remoteHosts.get(hostid);
 
 		//Check if host exists
 		if(remoteHost === undefined) {
 
 			remoteHost = new RemoteHost(hostid);
-			this.remoteHosts.set(hostid, remoteHost);
+			localHost.remoteHosts.set(hostid, remoteHost);
 
-			for(const env of this.environments) {
+			for(const env of localHost.environments) {
 				const servicesList = await env.getServicesForHost(hostid);
 				if(servicesList.length > 0) {
 					await remoteHost.updateServices(servicesList);
@@ -173,11 +175,11 @@ export class HostManager {
 		}
 
 		return remoteHost;
-	}
+	},
 
 	getEnvironment(uuid) {
 
-		for(const env of this.environments) {
+		for(const env of localHost.environments) {
 
 			if(env.uuid === uuid) {
 				return env;
@@ -185,172 +187,17 @@ export class HostManager {
 		}
 
 		return null;
-	}
-
-	async storeResourceObject(object) {
-
-		const base64data = ResourcesManager.convertObjectToData(object);
-
-		var base64hash = await this.storeResource(base64data);
-
-//		logger.log('info', "------------------------------\n"
-//			+ "Storing: " + base64hash
-//			+ "->" + JSON.stringify(object, null, 2)
-//			+ "\n------------------------------\n");
-
-		return base64hash;
-	}
-
-	async getResourceObject(hash, owner) {
-
-		const base64data = await this.getResource(hash, owner);
-
-		var object = ResourcesManager.convertDataToObject(base64data);
-
-		return object;
-	}
-
-	async storeResource(data) {
-
-		var base64hash;
-
-		if(this.resourcesManagers.size > 0) {
-
-			//Store in all defined managers
-
-			for await (const manager of this.resourcesManagers) {
-
-				base64hash = await manager.storeResource(data);
-
-			}
-
-		} else {
-			throw Error('No resources managers defined');
-		}
-
-		return base64hash;
-	}
-
-	async getResource(hash, owner) {
-
-        ResourcesManager.validateKey(hash);
-
-		var base64data;
-
-		//Attemp to find resource on all resources managers
-		for(const manager of this.resourcesManagers) {
-
-			try {
-
-				base64data = await manager.getResource(hash);
-
-				if(base64data !== undefined) {
-					return base64data;
-				}
-
-			} catch (error) {
-
-				if(error.name === 'NOT_FOUND_ERROR') {
-					// logger.log('info', 'Manager ' + manager + ' does not have ' + hash);
-				} else {
-					throw Error('getResource failed: ', {cause: error});
-				}
-
-			}
-
-		}
-
-		//logger.log('info', "res.fetch: Not found locally. Owner: " + owner);
-
-		//not found locally, attemp to find on remote host
-
-		if(owner === null
-		|| owner === undefined) {
-
-			//Owner not know, fail
-			var error = Error('resource not found locally, owner not known: ' + hash);
-			error.name = 'NOT_FOUND_ERROR';
-			throw error;
-
-		}
-
-		const retryCount = 3;
-
-		for(var attempts = 0; attempts<retryCount; attempts++) {
-
-			//Check if there is already a request for
-			//this same hash
-			var request = this.requests.get(hash);
-
-			if(request === undefined) {
-
-				if(attempts > 0) {
-					logger.log('info', 'get resource request retry ' + attempts + ' of ' + retryCount-1);
-				}
-
-				request = new Request('resource', 10000, {
-					hash: hash
-				});
-
-				request.setDestinationAddress(owner);
-
-				//send request
-				this.requests.set(hash, request);
-
-				//Notify that a new request was created
-				this.onNewRequest(request);
-
-			}
-
-			try {
-
-				const response = await request.complete();
-
-				var remoteBase64hash = response.data.hash;
-				var remoteBase64data = response.data.data;
-
-				//logger.log 'info', ("Received remote resource response:" + JSON.stringify(response.data.data));
-				const verifyHash = await this.storeResource(remoteBase64data);
-
-				if(verifyHash !== remoteBase64hash) {
-
-					//logger.log('info', "[+RES] (" + hash + "):(" + response.data.data + ")");
-					throw Error('corrupted resource received from remote host');
-
-				}
-
-				return remoteBase64data;
-
-			} catch (error) {
-
-				// logger.error('info','Get resource request failed: ' + error.stack);
-
-			} finally {
-
-				this.requests.clear(hash);
-
-			}
-		}
-
-		throw Error('Resource not found remotely: ' + hash).name = 'NOT_FOUND_ERROR';
-
-	}
-
-	addResourcesManager(manager) {
-
-		this.resourcesManagers.add(manager);
-
-	}
+	},
 
 	onNewRequest(request) {
 
 		//logger.log('info', "Forwarding request to request.destination")
 
-		var destinationHost = this.remoteHosts.get(request.destination);
+		var destinationHost = localHost.remoteHosts.get(request.destination);
 
 		if(destinationHost != undefined) {
 
-			request.source = this.id;
+			request.source = localHost.id;
 
 			destinationHost.send(request);
 
@@ -361,15 +208,15 @@ export class HostManager {
 			//TODO: routing here
 		}
 
-	}
+	},
 
 	async bootChannel(channel) {
 
-		this.bootChannels.add(channel);
+		localHost.bootChannels.add(channel);
 
 		channel.onMessageReceived = async (message) => {
 
-			// logger.log('info', "Received message from boot channel: " + JSON.stringify(message));
+			//logger.debug("Received message from boot channel: " + JSON.stringify(message));
 
 			if(message.service === 'announce') {
 
@@ -384,14 +231,14 @@ export class HostManager {
 
 					// logger.log('info', "Received direct announce from boot channel. Host ID: " + remoteId);
 
-					var remoteHost = this.remoteHosts.get(remoteId);
+					var remoteHost = localHost.remoteHosts.get(remoteId);
 
 					//register channel to remote host
 					if(remoteHost === undefined) {
 
 						// logger.log('info', "Host was not registered. Creating new... ");
 
-						remoteHost = await this.registerRemoteHost(remoteId);
+						remoteHost = await LocalHost.registerRemoteHost(remoteId);
 
 					}
 
@@ -399,8 +246,8 @@ export class HostManager {
 
 					channel.onMessageReceived(message);
 
-					//remove this channel from boot list
-					this.bootChannels.clear(channel);
+					//remove localHost channel from boot list
+					localHost.bootChannels.clear(channel);
 
 //				} else {
 //
@@ -416,7 +263,7 @@ export class HostManager {
 		//no source nor destination address, direct message
 		try {
 
-			this.announce(channel);
+			LocalHost.announce(channel);
 
 		} catch (error) {
 
@@ -424,22 +271,22 @@ export class HostManager {
 
 		}
 
-	}
+	},
 
 	async signMessage(message) {
 
-		if(this.privateKey === undefined) {
+		if(localHost.privateKey === undefined) {
 			throw Error('failed to sign message, private key undefined');
 		}
 
 		var utf8ArrayBuffer = Utils.strToUtf8Array(JSON.stringify(message.data));
-		
+
 		var signatureBuffer = await crypto.subtle.sign(
 			{
 				name: "ECDSA",
 				hash: {name: "SHA-256"}
 			},
-			this.privateKey,
+			localHost.privateKey,
 			utf8ArrayBuffer);
 
 //		logger.log('info', "Correct Message signature: " + Utils.arrayBufferToBase64(signatureBuffer));
@@ -450,7 +297,7 @@ export class HostManager {
 		message.signature = Utils.arrayBufferToBase64(signatureBuffer);
 
 //		logger.log('info', "Message signature added: " + message.signature);
-	}
+	},
 
 	async announce(destination) {
 
@@ -460,22 +307,22 @@ export class HostManager {
 
 		var envVersionGroup;
 
-		if(this.environments.size > 0) {
+		if(localHost.environments.size > 0) {
 			envVersionGroup = {};
-			for(const env of this.environments) {
+			for(const env of localHost.environments) {
 				envVersionGroup[env.uuid] = env.version;
 			}
 		}
 
 		var message = new Message('announce', {
-			id: this.id,
+			id: localHost.id,
 			env: envVersionGroup,
-			state: this.updateState()
+			state: LocalHost.updateState()
 		});
 
-		await this.signMessage(message);
+		await LocalHost.signMessage(message);
 
-		message.setSourceAddress(this.id);
+		message.setSourceAddress(localHost.id);
 
 		if(typeof (destination.send) === 'function') {
 			return destination.send(message);
@@ -483,19 +330,19 @@ export class HostManager {
 
 		throw Error('destination ' + JSON.stringify(destination) + ' not send-able');
 
-	}
+	},
 
 	async establish(remoteHostID) {
 
 		logger.debug("host.establish: " + remoteHostID);
 
-		const remoteHost = this.remoteHosts.get(snapshotProviderID);
+		const remoteHost = localHost.remoteHosts.get(snapshotProviderID);
 
 		if(remoteHost === undefined
 		|| remoteHost === null
 		|| remoteHost.isActive() === false) {
 
-			// //attemp connection to webport assigned to this host
+			// //attemp connection to webport assigned to localHost host
 			// const webport = await env.getWebport(snapshotProviderID);
 			//
 			// await host.connectWebport(webport);
@@ -509,4 +356,4 @@ export class HostManager {
 		return remoteHost;
 	}
 
-};
+}

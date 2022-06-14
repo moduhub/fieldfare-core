@@ -1,23 +1,22 @@
 
 import {ResourcesManager} from '../resources/ResourcesManager';
-import {LevelNVData} from '../nvd/LevelNVData';
+import {LevelNVD} from '../platforms/node/LevelNVD';
+import {NVD} from '../basic/NVD';
 import {Utils} from '../basic/Utils';
 
 
 export async function init() {
 
-    if(global.nvdata === undefined) {
-        global.nvdata = new LevelNVData;
-    }
-
     if(global.crypto === undefined) {
         global.crypto = require('crypto').webcrypto;
     }
 
+    LevelNVD.init();
+
 }
 
 export async function getEnvironmentUUID() {
-    var uuid = await nvdata.load('envUUID');
+    var uuid = await NVD.load('envUUID');
     if(uuid === undefined) {
         uuid = '<undefined>';
     }
@@ -32,13 +31,13 @@ export async function setEnvironmentUUID(uuid) {
         throw Error('invalid UUID');
     }
 
-    await nvdata.save('envUUID', uuid);
+    await NVD.save('envUUID', uuid);
 
 }
 
 export async function getBootWebports() {
 
-    const webportsJSON = await nvdata.load('bootWebports');
+    const webportsJSON = await NVD.load('bootWebports');
 
     if(webportsJSON) {
         return JSON.parse(webportsJSON);
@@ -50,7 +49,7 @@ export async function getBootWebports() {
 
 export async function addBootWebport(newWebportData) {
 
-    const webportsJSON = await nvdata.load('bootWebports');
+    const webportsJSON = await NVD.load('bootWebports');
 
     var webports;
 
@@ -67,13 +66,13 @@ export async function addBootWebport(newWebportData) {
 
     webports.push(newWebportData);
 
-    await nvdata.save('bootWebports', JSON.stringify(webports));
+    await NVD.save('bootWebports', JSON.stringify(webports));
 
 }
 
 export async function removeBootWebport(index) {
 
-    const webportsJSON = await nvdata.load('bootWebports');
+    const webportsJSON = await NVD.load('bootWebports');
 
     var webports;
 
@@ -86,11 +85,11 @@ export async function removeBootWebport(index) {
 
     webports.splice(index, 1);
 
-    await nvdata.save('bootWebports', JSON.stringify(webports));
+    await NVD.save('bootWebports', JSON.stringify(webports));
 }
 
 export async function removeAllBootWebports() {
 
-    await nvdata.save('bootWebports', '[]');
+    await NVD.save('bootWebports', '[]');
 
 }

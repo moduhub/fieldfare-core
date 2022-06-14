@@ -7,7 +7,7 @@ export async function addServedWebport(options) {
 
     var newWebportData = webportFromOptions(options);
 
-    newWebportData.hostid = host.id;
+    newWebportData.hostid = LocalHost.getID();
 
     logger.log('info',"adding served webport to env:" + JSON.stringify(newWebportData));
 

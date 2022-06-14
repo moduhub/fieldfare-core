@@ -1,4 +1,5 @@
 
+import {ResourcesManager} from '../resources/ResourcesManager';
 import {VersionStatement} from '../versioning/VersionStatement';
 import {logger} from '../basic/Log';
 import chalk from 'chalk';
@@ -35,7 +36,7 @@ class ChangesIterator {
 
             //logger.log('info', 'Iteration ' + i + '>  key:' + key + ' issuer: ' + issuer);
 
-            const changes = await host.getResourceObject(key, this.chain.owner);
+            const changes = await ResourcesManager.getResourceObject(key, this.chain.owner);
 
 			for(const prop in changes) {
 				const value = changes[prop];

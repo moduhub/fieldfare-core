@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 
+import {ResourcesManager} from '../resources/ResourcesManager';
 import {logger} from '../basic/Log';
 
 export class VersionStatement {
@@ -41,7 +42,7 @@ export class VersionStatement {
 
 	static async fromResource(hash, source) {
 
-		const resourceObject = await host.getResourceObject(hash, source);
+		const resourceObject = await ResourcesManager.getResourceObject(hash, source);
 
 		VersionStatement.validate(resourceObject);
 
@@ -59,7 +60,7 @@ export class VersionStatement {
 		rootStatement.data = {
 			prev: '',
 			state: '',
-			changes: await host.storeResourceObject({uuid:uuid})
+			changes: await ResourcesManager.storeResourceObject({uuid:uuid})
 		};
 
 		return rootStatement;

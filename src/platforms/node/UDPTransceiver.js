@@ -6,9 +6,9 @@
 
 const dgram = require('dgram');
 
-import {Transceiver} from './Transceiver';
-import {Utils} from './basic/Utils';
-import {logger} from './basic/Log';
+import {Transceiver} from '../../trx/Transceiver';
+import {Utils} from '../../basic/Utils';
+import {logger} from '../../basic/Log';
 
 
 export class UDPTransceiver extends Transceiver {
@@ -21,14 +21,14 @@ export class UDPTransceiver extends Transceiver {
 		this.socket = dgram.createSocket('udp4');
 
 		this.socket.on('error', (err) => {
-			logger.log('info', `server error:\n${err.stack}`);
+			logger.debug(`server error:\n${err.stack}`);
 			this.socket.close();
 		});
 
 		this.socket.on('message', (msg, rinfo) => {
 
-  			logger.log('info', 'Message from ' + rinfo.address + ':' + rinfo.port);
-			logger.log('info', 'Lenght: ' + msg.length + ' bytes');
+  			logger.debug('[UDPTRX] Message from ' + rinfo.address + ':' + rinfo.port
+				+ ' (Lenght: ' + msg.length + ' bytes)');
 
 			const channelID = rinfo.address + ":" + rinfo.port;
 
@@ -48,7 +48,7 @@ export class UDPTransceiver extends Transceiver {
 
 					assignedChannel = {
 						type : 'udp',
-						send : (message) => { this.send(message, assignedChannel)},
+						send : (message) => { this.send(message, assignedChannel);},
 						info : {
 							address: rinfo.address,
 							port: rinfo.port
@@ -83,7 +83,7 @@ export class UDPTransceiver extends Transceiver {
 
 		this.socket.on('listening', () => {
 			const address = this.socket.address();
-			logger.log('info', `server listening ${address.address}:${address.port}`);
+			logger.debug(`server listening ${address.address}:${address.port}`);
 		});
 
 		this.socket.bind(port);
@@ -105,11 +105,11 @@ export class UDPTransceiver extends Transceiver {
 
 	send(message, channel) {
 
-		logger.log('info', "Message object: " + JSON.stringify(message, message.jsonReplacer));
+		// logger.debug("[UDPTRX] outgoing message: " + JSON.stringify(message, message.jsonReplacer));
 
 		var messageBuffer = JSON.stringify(message, message.jsonReplacer);//message.toBuffer();
 
-		logger.log('info', 'UDPTrx.send ' + messageBuffer.length + ' bytes to '
+		logger.debug('UDPTRX.send ' + messageBuffer.length + ' bytes to '
 			+ channel.info.address + ':'
 			+ channel.info.port);
 
