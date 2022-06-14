@@ -1,12 +1,18 @@
 
-import {IndexedDBBase} from '../basic/IndexedDBBase';
+import {IndexedDBBase} from './IndexedDBBase';
+import {NVD} from '../../basic/NVD';
 
-export class IndexedDBNVData {
+
+export class IndexedDBNVD {
 
     constructor() {
 
          this.db = new IndexedDBBase('nvdata');
 
+    }
+
+    static init() {
+        NVD.singleton(new IndexedDBNVD);
     }
 
     async save(key, object) {

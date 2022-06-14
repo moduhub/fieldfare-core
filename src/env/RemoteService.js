@@ -1,4 +1,5 @@
 
+import {LocalHost} from './LocalHost';
 import {ServiceDefinition} from './ServiceDefinition';
 import {ResourcesManager} from '../resources/ResourcesManager';
 import {Request} from '../trx/Request';
@@ -19,7 +20,7 @@ export class RemoteService {
         for(const methodName of definition.methods) {
             newService[methodName] = async (params) => {
 
-                if(newService.owner == undefined) {
+                if(newService.owner === undefined) {
                     throw Error('RemoteService owner is undefined');
                 }
 
@@ -31,9 +32,7 @@ export class RemoteService {
                     }
                 });
 
-                request.setDestinationAddress(newService.owner);
-
-                await host.signMessage(request);
+                await LocalHost.signMessage(request);
 
                 const requestKey = await ResourcesManager.generateKeyForObject(request.data);
 
@@ -63,6 +62,13 @@ export class RemoteService {
         ServiceDefinition.buildData(definition, newService);
 
         return newService;
+    }
+
+    setOwner(owner) {
+        this.owner = owner;
+        for(const prop in this.data) {
+            this.data[prop].setOwnerID(owner.id);
+        }
     }
 
     setState(state) {

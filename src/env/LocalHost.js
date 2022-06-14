@@ -9,6 +9,7 @@ import {LocalService} from './LocalService';
 import {RemoteHost} from './RemoteHost';
 import {Message} from '../trx/Message';
 import {Request} from '../trx/Request';
+import {NVD} from '../basic/NVD';
 import {Utils} from '../basic/Utils';
 import {logger} from '../basic/Log';
 
@@ -98,10 +99,6 @@ export const LocalHost = {
 
 	},
 
-	getPendingRequest() {
-		return localHost.requests.get(hash);
-	},
-
 	addEnvironment(env) {
 
 		if(localHost.environments.has(env) === false) {
@@ -189,9 +186,19 @@ export const LocalHost = {
 		return null;
 	},
 
-	onNewRequest(request) {
+	getPendingRequest(hash) {
+		return localHost.requests.get(hash);
+	},
 
-		//logger.log('info', "Forwarding request to request.destination")
+	clearRequest(hash) {
+		localHost.requests.clear(hash);
+	},
+
+	dispatchRequest(hash, request) {
+
+		logger.debug("Forwarding request to request.destination: " + JSON.stringify(request.destination));
+
+		localHost.requests.set(hash, request);
 
 		var destinationHost = localHost.remoteHosts.get(request.destination);
 
@@ -203,7 +210,7 @@ export const LocalHost = {
 
 		} else {
 
-			throw Error('Destination is unknown');
+			throw Error('dispatchRequest failed: destination is unknown');
 
 			//TODO: routing here
 		}

@@ -452,7 +452,7 @@ export async function main(args) {
     logger.disable();
 
     try {
-        await DrozdInit.setupHost();
+        await DrozdInit.setupLocalHost();
         env = await DrozdInit.setupEnvironment();
         await DrozdInit.initWebports(env);
     } catch (error) {

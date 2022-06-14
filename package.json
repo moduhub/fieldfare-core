@@ -17,7 +17,7 @@
     "url": "https://github.com/moduhub/drozd"
   },
   "keywords": [
-    "backend, framework, distributed"
+    "backend, framework, distributed, version-control"
   ],
   "author": "Adan Kvitschal",
   "license": "ISC",
@@ -42,8 +42,8 @@
         "import": "./src/platforms/shared/CommonExports"
     },
     "./browser": {
-        "require": "./src/platforms/reactnative/ReactNativeExports.js",
-        "import": "./src/platforms/reactnative/ReactNativeExports"
+        "require": "./src/platforms/browser/BrowserExports.js",
+        "import": "./src/platforms/browser/BrowserExports"
     },
     "./node": {
         "require": "./src/platforms/node/NodeExports.js",

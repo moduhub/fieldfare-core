@@ -2,6 +2,7 @@
 import {ResourcesManager} from '../resources/ResourcesManager';
 import {ServiceDefinition} from './ServiceDefinition';
 import {Message} from '../trx/Message';
+import {NVD} from '../basic/NVD';
 import {logger} from '../basic/Log';
 
 
@@ -45,7 +46,7 @@ export class LocalService {
         if(this.prevState !== newState) {
             const uuid = this.definition.uuid;
             logger.log('info', "Storing service state " + uuid + '->' + JSON.stringify(newState, null, 2));
-            nvdata.save(uuid, newState);
+            NVD.save(uuid, newState);
             this.prevState = newState;
         }
 

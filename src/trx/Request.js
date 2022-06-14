@@ -11,14 +11,13 @@ import {logger} from '../basic/Log';
 export class Request extends Message {
 
 	constructor(service, timeout, data) {
-
 		super(service, data);
 
 		this.resolveCallbacks = new Set();
 		this.rejectCallbacks = new Set();
 
 		this.timeout = setTimeout(() => {
-			logger.info('request timeout');
+			logger.debug('request timeout');
 			const error = Error('Request ' + JSON.stringify(this.data) + ' timed out');
 			error.name = 'TIMEOUT_ERROR';
 			this.reject(error);

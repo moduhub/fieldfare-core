@@ -1,10 +1,9 @@
 
-export * from './common';
+export * from '../shared/CommonExports';
 
-export * from '../WebClientTransceiver';
+export * from '../shared/WebClientTransceiver';
 
-export * from '../nvd/IndexedDBNVData';
+export * from './IndexedDBNVD';
+export * from './IndexedDBResourcesManager';
 
-export * from '../resources/IndexedDBResourcesManager';
-
-export * as mhsetup from '../setup/webSetup';
+export * as DrozdInit from './BrowserSetup';

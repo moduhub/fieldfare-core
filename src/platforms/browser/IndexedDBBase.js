@@ -1,7 +1,7 @@
 
-import {logger} from '../basic/Log';
+import {logger} from '../../basic/Log';
 
-const dbname = 'mhlib';
+const dbname = 'drozd';
 const dbversion = 1;
 
 export class IndexedDBBase {

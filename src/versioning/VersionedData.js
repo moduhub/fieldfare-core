@@ -4,11 +4,13 @@
  * and open the template in the editor.
  */
 
+import {LocalHost} from '../env/LocalHost';
 import {ResourcesManager} from '../resources/ResourcesManager';
 import {HashLinkedList} from '../structures/HashLinkedList';
 import {HashLinkedTree} from '../structures/HashLinkedTree';
 import {VersionStatement} from './VersionStatement';
 import {VersionChain} from './VersionChain';
+import {NVD} from '../basic/NVD';
 import {Utils} from '../basic/Utils';
 import {logger} from '../basic/Log';
 
@@ -89,16 +91,13 @@ export class VersionedData {
 		const changes = await chain.getChanges();
 		// logger.log('info', "remoteChanges:" + JSON.stringify(remoteChanges));
 		for await (const [issuer, method, params] of changes) {
-			console.log('------------method: ' + method);
 			if(method === 'merge') {
 
 				const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
 				mergeChain.limit(params.base);
-				console.log('mergechain: '+ mergeChain);
 				await this.applyChain(mergeChain, true);
-				console.log('after apply chain');
 			} else {
-				logger.debug('info', 'await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
+				logger.debug('await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
 				await this.apply(issuer, method, params, merge);
 			}
 
@@ -109,7 +108,7 @@ export class VersionedData {
 	async apply(issuer, methodName, params, merge=false) {
 
 		const methodCallback = this.methods.get(methodName);
-		console.log('---------------------[apply] method: ' + methodCallback);
+
 		if(!methodCallback) {
 			throw Error('apply failed: unknown change method ' + methodName);
 		}
@@ -160,7 +159,7 @@ export class VersionedData {
 			throw Error('another update in progress');
 		}
 
-		logger.log('info', ">> Env update to version: " + version);
+		logger.debug(">> Env update to version: " + version);
 
 		this.updateInProgress = version;
 
@@ -235,7 +234,7 @@ export class VersionedData {
 				}
 
 				//Save changes permanently
-				await nvdata.save(this.uuid, this.version);
+				await NVD.save(this.uuid, this.version);
 
 				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.version);
 
@@ -267,7 +266,7 @@ export class VersionedData {
 		//Create update message
 		var versionStatement = new VersionStatement();
 
-		versionStatement.source = localHost.getID();
+		versionStatement.source = LocalHost.getID();
 
 		const stateResource = await ResourcesManager.storeResourceObject(await this.getState());
 
@@ -348,13 +347,13 @@ export class VersionedData {
 		//newAdmin must be a valid host ID
 		logger.log('info', "VersionedData.addAdmin ID="+newAdminID);
 
-		await this.applyAddAdmin(localHost.getID(), params);
+		await this.applyAddAdmin(LocalHost.getID(), params);
 
 		await this.commit({
 			addAdmin: params
 		});
 
-		await nvdata.save(this.uuid, this.version);
+		await NVD.save(this.uuid, this.version);
 
 	}
 

@@ -34,11 +34,11 @@ class TreeContainer {
 		this.numElements = 0;
 	}
 
-	static async fromResource(hash) {
+	static async fromResource(hash, ownerID) {
 
 		var newContainer = new TreeContainer();
 
-		const resourceObject = await ResourcesManager.getResourceObject(hash);
+		const resourceObject = await ResourcesManager.getResourceObject(hash, ownerID);
 
 		if(resourceObject === null
 		|| resourceObject === undefined) {
@@ -168,14 +168,14 @@ class TreeContainer {
 		return this.children[childIndex];
 	}
 
-	async* [Symbol.asyncIterator]() {
+	async* iterator(ownerID) {
 
 		if(this.children[0] !== '') {
 
-			const leftmostChild = await TreeContainer.fromResource(this.children[0]);
+			const leftmostChild = await TreeContainer.fromResource(this.children[0], ownerID);
 
 			//Descent on leftmost child
-			for await (const element of leftmostChild) {
+			for await (const element of leftmostChild.iterator(ownerID)) {
 				yield element;
 			}
 
@@ -188,43 +188,15 @@ class TreeContainer {
 
 			if(this.children[i+1] !== '') {
 
-				var iChild = await TreeContainer.fromResource(this.children[i+1]);
+				var iChild = await TreeContainer.fromResource(this.children[i+1], ownerID);
 
-				for await (const element of iChild) {
+				for await (const element of iChild.iterator(ownerID)) {
 					yield element;
 				}
 			}
 
 		}
 
-
-	}
-
-	//Runs the callback following hash order of the set
-	async forEach(callback) {
-
-		if(this.children[0] !== '') {
-
-			const leftmostChild = await TreeContainer.fromResource(this.children[0]);
-
-			//Descent on leftmost child
-			await leftmostChild.forEach(callback);
-
-		}
-
-		for(var i=0; i<this.numElements; i++) {
-
-			//Intercalate children with branches
-			callback(this.elements[i]);
-
-			if(this.children[i+1] !== '') {
-
-				var iChild = await TreeContainer.fromResource(this.children[i+1]);
-
-				await iChild.forEach(callback);
-			}
-
-		}
 
 	}
 
@@ -245,6 +217,17 @@ export class HashLinkedTree {
 		this.setState(rootHash);
 
 	}
+
+    setOwnerID(id) {
+
+        ResourcesManager.validateKey(id);
+
+        this.ownerID = id;
+
+        if(id !== host.id) {
+            this.readOnly = true;
+        }
+    }
 
 	setState(state) {
 
@@ -319,6 +302,10 @@ export class HashLinkedTree {
 
 	async add(element) {
 
+        if(this.readOny) {
+            throw Error('Attempt to edit a read only hash linked tree');
+        }
+
 		var elementHash = await this.validate(element);
 
 //		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + elementHash);
@@ -335,7 +322,7 @@ export class HashLinkedTree {
 			var prevBranchHashes = new Array();
 			var branch = new Array();
 
-			var iContainer = await TreeContainer.fromResource(this.rootHash);
+			var iContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
 
 			logger.log('info', 'root->' + JSON.stringify(iContainer, null, 2));
 
@@ -354,7 +341,7 @@ export class HashLinkedTree {
 
 //				logger.log('info', 'follow->' + nextContainerHash);
 
-				iContainer = await TreeContainer.fromResource(nextContainerHash);
+				iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
 				depth++;
 
 //				logger.log('info', 'depth[' + depth + ']->' + JSON.stringify(iContainer, null, 2));
@@ -500,7 +487,7 @@ export class HashLinkedTree {
 
 			do {
 
-				iContainer = await TreeContainer.fromResource(nextContainerHash);
+				iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
 
 //				logger.log('info', "search["+depth+"]: " + JSON.stringify(iContainer, null, 2));
 
@@ -531,26 +518,13 @@ export class HashLinkedTree {
 		if(this.rootHash != null
 		&& this.rootHash != undefined) {
 
-			var rootContainer = await TreeContainer.fromResource(this.rootHash);
+			var rootContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
 
-			for await(const element of rootContainer) {
+			for await(const element of rootContainer.iterator(this.ownerID)) {
 				yield element;
 			}
 
 		}
-	}
-
-	async forEach(callback) {
-
-		if(this.rootHash != null
-		&& this.rootHash != undefined) {
-
-			var rootContainer = await TreeContainer.fromResource(this.rootHash);
-
-			rootContainer.forEach(callback);
-
-		}
-
 	}
 
 	async isEmpty() {
@@ -559,7 +533,7 @@ export class HashLinkedTree {
 		&& this.rootHash !== null
 		&& this.rootHash !== undefined) {
 
-			const rootElement = await ResourcesManager.getResourceObject(this.rootHash);
+			const rootElement = await ResourcesManager.getResourceObject(this.rootHash, this.ownerID);
 
 			if(rootElement.numElements > 0) {
 				return true;

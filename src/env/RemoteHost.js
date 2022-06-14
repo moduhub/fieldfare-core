@@ -140,7 +140,7 @@ export class RemoteHost {
 
 	async treatAnnounce(message, channel) {
 
-		logger.log('info', "Received announce message: " + JSON.stringify(message, null, 2));
+		logger.debug("Received announce message: " + JSON.stringify(message, null, 2));
 
 		if('id' in message.data === false) {
 			throw Error('malformed announce, missing host id');
@@ -202,6 +202,8 @@ export class RemoteHost {
 		if(message.data.state instanceof Object === false) {
 			throw Error('Message state object is not an object');
 		}
+
+		this.lastState = message.data.state;
 
 		for(const prop in message.data.state) {
 			const service = this.implementedServices.get(prop);
@@ -368,8 +370,14 @@ export class RemoteHost {
 			try {
 				const definition = this.definedServices.get(uuid);
 				const newService = RemoteService.fromDefinition(definition);
-				newService.owner = this;
+				newService.setOwner(this);
 				this.implementedServices.set(definition.uuid, newService);
+
+				if(this.lastState) {
+					const serviceState = this.lastState[uuid];
+					newService.setState(serviceState);
+				}
+
 				logger.info('Implemented new RemoteService ' + uuid + ' for RemoteHost ' + this.id);
 			} catch(error) {
 				throw Error('Failed to setup RemoteService ' + uuid, {cause: error});

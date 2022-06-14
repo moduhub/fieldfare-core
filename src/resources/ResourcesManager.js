@@ -1,4 +1,6 @@
 
+import { LocalHost } from '../env/LocalHost';
+import { Request } from '../trx/Request';
 import {Utils} from '../basic/Utils';
 
 var instances = new Set();
@@ -70,7 +72,7 @@ export class ResourcesManager {
 
 		const base64data = ResourcesManager.convertObjectToData(object);
 
-		var base64hash = await this.storeResource(base64data);
+		var base64hash = await ResourcesManager.storeResource(base64data);
 
 //		logger.log('info', "------------------------------\n"
 //			+ "Storing: " + base64hash
@@ -168,11 +170,8 @@ export class ResourcesManager {
 
 				request.setDestinationAddress(owner);
 
-				//send request
-				this.requests.set(hash, request);
-
 				//Notify that a new request was created
-				this.onNewRequest(request);
+				LocalHost.dispatchRequest(hash, request);
 
 			}
 
@@ -184,7 +183,7 @@ export class ResourcesManager {
 				var remoteBase64data = response.data.data;
 
 				//logger.log 'info', ("Received remote resource response:" + JSON.stringify(response.data.data));
-				const verifyHash = await this.storeResource(remoteBase64data);
+				const verifyHash = await ResourcesManager.storeResource(remoteBase64data);
 
 				if(verifyHash !== remoteBase64hash) {
 
@@ -197,11 +196,11 @@ export class ResourcesManager {
 
 			} catch (error) {
 
-				// logger.error('info','Get resource request failed: ' + error.stack);
+				logger.error('Get resource request failed: ' + error.stack);
 
 			} finally {
 
-				this.requests.clear(hash);
+                LocalHost.clearRequest(hash);
 
 			}
 		}

@@ -14,7 +14,7 @@ var udpTransceiver;
 const minUDPPort = 10000;
 const maxUDPPort = 60000;
 
-export async function setupHost() {
+export async function setupLocalHost() {
 
     if(global.crypto === undefined) {
         global.crypto = require('crypto').webcrypto;

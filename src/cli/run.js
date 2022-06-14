@@ -37,7 +37,7 @@ export async function main(args) {
     const options = parseArgumentsIntoOptions(args);
 
     try {
-        await DrozdInit.setupHost();
+        await DrozdInit.setupLocalHost();
         const env = await DrozdInit.setupEnvironment();
         await DrozdInit.initWebports(env);
     } catch (error) {

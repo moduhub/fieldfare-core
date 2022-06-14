@@ -1,6 +1,6 @@
 
-import {ResourcesManager} from './ResourcesManager';
-import {IndexedDBBase} from '../basic/IndexedDBBase';
+import {ResourcesManager} from '../../resources/ResourcesManager';
+import {IndexedDBBase} from './IndexedDBBase';
 
 
 export class IndexedDBResourcesManager extends ResourcesManager {
@@ -10,6 +10,11 @@ export class IndexedDBResourcesManager extends ResourcesManager {
 
         this.db = new IndexedDBBase('res');
 
+    }
+
+    static init() {
+        const newInstance = new IndexedDBResourcesManager;
+        ResourcesManager.addInstance(newInstance);
     }
 
     async storeResource(base64data) {

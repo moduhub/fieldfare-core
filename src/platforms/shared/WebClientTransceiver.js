@@ -4,8 +4,8 @@
  * and open the template in the editor.
  */
 
-import {Transceiver} from './Transceiver';
-import {logger} from './basic/Log';
+import {Transceiver} from '../../trx/Transceiver';
+import {logger} from '../../basic/Log';
 
 export class WebClientTransceiver extends Transceiver {
 
