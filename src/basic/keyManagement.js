@@ -3,6 +3,7 @@ var privateKeyData;
 var pubKeyData;
 
 import {ResourcesManager} from '../resources/ResourcesManager';
+import {logger} from '../basic/Log'
 
 export async function getHostID() {
 
@@ -48,7 +49,7 @@ export async function importPrivateKey(privateKeyData) {
         alg: "ES256"
     };
 
-    nvdata.save('privateKey', privateKeyData);
+    await nvdata.save('privateKey', privateKeyData);
 }
 
 export async function generatePrivateKey() {
@@ -80,6 +81,7 @@ export async function generatePrivateKey() {
 
     console.log('Public key: ' + pubKeyData);
 
+    logger.debug("Storing privateKey to nvdata: "+ privateKeyData);
     await nvdata.save('privateKey', privateKeyData);
 
     return privateKeyData;

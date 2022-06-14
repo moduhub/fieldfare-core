@@ -10,25 +10,31 @@ var webClientTransceiver;
 
 export async function setupHost(){
 
-  logger.info("System initHost - React Native");
+    logger.info("System initHost - React Native");
 
-  global.host = new HostManager();
+    global.host = new HostManager();
 
-  global.nvdata = new LevelUpNVData();
+    global.nvdata = new LevelUpNVData();
 
-  host.addResourcesManager(new LevelUpResourcesManager());
+    host.addResourcesManager(new LevelUpResourcesManager());
 
-  // check webSetup if needed
-  var privateKeyData = await nvdata.load('privateKey');
+    // check webSetup if needed
+    var privateKeyData = await nvdata.load('privateKey');
+    logger.debug("Private key data load before: " + privateKeyData);
 
 	if(privateKeyData === undefined
 	|| privateKeyData === null) {
 		privateKeyData = await generatePrivateKey();
 	}
 
+    var privateKeyData = await nvdata.load('privateKey');
+    logger.debug("Private key data load after: " + privateKeyData);
+
 	await host.setupId(privateKeyData);
 
-  webClientTransceiver = new WebClientTransceiver();
+    webClientTransceiver = new WebClientTransceiver();
+
+    logger.info("Host ID: " + host.id);
 }
 
 

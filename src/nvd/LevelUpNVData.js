@@ -30,9 +30,10 @@ export class LevelUpNVData{
     var object;
       console.log('levelupnvdata load\nkey: ' + key);
       return new Promise((resolve) => {
-        this.db.get(key, function(err, value){
+        this.db.get(key, function(err, value) {
           if(err){
-            resolve(undefined);
+              console.error('LevelUpNVData.load() err: ' + err);
+              resolve(undefined);
           } else {
             console.log('Gotten value: ', JSON.parse(value));
             console.log('Key: ' + key);
