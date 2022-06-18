@@ -84,7 +84,7 @@ export class HashLinkedList {
 
 		var newListElement = {
 			prev: this.lastHash,
-			obj: element
+			objKey: await ResourcesManager.storeResourceObject(element)
 		};
 
 		// logger.log('info', "Hash Linked List append: " + JSON.stringify(newListElement));
@@ -110,7 +110,7 @@ export class HashLinkedList {
 				throw Error('HashLinkedList: resource is null or undefined');
 			}
 
-			yield listElement.obj;
+			yield await ResourcesManager.getResourceObject(listElement.objKey, this.ownerID);
 
 			var prevHash = listElement.prev;
 		}
