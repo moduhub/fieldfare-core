@@ -2,6 +2,7 @@
 import {LocalHost} from '../../env/LocalHost';
 import {ResourcesManager} from '../../resources/ResourcesManager';
 import {Environment} from '../../env/Environment';
+import {VolatileResourcesManager} from '../../resources/VolatileResourcesManager';
 import {IndexedDBResourcesManager} from './IndexedDBResourcesManager';
 import {IndexedDBNVD} from './IndexedDBNVD';
 import {WebClientTransceiver} from '../shared/WebClientTransceiver';
@@ -17,6 +18,7 @@ export async function setupLocalHost() {
 
 	IndexedDBNVD.init();
 
+	VolatileResourcesManager.init();
 	IndexedDBResourcesManager.init();
 
 	var privateKeyData = await NVD.load('privateKey');

@@ -16,6 +16,11 @@ export class VolatileResourcesManager extends ResourcesManager {
 
     }
 
+    static init() {
+        const newInstance = new VolatileResourcesManager;
+        ResourcesManager.addInstance(newInstance);
+    }
+
     async storeResource(base64data) {
 
         const base64hash = await ResourcesManager.generateKeyForData(base64data);
