@@ -1,7 +1,7 @@
 import fs from 'fs';
 import arg from 'arg';
 import path from 'path';
-import {DrozdInit} from '../platforms/node/NodeExports';
+import {ffinit} from '../platforms/node/NodeExports';
 import {logger} from '../basic/Log'
 import {dashboard} from './dashboard';
 import chalk from 'chalk';
@@ -37,11 +37,11 @@ export async function main(args) {
     const options = parseArgumentsIntoOptions(args);
 
     try {
-        await DrozdInit.setupLocalHost();
-        const env = await DrozdInit.setupEnvironment();
-        await DrozdInit.initWebports(env);
+        await ffinit.setupLocalHost();
+        const env = await ffinit.setupEnvironment();
+        await ffinit.initWebports(env);
     } catch (error) {
-        logger.error('Drozd initialization failed: ' + error);
+        logger.error('Fieldfare initialization failed: ' + error);
     }
 
     if(options.dashboard) {

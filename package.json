@@ -1,12 +1,12 @@
 {
-  "name": "drozd",
+  "name": "fieldfare",
   "version": "0.0.1",
   "description": "Backend framework for distributed networks",
   "main": "src/platform/reactnative/ReactNativeExports.js",
   "bin": {
-    "mhsetup": "bin/mhsetup",
-    "mhconfig": "bin/mhconfig",
-    "mhrun": "bin/mhrun"
+    "ffsetup": "bin/ffsetup",
+    "ffconf": "bin/ffconf",
+    "ffrun": "bin/ffrun"
   },
   "scripts": {
     "start": "node test/Environment/EnvTestHost1.js",
@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/moduhub/drozd"
+    "url": "https://github.com/moduhub/fieldfare"
   },
   "keywords": [
     "backend, framework, distributed, version-control"

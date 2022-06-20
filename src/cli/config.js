@@ -7,7 +7,7 @@ import {LocalHost} from '../env/LocalHost';
 import {ResourcesManager} from '../resources/ResourcesManager';
 import {VersionChain} from '../versioning/VersionChain';
 import {Utils} from '../basic/Utils';
-import {DrozdInit} from '../platforms/node/NodeExports';
+import {ffinit} from '../platforms/node/NodeExports';
 
 import {
     inputWebport,
@@ -452,11 +452,11 @@ export async function main(args) {
     logger.disable();
 
     try {
-        await DrozdInit.setupLocalHost();
-        env = await DrozdInit.setupEnvironment();
-        await DrozdInit.initWebports(env);
+        await ffinit.setupLocalHost();
+        env = await ffinit.setupEnvironment();
+        await ffinit.initWebports(env);
     } catch (error) {
-        console.error('Drozd initialization failed: ' + error.stack);
+        console.error('Fieldfare initialization failed: ' + error.stack);
         process.exit(1);
     }
 

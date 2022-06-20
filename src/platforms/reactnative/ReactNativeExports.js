@@ -1,12 +1,12 @@
 
-export * from './common'
+export * from './common';
 
-export * from '../resources/LevelUpResourcesManager'
+export * from '../resources/LevelUpResourcesManager';
 
 export * from '../nvd/LevelUpNVData';
 
-import * as MHsetup from '../setup/reactNativeSetup'
+import * as ffinit from '../setup/reactNativeSetup';
 
 export {
-  MHsetup,
-}
+  ffinit
+};

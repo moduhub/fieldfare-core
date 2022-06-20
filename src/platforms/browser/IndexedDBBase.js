@@ -1,7 +1,7 @@
 
 import {logger} from '../../basic/Log';
 
-const dbname = 'drozd';
+const dbname = 'fieldfare';
 const dbversion = 1;
 
 export class IndexedDBBase {

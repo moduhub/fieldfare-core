@@ -8,4 +8,4 @@ export * from './LevelResourcesManager';
 
 export * from './LevelNVD';
 
-export * as DrozdInit from './NodeSetup';
+export * as ffnit from './NodeSetup';
