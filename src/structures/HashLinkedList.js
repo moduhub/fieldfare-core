@@ -105,12 +105,20 @@ export class HashLinkedList {
 
 			var listElement = await ResourcesManager.getResourceObject(prevHash, this.ownerID);
 
+			console.log('listElement: ' + JSON.stringify(listElement));
+
 			if(listElement === null
 			|| listElement === undefined) {
 				throw Error('HashLinkedList: resource is null or undefined');
 			}
 
-			yield await ResourcesManager.getResourceObject(listElement.objKey, this.ownerID);
+			if(listElement.obj) {
+				yield listElement.obj;
+			} else {
+				const object = await ResourcesManager.getResourceObject(listElement.objKey, this.ownerID);;
+				console.log('object: ' + JSON.stringify(object));
+				yield object;
+			}
 
 			var prevHash = listElement.prev;
 		}
