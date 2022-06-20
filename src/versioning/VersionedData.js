@@ -165,7 +165,7 @@ export class VersionedData {
 
 		const receivedMessage = await VersionStatement.fromResource(version, owner);
 
-		// logger.log('info', "Received update statement " + JSON.stringify(receivedMessage));
+		logger.debug("Received update statement: " + JSON.stringify(receivedMessage,null, 2));
 
 		var localChain = new VersionChain(this.version, LocalHost.getID(), 50);
 		var remoteChain = new VersionChain(version, owner, 50);
@@ -176,13 +176,13 @@ export class VersionedData {
 		localChain.limit(commonVersion, false);
 		remoteChain.limit(commonVersion, false);
 
-		logger.log('info', "Common version is " + commonVersion);
+		logger.debug("Common version is " + commonVersion);
 
 		const localCommitsAhead = await localChain.length();
 		const remoteCommitsAhead = await remoteChain.length();
 
-		logger.log('info', "Local env is " + localCommitsAhead + " commits ahead");
-		logger.log('info', "Remote env is " + remoteCommitsAhead + " commits ahead");
+		logger.debug("Local env is " + localCommitsAhead + " commits ahead");
+		logger.debug("Remote env is " + remoteCommitsAhead + " commits ahead");
 
 		// 		1) I have concurrent changes
 		// && 	2) remote chain is LoggerManager
@@ -253,7 +253,7 @@ export class VersionedData {
 
 			this.updateInProgress = null;
 
-			logger.log('info', "Local chain is ahead of remote chain, nothing to do");
+			logger.debug("Local chain is ahead of remote chain, nothing to do");
 
 			//Local chain is ahead of remote, wait for remote to merge
 			// Todo: notify him?
