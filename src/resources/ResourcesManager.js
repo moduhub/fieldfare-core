@@ -1,16 +1,15 @@
 
-import { LocalHost } from '../env/LocalHost';
-import { Request } from '../trx/Request';
+import {LocalHost} from '../env/LocalHost';
+import {Request} from '../trx/Request';
 import {Utils} from '../basic/Utils';
+import {logger} from '../basic/Log';
 
 var instances = new Set();
 
 export class ResourcesManager {
 
     constructor() {
-
             //
-
     }
 
     static available() {
@@ -161,7 +160,7 @@ export class ResourcesManager {
 			if(request === undefined) {
 
 				if(attempts > 0) {
-					logger.log('info', 'get resource request retry ' + attempts + ' of ' + retryCount-1);
+					logger.debug('get resource request retry ' + attempts + ' of ' + retryCount-1);
 				}
 
 				request = new Request('resource', 10000, {
@@ -195,13 +194,9 @@ export class ResourcesManager {
 				return remoteBase64data;
 
 			} catch (error) {
-
 				logger.error('Get resource request failed: ' + error.stack);
-
 			} finally {
-
                 LocalHost.clearRequest(hash);
-
 			}
 		}
 

@@ -15,7 +15,7 @@ export class LocalService {
         this.numRequests = 0;
         this.numErrors = 0;
 
-	this.pendingRequests = [];
+        this.pendingRequests = [];
 
     }
 
