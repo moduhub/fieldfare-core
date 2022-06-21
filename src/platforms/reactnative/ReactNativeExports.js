@@ -1,5 +1,5 @@
 
-export * from './common';
+export * from '../shared/CommonExports';
 
 export * from '../resources/LevelUpResourcesManager';
 
