@@ -253,6 +253,10 @@ export class RemoteHost {
 					logger.log('error', "Cause: " + iError.stack);
 					iError = iError.cause;
 				}
+
+				console.warn('Blacklisting version ' + version + ' due to update rejection');
+				env.versionBlacklist.add(version);
+
 			}
 		}
 

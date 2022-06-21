@@ -28,6 +28,8 @@ export class VersionedData {
 
 		this.version = '';
 
+		this.versionBlacklist = new Set();
+
 	}
 
 	addSet(name) {
@@ -159,6 +161,10 @@ export class VersionedData {
 			throw Error('another update in progress');
 		}
 
+		if(this.versionBlacklist.has(version)) {
+			throw Error('This version has been blacklisted');
+		}
+
 		logger.debug(">> Env update to version: " + version);
 
 		this.updateInProgress = version;
@@ -167,10 +173,10 @@ export class VersionedData {
 
 		logger.debug("Received update statement: " + JSON.stringify(receivedMessage,null, 2));
 
-		var localChain = new VersionChain(this.version, LocalHost.getID(), 50);
-		var remoteChain = new VersionChain(version, owner, 50);
+		const localChain = new VersionChain(this.version, LocalHost.getID(), 50);
+		const remoteChain = new VersionChain(version, owner, 50);
 
-		var commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
+		const commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
 
 		//Limit to commonVersion, not including
 		localChain.limit(commonVersion, false);
@@ -235,6 +241,9 @@ export class VersionedData {
 
 				//Save changes permanently
 				await NVD.save(this.uuid, this.version);
+
+				// Reset blacklist
+				this.versionBlacklist.clear();
 
 				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.version);
 
