@@ -26,16 +26,28 @@ export class HashLinkedList {
 
 			this.lastHash = lastHash;
 
-			logger.log('warning', "WARNING: HLT num elements is wrong");
-			this.numElements = undefined;
-
 		} else {
 
 			this.lastHash = '';
-			this.numElements = 0;
 
 		}
 
+	}
+
+	async getNumElements() {
+
+		if(this.numElements) {
+			return this.numElements;
+		}
+
+		if(this.lastHash
+		&& this.lastHash !== '') {
+			const lastElement = await ResourcesManager.getResourceObject(this.lastHash);
+
+			this.numElements = lastElement.index;
+		}
+
+		return 0;
 	}
 
 	setOwnerID(id) {
@@ -76,14 +88,21 @@ export class HashLinkedList {
 		return stateId;
 	}
 
+	clear() {
+		this.lastHash = '';
+	}
+
 	async append(element) {
 
 		if(this.readOny) {
 			throw Error('Attempt to edit a read only hash linked list');
 		}
 
+		const currentNumElements = await this.getNumElements();
+
 		var newListElement = {
 			prev: this.lastHash,
+			index: currentNumElements,
 			objKey: await ResourcesManager.storeResourceObject(element)
 		};
 
