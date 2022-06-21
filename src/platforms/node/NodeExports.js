@@ -8,4 +8,4 @@ export * from './LevelResourcesManager';
 
 export * from './LevelNVD';
 
-export * as ffnit from './NodeSetup';
+export * as ffinit from './NodeSetup';
