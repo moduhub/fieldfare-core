@@ -75,7 +75,7 @@ export async function initWebports(env) {
                 webServerTransceiver.open();
                 webServerTransceiver.onNewChannel = (newChannel) => {
                     logger.debug('WS server onNewChannel');
-                    host.bootChannel(newChannel);
+                    LocalHost.bootChannel(newChannel);
                 };
 
             } break;
@@ -120,7 +120,7 @@ export async function initWebports(env) {
             //
             //     var wsChannel = await webClientTransceiver.newChannel(webport.address, webport.port);
             //
-            //     host.bootChannel(wsChannel);
+            //     LocalHost.bootChannel(wsChannel);
             //
             // } break;
 
@@ -133,7 +133,7 @@ export async function initWebports(env) {
                     logger.log('info', 'Opening UDP port ' + udpPort);
                     udpTransceiver = new UDPTransceiver(udpPort);
                     udpTransceiver.onNewChannel = (newChannel) => {
-                        host.bootChannel(newChannel);
+                        LocalHost.bootChannel(newChannel);
                     };
                 }
 
