@@ -121,7 +121,7 @@ export class RemoteHost {
 
 				if(localService === undefined
 				|| localService === null) {
-					throw Error('unexpected service id');
+					throw Error('unexpected service id: ' + message.service);
 				}
 
 				if(await this.verifyMessage(message) !== true) {
