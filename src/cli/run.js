@@ -6,6 +6,8 @@ import {logger} from '../basic/Log'
 import {dashboard} from './dashboard';
 import chalk from 'chalk';
 
+var env;
+
 function parseArgumentsIntoOptions(rawArgs) {
     const args = arg(
     {
@@ -38,7 +40,7 @@ export async function main(args) {
 
     try {
         await ffinit.setupLocalHost();
-        const env = await ffinit.setupEnvironment();
+        env = await ffinit.setupEnvironment();
         await ffinit.initWebports(env);
     } catch (error) {
         logger.error('Fieldfare initialization failed: ' + error);
