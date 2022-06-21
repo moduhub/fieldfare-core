@@ -2,7 +2,7 @@
   "name": "fieldfare",
   "version": "0.0.1",
   "description": "Backend framework for distributed networks",
-  "main": "src/platform/reactnative/ReactNativeExports.js",
+  "main": "src/platforms/reactnative/ReactNativeExports.js",
   "bin": {
     "ffsetup": "bin/ffsetup",
     "ffconf": "bin/ffconf",
