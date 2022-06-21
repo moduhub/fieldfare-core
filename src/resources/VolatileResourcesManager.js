@@ -40,6 +40,12 @@ export class VolatileResourcesManager extends ResourcesManager {
 
 		var base64data = this.hashmap.get(base64hash);
 
+        if(base64data === undefined) {
+            const error = Error('Resource not found');
+            error.name = 'NOT_FOUND_ERROR';
+            throw error;
+        }
+
 		return base64data;
 	}
 
