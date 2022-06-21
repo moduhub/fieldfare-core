@@ -2,7 +2,7 @@
   "name": "fieldfare",
   "version": "0.0.1",
   "description": "Backend framework for distributed networks",
-  "main": "src/platforms/common/CommonExports.js",
+  "main": "./src/platforms/shared/CommonExports.js",
   "bin": {
     "ffsetup": "bin/ffsetup",
     "ffconf": "bin/ffconf",
