@@ -22,9 +22,7 @@
   "author": "Adan Kvitschal",
   "license": "ISC",
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^1.17.5",
     "arg": "^5.0.1",
-    "asyncstorage-down": "^4.2.0",
     "blessed": "^0.1.81",
     "chalk": "^4.1.2",
     "crypto": "^1.0.1",
