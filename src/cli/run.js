@@ -42,6 +42,7 @@ export async function main(args) {
         await ffinit.initWebports(env);
     } catch (error) {
         logger.error('Fieldfare initialization failed: ' + error);
+        process.exit(0);
     }
 
     if(options.dashboard) {
