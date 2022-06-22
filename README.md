@@ -264,4 +264,4 @@ Project Link: [https://github.com/moduhub/fieldfare](https://github.com/moduhub/
 [license-url]: https://github.com/moduhub/fieldfare/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/adan-kvitschal-ba771b177
-[product-screenshot]: images/screenshot.png
+[product-screenshot]: doc/images/cli-example.png
