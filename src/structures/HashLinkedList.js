@@ -96,7 +96,8 @@ export class HashLinkedList {
 		const key = await ResourcesManager.generateKeyForObject(element);
 		var iNodeKey = this.lastHash;
 		while(iNodeKey !== '') {
-			const iNode = ResourcesManager.getResourceObject(iNodeKey);
+			//logger.debug('iNodeKey: ' + iNodeKey + ' vs ' + key);
+			const iNode = await ResourcesManager.getResourceObject(iNodeKey);
 			if(iNode.objKey === key) {
 				return true;
 			}
