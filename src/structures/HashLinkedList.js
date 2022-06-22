@@ -92,6 +92,19 @@ export class HashLinkedList {
 		this.lastHash = '';
 	}
 
+	async has(element) {
+		const key = await ResourcesManager.generateKeyForObject(element);
+		var iNodeKey = this.lastHash;
+		while(iNodeKey !== '') {
+			const iNode = ResourcesManager.getResourceObject(iNodeKey);
+			if(iNode.objKey === key) {
+				return true;
+			}
+			iNodeKey = iNode.prev;
+		}
+		return false;
+	}
+
 	async append(element) {
 
 		if(this.readOny) {
