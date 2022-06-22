@@ -38,14 +38,14 @@
   <p align="center">
     A backend framework for distributed networks
     <br />
-    <a href="https://github.com/github_username/repo_name"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/moduhub/fieldfare"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/github_username/repo_name">View Demo</a>
+    <a href="https://github.com/moduhub/fieldfare">View Demo</a>
     ·
-    <a href="https://github.com/github_username/repo_name/issues">Report Bug</a>
+    <a href="https://github.com/moduhub/fieldfare/issues">Report Bug</a>
     ·
-    <a href="https://github.com/github_username/repo_name/issues">Request Feature</a>
+    <a href="https://github.com/moduhub/fieldfare/issues">Request Feature</a>
   </p>
 </div>
 
@@ -84,7 +84,9 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://example.com)
 
-Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`
+We have built a framework to solve some of our problems with data property. Depending on big datacenters, paying for DNS and fixed IPs to store your data is not fair, but micro datacenters like the ones small businesses can have are just not stable enough for any serious task. But using many microdatacenters spread in more than one location could solve the problem, provided that they can share information between them efficiently in real time.
+
+Fieldfare is a library that uses Distributed Hash Tables to store data in a way that cannot be corrupted by malicious nodes, and Version Control to manager users, network configuration and services definitions. This way, no central authority is necessary, since anyone in teh "admins" group can commit changes to the environment, that are replicated by all the other participants.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -92,14 +94,8 @@ Here's a blank template to get started: To avoid retyping too much info. Do a se
 
 ### Built With
 
-* [Next.js](https://nextjs.org/)
-* [React.js](https://reactjs.org/)
-* [Vue.js](https://vuejs.org/)
-* [Angular](https://angular.io/)
-* [Svelte](https://svelte.dev/)
-* [Laravel](https://laravel.com)
-* [Bootstrap](https://getbootstrap.com)
-* [JQuery](https://jquery.com)
+* [Node.js](https://nodejs.org/)
+
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -113,27 +109,52 @@ To get a local copy up and running follow these simple example steps.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
+Install the library via npm
 * npm
   ```sh
-  npm install npm@latest -g
+  npm install fieldfare
   ```
 
-### Installation
+### Setup
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
-   ```sh
-   git clone https://github.com/github_username/repo_name.git
-   ```
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
+In your code, import ffinit accordng to the platform you are using:
+
+If you are using Node.js, you can import like this:
+```js
+import {ffinit} from 'fieldfare/node';
+```
+This will also implement a WebSocket Server and a UDP Transceiver, please check the section about Webports to learn how to define the ports where the server will listen.
+
+Or, if you are building for the browser, please do the following:
+
+```js
+import {ffinit} from 'fieldfare/browser';
+```
+This will implement a WebSocket client Transceiver only, that cannot receive incomming connections.
+
+Define a UUID in string format to uniquely identify your data environment, that must be the same for all participants:
+```js
+const envUUID = '3481b164-58ac-4c68-8d9a-7e3c85839ca5';
+```
+Warning: please dont use this UUID, it was generated randmnly for this example only. You can generate a random UUID in any online service (https://www.uuidgenerator.net/version4) or user a library like
+
+```sh
+npm i uuid:
+```
+
+Now you can initilize the LocalHost and Environment, your data will be stored ina LevelDB instance if you are running on Node, or on IndexedDb if your are building for the browser;
+
+```js
+var env;
+
+try {
+  ffinit.setupLocalHost();
+  ffinit.setEnvironmentUUID(envUUID);
+  env = ffinit.setupEnvironment();
+} catch (error) {
+    console.error('Fieldfare Initialization failed: ' + error);
+}
+```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -153,12 +174,11 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-    - [ ] Nested Feature
+- [ ] B-Tree Removal
+- [ ] Routing
+- [ ] Planning
 
-See the [open issues](https://github.com/github_username/repo_name/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/moduhub/fieldfare/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -194,12 +214,11 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
+Adan Kvitschal - adan@moduhub.com
 
-Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
+Project Link: [https://github.com/moduhub/fieldfare](https://github.com/moduhub/fieldfare)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
-
 
 
 <!-- ACKNOWLEDGMENTS -->
@@ -215,16 +234,16 @@ Project Link: [https://github.com/github_username/repo_name](https://github.com/
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/github_username/repo_name.svg?style=for-the-badge
-[contributors-url]: https://github.com/github_username/repo_name/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/github_username/repo_name.svg?style=for-the-badge
-[forks-url]: https://github.com/github_username/repo_name/network/members
-[stars-shield]: https://img.shields.io/github/stars/github_username/repo_name.svg?style=for-the-badge
-[stars-url]: https://github.com/github_username/repo_name/stargazers
-[issues-shield]: https://img.shields.io/github/issues/github_username/repo_name.svg?style=for-the-badge
-[issues-url]: https://github.com/github_username/repo_name/issues
-[license-shield]: https://img.shields.io/github/license/github_username/repo_name.svg?style=for-the-badge
-[license-url]: https://github.com/github_username/repo_name/blob/master/LICENSE.txt
+[contributors-shield]: https://img.shields.io/github/contributors/moduhub/fieldfare.svg?style=for-the-badge
+[contributors-url]: https://github.com/moduhub/fieldfare/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/moduhub/fieldfare.svg?style=for-the-badge
+[forks-url]: https://github.com/moduhub/fieldfare/network/members
+[stars-shield]: https://img.shields.io/github/stars/moduhub/fieldfare.svg?style=for-the-badge
+[stars-url]: https://github.com/moduhub/fieldfare/stargazers
+[issues-shield]: https://img.shields.io/github/issues/moduhub/fieldfare.svg?style=for-the-badge
+[issues-url]: https://github.com/moduhub/fieldfare/issues
+[license-shield]: https://img.shields.io/github/license/moduhub/fieldfare.svg?style=for-the-badge
+[license-url]: https://github.com/moduhub/fieldfare/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/linkedin_username
+[linkedin-url]: https://linkedin.com/in/adan-kvitschal-ba771b177
 [product-screenshot]: images/screenshot.png
