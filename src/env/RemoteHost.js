@@ -288,7 +288,8 @@ export class RemoteHost {
 			throw Error('malformed resouce message');
 		}
 
-		if('data' in message.data) {
+		if('data' in message.data
+		|| 'error' in message.data) {
 
 			//this is a response to a previous request
 			if(this.onResponseReceived) {
