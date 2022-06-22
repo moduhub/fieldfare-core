@@ -401,7 +401,7 @@ async function mainMenu() {
       choices: ['Admins', 'Services', 'Providers', 'Webports', 'Exit'],
     };
 
-    console.log(title('__________ ModuHub mhlib.js Environment configuration __________'));
+    console.log(title('__________ Fieldfare Environment configuration __________'));
 
     if(env) {
         console.table({

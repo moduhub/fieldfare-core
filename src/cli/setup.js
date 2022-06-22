@@ -199,7 +199,7 @@ function mainMenu() {
       choices: ['Local Host', 'Environment', 'Boot Webports', 'Exit'],
     };
 
-    console.log('--- ModuHub mhlib.js configuration ---');
+    console.log('--- Fieldfare Host configuration ---');
 
     inquirer.prompt(menu).then((answers) => {
         switch (answers.submenu ) {

@@ -64,7 +64,7 @@ export function dashboard(pEnv) {
         smartCSR: true
     });
 
-    screen.title = 'mhHost-' + host.id.substring(0,8);
+    screen.title = 'fieldfare-' + host.id.substring(0,8);
 
     // Create a box perfectly centered horizontally and vertically.
     activeHostsList = blessed.box({
