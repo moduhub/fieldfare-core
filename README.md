@@ -90,22 +90,40 @@ Fieldfare is a library that uses Distributed Hash Tables to store data in a way 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+### Main Concepts
 
+#### Resources
+
+Resource is the name given to any chunk of data that is used inside the enviroment. All resources are identified by the hash of their content. This way they can be stored anywhere and retrieved from any potentially malicious source withou the fear of data corruption.
+
+#### Local Host
+
+Any instance running Fieldfare must implement a Local Host to be able to talk to the network. A host is basically a store for a key pair that is used to sign every message generate locally. Another use of the key pair is for unique identification: every host is identified by the hash of their public key in JWK format.
+
+#### Environment
+
+The environment is an object that is kept under version control and is identified by an UUID, it can be edited by anyone that is under the "admins" group. Valid changs include adding other admins and removing itself, or editing any property of the environment (except its UUID).
+
+The basic properties of the enviorment are its Services and lists of providers of eac service. Also there is a list of webports, that wll be explained ahead.
+
+#### Services
+
+TODO
+
+#### Webports
+
+TODO
 
 ### Built With
 
 * [Node.js](https://nodejs.org/)
 
-
 <p align="right">(<a href="#top">back to top</a>)</p>
-
-
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+Fieldfare can be used in two ways: it can run standalone using the CLI tools or you can integrate it to a larger project. when you run it alone, most of the cases you are implementing a single service, when you are integrating it, usually you are building an UI to view and change and environment.
 
 ### Prerequisites
 
@@ -123,26 +141,26 @@ If you are using Node.js, you can import like this:
 ```js
 import {ffinit} from 'fieldfare/node';
 ```
-This will also implement a WebSocket Server and a UDP Transceiver, please check the section about Webports to learn how to define the ports where the server will listen.
+This will also implement a WebSocket Server and a UDP Transceiver, please check the section about Webports to learn how to define the ports where the server will listen. The node setup will use LevelDB to sotre all non-volatile objects and resources used by the environment you are connecting to.
 
 Or, if you are building for the browser, please do the following:
 
 ```js
 import {ffinit} from 'fieldfare/browser';
 ```
-This will implement a WebSocket client Transceiver only, that cannot receive incomming connections.
+This will implement a WebSocket client Transceiver only, that cannot receive incomming connections. The browser setup will use IndexedDB to store all non-volatile objects and resources.
 
 Define a UUID in string format to uniquely identify your data environment, that must be the same for all participants:
 ```js
 const envUUID = '3481b164-58ac-4c68-8d9a-7e3c85839ca5';
 ```
-Warning: please dont use this UUID, it was generated randmnly for this example only. You can generate a random UUID in any online service (https://www.uuidgenerator.net/version4) or user a library like
+Warning: please don't use this UUID, it was randomly generated for this example only. You can generate a random UUID in any online service (https://www.uuidgenerator.net/version4) or use a library like:
 
 ```sh
-npm i uuid:
+npm i uuid
 ```
 
-Now you can initilize the LocalHost and Environment, your data will be stored ina LevelDB instance if you are running on Node, or on IndexedDb if your are building for the browser;
+Now you can initilize the LocalHost and Environment like this:
 
 ```js
 var env;
