@@ -120,7 +120,7 @@ export class HashLinkedList {
 			objKey: await ResourcesManager.storeResourceObject(element)
 		};
 
-		// logger.log('info', "Hash Linked List append: " + JSON.stringify(newListElement));
+		logger.debug("[HLL append] newListElement: " + JSON.stringify(newListElement));
 
 		this.lastHash = await ResourcesManager.storeResourceObject(newListElement);
 
@@ -132,28 +132,28 @@ export class HashLinkedList {
 
 	async* [Symbol.asyncIterator]() {
 
-		var prevHash = this.lastHash;
+		var iNodeKey = this.lastHash;
 
-		while(prevHash !== '') {
+		while(iNodeKey !== '') {
 
-			var listElement = await ResourcesManager.getResourceObject(prevHash, this.ownerID);
+			const iNode = await ResourcesManager.getResourceObject(iNodeKey, this.ownerID);
 
-			console.log('listElement: ' + JSON.stringify(listElement));
+			logger.debug('[HLL Iterator] iNode: ' + JSON.stringify(iNode));
 
-			if(listElement === null
-			|| listElement === undefined) {
+			if(iNode === null
+			|| iNode === undefined) {
 				throw Error('HashLinkedList: resource is null or undefined');
 			}
 
-			if(listElement.obj) {
-				yield listElement.obj;
+			if(iNode.obj) {
+				yield iNode.obj;
 			} else {
-				const object = await ResourcesManager.getResourceObject(listElement.objKey, this.ownerID);;
-				console.log('object: ' + JSON.stringify(object));
+				const object = await ResourcesManager.getResourceObject(iNode.objKey, this.ownerID);;
+				logger.debug('[HLL iterator] Object: ' + JSON.stringify(object));
 				yield object;
 			}
 
-			var prevHash = listElement.prev;
+			iNodeKey = iNode.prev;
 		}
 
 	}
