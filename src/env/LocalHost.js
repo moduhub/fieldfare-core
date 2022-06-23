@@ -5,6 +5,7 @@
  */
 
 import {ResourcesManager} from '../resources/ResourcesManager';
+import {Environment} from '../env/Environment';
 import {LocalService} from './LocalService';
 import {RemoteHost} from './RemoteHost';
 import {Message} from '../trx/Message';
@@ -101,9 +102,15 @@ export const LocalHost = {
 
 	addEnvironment(env) {
 
+		if(env === null
+		|| env === undefined
+		|| env instanceof Environment === false) {
+			throw Error('Invalid environment object');
+		}
+
 		if(localHost.environments.has(env) === false) {
 			localHost.environments.add(env);
-			logger.log('info', 'New env registered: ' + env.uuid);
+			logger.debug('New env registered: ' + env.uuid);
 		} else {
 			logger.warn('Env already registered ' + env.uuid);
 		}
@@ -196,7 +203,7 @@ export const LocalHost = {
 
 	dispatchRequest(hash, request) {
 
-		logger.debug("Forwarding request to request.destination: " + JSON.stringify(request.destination));
+		// logger.debug("Forwarding request to request.destination: " + JSON.stringify(request.destination));
 
 		localHost.requests.set(hash, request);
 
