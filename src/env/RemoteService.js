@@ -24,7 +24,7 @@ export class RemoteService {
                     throw Error('RemoteService owner is undefined');
                 }
 
-                logger.log('info', methodName + 'called with params: ' + JSON.stringify(params));
+                logger.debug('[Remote Service]' +  methodName + ' called with params: ' + JSON.stringify(params));
 
                 const request = new Request(newService.definition.uuid, 10000, {
                     [methodName]: {
@@ -72,24 +72,26 @@ export class RemoteService {
     }
 
     setState(state) {
-
-       logger.log('info', 'SERVICE: ' + this.definition.uuid + ' set state:' + JSON.stringify(state));
-
+       // logger.debug('[RemoteService] ' + this.definition.uuid + ' set state:' + JSON.stringify(state));
+       var stateChanged = false;
        for(const prop in state) {
-
            // logger.log('info', "entry state: " + state[prop]);
-
            if(prop in this.data === false) {
                throw Error('state data mismatch');
            }
-
-           const entryState = state[prop];
-           this.data[prop].setState(entryState);
-
+           const entryNewState = state[prop];
+           const entryPrevState = this.data[prop].getState();
+           if(entryNewState !== entryPrevState) {
+            //    logger.debug('[RemoteService] Entry '+ this.definition.uuid + '.' + prop + ' state changed '
+            // + ' from \''  + entryPrevState
+            // + '\' to \'' + entryNewState + '\'');
+               this.data[prop].setState(entryNewState);
+               stateChanged = true;
+           }
        }
-
+       if(stateChanged && this.onStateUpdate) {
+           this.onStateUpdate(state);
+       }
     }
-
-    //match request/response
 
 }
