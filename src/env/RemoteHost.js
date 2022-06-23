@@ -383,7 +383,7 @@ export class RemoteHost {
 					newService.setState(serviceState);
 				}
 
-				logger.info('Implemented new RemoteService ' + uuid + ' for RemoteHost ' + this.id);
+				logger.debug('Implemented new RemoteService ' + uuid + ' for RemoteHost ' + this.id);
 			} catch(error) {
 				throw Error('Failed to setup RemoteService ' + uuid, {cause: error});
 			}
@@ -391,7 +391,7 @@ export class RemoteHost {
 
 		const service = this.implementedServices.get(uuid);
 
-		logger.info('accessService('+uuid+') result: ' + JSON.stringify(service));
+		logger.debug('accessService('+uuid+') result: ' + JSON.stringify(service));
 
 		return service;
 	}

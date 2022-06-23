@@ -120,7 +120,7 @@ export class HashLinkedList {
 			objKey: await ResourcesManager.storeResourceObject(element)
 		};
 
-		logger.debug("[HLL append] newListElement: " + JSON.stringify(newListElement));
+		//logger.debug("[HLL append] newListElement: " + JSON.stringify(newListElement));
 
 		this.lastHash = await ResourcesManager.storeResourceObject(newListElement);
 
@@ -146,6 +146,7 @@ export class HashLinkedList {
 			}
 
 			if(iNode.obj) {
+				logger.warn('[HLL Iterator] Iterating deprecated HLL format');
 				yield iNode.obj;
 			} else {
 				const object = await ResourcesManager.getResourceObject(iNode.objKey, this.ownerID);;
