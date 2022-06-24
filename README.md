@@ -123,7 +123,7 @@ TODO
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Fieldfare can be used in two ways: it can run standalone using the CLI tools or you can integrate it to a larger project. when you run it alone, most of the cases you are implementing a single service, when you are integrating it, usually you are building an UI to view and change and environment.
+Fieldfare can be used in two ways: it can run standalone using the CLI tools or you can integrate it to a larger project. Standalone services are useful to manage data and workload in the backend. When you are integrating it, usually you are building a graphical UI (an 'app' or web interface) to view and change the environment.
 
 ### Prerequisites
 
@@ -133,9 +133,47 @@ Install the library via npm
   npm install fieldfare
   ```
 
+### CLI Tools
+
+The CLI tools can be used to setup a service written in javascript as a standalone server. They can also be used to configure the environment, adding or removing admins, services, authorizations and webports.
+
+#### ffsetup
+
+This tools is used to edit only the Local Host information, all changes performed here are stored locally in the folder you are currently working. All the options that this tool offers can be acessed from the menu by calling:
+
+```sh
+ffsetup
+```
+
+The first this to do when setting up a service is to generate the host private key. This option is accessible via 'Local Host > Generate Private Key'. This will overwrite any previosu key information, discarding it forever, so beware.
+
+After the key is generated, the host will receive ad ID, you can copy it since this will be the identification of the host you are setting up and can be used if you are integrating to an already existing environment and will need to add an authorization.
+
+To define the UUID of the environment, use "Environment > Set UUID". By doing this you will scrap any previous UUID defined, so if you didn't have a copy of it, beware.
+
+The last step is to add a "Boot Webport" and is not always needed. This information is used to perform a bootstrap of the host when it is freshly configured and needs to find another enviroment participants to exchange information. If this service will be a central node, probably the other hosts will find it via its public IP that can be configured later.
+
+#### ffconf
+
+This tool is used to edit the Environment data directly. All changes performed via ffconf are propagated to all environment participants and permanently stored everywhere. Since the configuration is sotored locally, please perform this step in teh sam eworking folder where you previously called ffsetup.
+
+To access the tool menu, you must call:
+
+```sh
+ffconf menu
+```
+
+TODO: Configuration steps;
+
+#### ffrun <path_to_service>
+
+This step will import a JS module that implements the service methods according to its definition. All information from ffsetup will be used to setup the host and connect to the enviroment.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
 ### Setup
 
-In your code, import ffinit accordng to the platform you are using:
+In your code, import ffinit according to the platform you are using:
 
 If you are using Node.js, you can import like this:
 ```js
@@ -175,18 +213,6 @@ try {
 ```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
-
-
-
-<!-- USAGE EXAMPLES -->
-## Usage
-
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
-
-_For more examples, please refer to the [Documentation](https://example.com)_
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
 
 
 <!-- ROADMAP -->
