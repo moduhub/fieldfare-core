@@ -89,24 +89,30 @@ export class TreeContainer {
 
 	}
 
+    popRight() {
+        const rightmostKey = this.keys.pop();
+        const rightmostChild = this.children.pop();
+        this.numElements--;
+        return [rightmostKey, rightmostChild];
+    }
+
     //1) key is deleted
-    //2) [left, right] children are retuned
+    //2) [leftKey, leftChild] is retuned
     remove(key) {
-
         const index = this.keys.indexOf(key);
-
         if(index === -1) {
             throw Error('Element not found');
         }
-
+        var leftKey = '';
+        if(index > 0){
+            leftKey = this.keys[index-1];
+        }
+        const leftChild = this.children[index];
+        const rightChild = this.children[index+1];
         this.keys.splice(index, 1);
-        const leftChild = this.children(index);
-        const rightChild = this.children(index+1);
         this.children.splice(index, 1);
-
         this.numElements--;
-
-        return [leftChild, rightChild];
+        return [leftKey, leftChild, rightChild];
     }
 
 	updateChild(prev, current) {

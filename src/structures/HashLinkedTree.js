@@ -56,28 +56,19 @@ export class HashLinkedTree {
 	}
 
 	getState() {
-
 		var stateId = this.rootHash;
-
 		return stateId;
 	}
 
 	//Start a new tree with a given initial element
 	async init(firstElementHash) {
-
 		var newRoot = new TreeContainer();
-
 		if(firstElementHash !== null
 		&& firstElementHash !== undefined) {
-
-			newRoot.addElement(firstElementHash);
-
+			newRoot.add(firstElementHash);
 		}
-
 		this.rootHash = await ResourcesManager.storeResourceObject(newRoot);
-
 //		logger.log('info', "New tree root: \'" + this.rootHash + "\'");
-
 	}
 
 	async validate(element, storeFlag) {
@@ -120,7 +111,7 @@ export class HashLinkedTree {
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
 
-			logger.log('info', "First insert, init root with \'" + elementHash + "\'");
+			logger.debug("First insert, init root with \'" + elementHash + "\'");
 
 			await this.init(elementHash);
 
@@ -131,7 +122,7 @@ export class HashLinkedTree {
 
 			var iContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
 
-			logger.log('info', 'root->' + JSON.stringify(iContainer, null, 2));
+			logger.debug('root->' + JSON.stringify(iContainer, null, 2));
 
 			var depth = 0;
 			prevBranchHashes[0] = this.rootHash;//root hash
@@ -168,7 +159,7 @@ export class HashLinkedTree {
 			//logger.log('info', "Destination container prev state: " + JSON.stringify(iContainer, null, 2));
 
 			//Leaf add
-			iContainer.addElement(elementHash);
+			iContainer.add(elementHash);
 
 //			logger.log('info', "Inserted new at depth=" + depth
 //				+ " -> Container: "  + JSON.stringify(iContainer, null, 2));
@@ -200,7 +191,7 @@ export class HashLinkedTree {
 					//create new root from scratch
 					var newRoot = new TreeContainer(leftContainerHash);
 
-					newRoot.addElement(meanElement, rightContainerHash);
+					newRoot.add(meanElement, rightContainerHash);
 
 					branch.unshift(newRoot);
 
@@ -223,7 +214,7 @@ export class HashLinkedTree {
 //					logger.log('info', ">>> iContainer prev state: " + JSON.stringify(iContainer, null, 2));
 
 					iContainer.updateChild(prevBranchHashes[depth], leftContainerHash);
-					iContainer.addElement(meanElement, rightContainerHash);
+					iContainer.add(meanElement, rightContainerHash);
 
 //					logger.log('info', ">>> iContainer after state: " + JSON.stringify(iContainer, null, 2));
 
@@ -291,40 +282,38 @@ export class HashLinkedTree {
             throw Error('Tree is empty');
 
 		} else {
-
 			// var prevBranchHashes = new Array();
 			// var branch = new Array();
 
-			var iContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
-            do {
-                const nextContainerHash = await iContainer.getContainer(key);
+            var iContainer;
+			var nextContainerHash = this.rootHash;
+            while(nextContainerHash !== true) {
+                iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
+                nextContainerHash  = await iContainer.follow(key);
                 if(nextContainerHash === '') {
                     throw Error('Element does not exist in tree');
                 }
-                iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
-            } while(nextContainerHash !== true);
-
+            }
             const ownerContainer = iContainer;
-            const [leftContainerKey, rightContainerKey] = ownerContainer.remove(key);
-
+            const [leftKey, leftContainerKey, rightContainerKey] = ownerContainer.remove(key);
             if(leftContainerKey !== '') {
                 const leftContainer = await TreeContainer.fromResource(leftContainerKey, this.ownerID);
-                const rightContainer = await TreeContainer.fromResource(rightContainerKey, this.ownerID);
-
-                const [downKey, downChild] = await leftContainer.popRightmostKey();
-
+                const [downKey, downChild] = await leftContainer.popRight();
                 if(leftContainer.numElements == 0) {
-                    //"steal from left"
-                    const leftKey = ownerContainer.getLeftKey(key);
-                    ownerContainer.remove(key);
-                    leftContainer.add(leftKey);
-
+                    if(leftKey !== '') {
+                        ownerContainer.add(downKey, downChild);
+                        //"steal from left"
+                        const [leftLeftKey, leftLeftChild] = ownerContainer.remove(leftKey);
+                        leftContainer.add(leftKey, leftLeftChild);
+                    } else {
+                        //merge right
+                        rightContainer.add(downKey, downChild);
+                    }
+                } else {
+                    ownerContainer.add(downKey, downChild);
                 }
             }
-
-
         }
-
     }
 
 	async has(element) {
