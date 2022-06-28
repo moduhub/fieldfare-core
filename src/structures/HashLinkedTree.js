@@ -275,6 +275,58 @@ export class HashLinkedTree {
 		return this.rootHash;
 	}
 
+    async remove(element) {
+
+        if(this.readOny) {
+            throw Error('Attempt to edit a read only hash linked tree');
+        }
+
+		var key = await this.validate(element);
+
+//		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + key);
+
+		if(this.rootHash == null
+		|| this.rootHash == undefined) {
+
+            throw Error('Tree is empty');
+
+		} else {
+
+			// var prevBranchHashes = new Array();
+			// var branch = new Array();
+
+			var iContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
+            do {
+                const nextContainerHash = await iContainer.getContainer(key);
+                if(nextContainerHash === '') {
+                    throw Error('Element does not exist in tree');
+                }
+                iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
+            } while(nextContainerHash !== true);
+
+            const ownerContainer = iContainer;
+            const [leftContainerKey, rightContainerKey] = ownerContainer.remove(key);
+
+            if(leftContainerKey !== '') {
+                const leftContainer = await TreeContainer.fromResource(leftContainerKey, this.ownerID);
+                const rightContainer = await TreeContainer.fromResource(rightContainerKey, this.ownerID);
+
+                const [downKey, downChild] = await leftContainer.popRightmostKey();
+
+                if(leftContainer.numElements == 0) {
+                    //"steal from left"
+                    const leftKey = ownerContainer.getLeftKey(key);
+                    ownerContainer.remove(key);
+                    leftContainer.add(leftKey);
+
+                }
+            }
+
+
+        }
+
+    }
+
 	async has(element) {
 
 		const elementHash = await this.validate(element, false);
