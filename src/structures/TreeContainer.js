@@ -7,7 +7,7 @@ export class TreeContainer {
 
 	constructor(leftChild) {
 
-		this.elements = new Array();
+		this.keys = new Array();
 		this.children = new Array();
 
 		if(leftChild == null
@@ -27,11 +27,11 @@ export class TreeContainer {
 		this.numElements = 0;
 	}
 
-	static async fromResource(hash, ownerID) {
+	static async fromResource(key, ownerID) {
 
 		var newContainer = new TreeContainer();
 
-		const resourceObject = await ResourcesManager.getResourceObject(hash, ownerID);
+		const resourceObject = await ResourcesManager.getResourceObject(key, ownerID);
 
 		if(resourceObject === null
 		|| resourceObject === undefined) {
@@ -43,11 +43,11 @@ export class TreeContainer {
 		return newContainer;
 	}
 
-	addElement(hash, rightChild) {
+	add(key, rightChild) {
 
 		//Parameters validation
-		if(Utils.isBase64(hash) === false) {
-			throw Error('invalid element hash');
+		if(Utils.isBase64(key) === false) {
+			throw Error('invalid element key');
 		}
 
 		if(rightChild === null
@@ -60,12 +60,12 @@ export class TreeContainer {
 		}
 
 		if(this.numElements == 0) {
-			this.elements[0] = hash;
+			this.keys[0] = key;
 			this.children[1] = rightChild;
 		} else {
-			if(hash < this.elements[0]) {
+			if(key < this.keys[0]) {
 
-				this.elements.unshift(hash);
+				this.keys.unshift(key);
 				this.children.splice(1, 0, rightChild);
 
 			} else {
@@ -73,14 +73,14 @@ export class TreeContainer {
 				var insertIndex = 1;
 
 				for(var i=0; i<this.numElements; i++) {
-					if(hash > this.elements[i]) {
+					if(key > this.keys[i]) {
 						insertIndex = i+1;
 					} else {
 						break;
 					}
 				}
 
-				this.elements.splice(insertIndex, 0, hash);
+				this.keys.splice(insertIndex, 0, key);
 				this.children.splice(insertIndex+1, 0, rightChild);
 			}
 		}
@@ -88,6 +88,26 @@ export class TreeContainer {
 		this.numElements++;
 
 	}
+
+    //1) key is deleted
+    //2) [left, right] children are retuned
+    remove(key) {
+
+        const index = this.keys.indexOf(key);
+
+        if(index === -1) {
+            throw Error('Element not found');
+        }
+
+        this.keys.splice(index, 1);
+        const leftChild = this.children(index);
+        const rightChild = this.children(index+1);
+        this.children.splice(index, 1);
+
+        this.numElements--;
+
+        return [leftChild, rightChild];
+    }
 
 	updateChild(prev, current) {
 
@@ -119,15 +139,15 @@ export class TreeContainer {
 		//find mean element
 		const meanIndex = Math.floor((this.numElements-1)/2);
 
-		var meanElement = this.elements[meanIndex];
+		var meanElement = this.keys[meanIndex];
 
 		const numRightElements = this.numElements - meanIndex - 1;
 
-		rightContainer.elements = this.elements.splice(meanIndex, numRightElements+2);
+		rightContainer.keys = this.keys.splice(meanIndex, numRightElements+2);
 		rightContainer.children = this.children.splice(meanIndex+1, numRightElements+1);
 
 		//fill first element
-		rightContainer.elements.splice(0,1);
+		rightContainer.keys.splice(0,1);
 
 		this.numElements -= numRightElements+1;
 		rightContainer.numElements = numRightElements;
@@ -135,17 +155,17 @@ export class TreeContainer {
 		return meanElement;
 	}
 
-	follow(hash) {
+	follow(key) {
 
 		var childIndex = 0;
 
-		if(hash > this.elements[0]) {
+		if(key > this.keys[0]) {
 
 			for(var i=0; i<this.numElements; i++) {
-				if(hash > this.elements[i]) {
+				if(key > this.keys[i]) {
 					childIndex = i+1;
 				} else
-				if (hash == this.elements[i]) {
+				if (key == this.keys[i]) {
 					//Found exact same element
 					return true;
 				} else {
@@ -153,7 +173,7 @@ export class TreeContainer {
 				}
 			}
 		} else
-		if(hash == this.elements[0]) {
+		if(key == this.keys[0]) {
 			//Found element on first position
 			return true;
 		}
@@ -176,8 +196,8 @@ export class TreeContainer {
 
 		for(var i=0; i<this.numElements; i++) {
 
-			//Intercalate children with branches
-			yield this.elements[i];
+			//Interleave children with branches
+			yield this.keys[i];
 
 			if(this.children[i+1] !== '') {
 
