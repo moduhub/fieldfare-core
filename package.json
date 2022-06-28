@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node test/Environment/EnvTestHost1.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest"
   },
   "repository": {
     "type": "git",
@@ -35,16 +35,22 @@
   },
   "exports": {
     ".": {
-        "require": "./src/platforms/shared/CommonExports.js",
-        "import": "./src/platforms/shared/CommonExports"
+      "require": "./src/platforms/shared/CommonExports.js",
+      "import": "./src/platforms/shared/CommonExports"
     },
     "./browser": {
-        "require": "./src/platforms/browser/BrowserExports.js",
-        "import": "./src/platforms/browser/BrowserExports"
+      "require": "./src/platforms/browser/BrowserExports.js",
+      "import": "./src/platforms/browser/BrowserExports"
     },
     "./node": {
-        "require": "./src/platforms/node/NodeExports.js",
-        "import": "./src/platforms/node/NodeExports"
+      "require": "./src/platforms/node/NodeExports.js",
+      "import": "./src/platforms/node/NodeExports"
     }
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.18.6",
+    "@babel/preset-env": "^7.18.6",
+    "cross-env": "^7.0.3",
+    "jest": "^28.1.1"
   }
 }
