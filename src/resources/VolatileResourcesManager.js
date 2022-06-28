@@ -5,14 +5,16 @@ import {logger} from '../basic/Log';
 
 export class VolatileResourcesManager extends ResourcesManager {
 
-    constructor() {
+    constructor(enableReport=false) {
         super();
 
         this.hashmap = new Map;
 
-        setInterval(() => {
-            logger.log('info', "Volatile Resources Manager: " + this.hashmap.size + " resources stored.");
-        }, 30000);
+        if(enableReport) {
+            setInterval(() => {
+                logger.log('info', "Volatile Resources Manager: " + this.hashmap.size + " resources stored.");
+            }, 30000);
+        }
 
     }
 
