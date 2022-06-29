@@ -89,6 +89,13 @@ export class TreeContainer {
 
 	}
 
+	popLeft() {
+        const leftmostKey = this.keys.shift();
+        const leftmostChild = this.children.shift();
+        this.numElements--;
+        return [leftmostKey, leftmostChild];
+    }
+
     popRight() {
         const rightmostKey = this.keys.pop();
         const rightmostChild = this.children.pop();
@@ -141,37 +148,33 @@ export class TreeContainer {
 	// 2) Left element stays
 	// 3) Right element is returned
 	split(rightContainer) {
-
 		//find mean element
 		const meanIndex = Math.floor((this.numElements-1)/2);
-
 		var meanElement = this.keys[meanIndex];
-
 		const numRightElements = this.numElements - meanIndex - 1;
-
 		rightContainer.keys = this.keys.splice(meanIndex, numRightElements+2);
 		rightContainer.children = this.children.splice(meanIndex+1, numRightElements+1);
-
 		//fill first element
 		rightContainer.keys.splice(0,1);
-
 		this.numElements -= numRightElements+1;
 		rightContainer.numElements = numRightElements;
-
 		return meanElement;
 	}
 
+	mergeLeft(left) {
+		this.keys = [left.keys, ...this.keys];
+		this.children = [left.children, ...this.children];
+		this.numElements += left.numElements;
+	}
+
 	follow(key) {
-
 		var childIndex = 0;
-
 		if(key > this.keys[0]) {
-
 			for(var i=0; i<this.numElements; i++) {
 				if(key > this.keys[i]) {
 					childIndex = i+1;
 				} else
-				if (key == this.keys[i]) {
+				if (key === this.keys[i]) {
 					//Found exact same element
 					return true;
 				} else {
@@ -179,44 +182,30 @@ export class TreeContainer {
 				}
 			}
 		} else
-		if(key == this.keys[0]) {
+		if(key === this.keys[0]) {
 			//Found element on first position
 			return true;
 		}
-
 		return this.children[childIndex];
 	}
 
 	async* iterator(ownerID) {
-
 		if(this.children[0] !== '') {
-
 			const leftmostChild = await TreeContainer.fromResource(this.children[0], ownerID);
-
 			//Descent on leftmost child
 			for await (const element of leftmostChild.iterator(ownerID)) {
 				yield element;
 			}
-
 		}
-
 		for(var i=0; i<this.numElements; i++) {
-
 			//Interleave children with branches
 			yield this.keys[i];
-
 			if(this.children[i+1] !== '') {
-
 				var iChild = await TreeContainer.fromResource(this.children[i+1], ownerID);
-
 				for await (const element of iChild.iterator(ownerID)) {
 					yield element;
 				}
 			}
-
 		}
-
-
 	}
-
 };
