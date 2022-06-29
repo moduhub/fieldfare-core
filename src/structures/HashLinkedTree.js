@@ -289,8 +289,8 @@ export class HashLinkedTree {
                             parentNode.add(neighborKey, neighborChild);
                             ownerContainer.add(parentKey, rightNeighborKey); //todo use new rightNeighborKey
                         } else {
-                            rightNeighbor.mergeLeft(leftNeighbor);
-                            //rightNeighbor.add(parentKey);
+                            //Choice between left or right merge is free
+                            ownerContainer.mergeLeft(leftNeighbor, parentKey);
                         }
                     } else {
                         //this is the root node
@@ -313,7 +313,7 @@ export class HashLinkedTree {
                 } else {
                     //case III, only one that causes tree shrink
                     //merge left and right
-                    rightContainer.mergeLeft(leftContainer);
+                    rightContainer.mergeLeft(leftContainer, 'which key?');
                 }
             }
         }

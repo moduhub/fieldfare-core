@@ -161,10 +161,10 @@ export class TreeContainer {
 		return meanElement;
 	}
 
-	mergeLeft(left) {
-		this.keys = [left.keys, ...this.keys];
+	mergeLeft(left, meanKey) {
+		this.keys = [left.keys, meanKey, ...this.keys];
 		this.children = [left.children, ...this.children];
-		this.numElements += left.numElements;
+		this.numElements += left.numElements + 1;
 	}
 
 	follow(key) {
