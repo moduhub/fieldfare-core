@@ -98,72 +98,55 @@ export class HashLinkedTree {
 		return elementHash;
 	}
 
-	async add(element) {
+    //Get to last container, storing the entire branch
+    async getBranch(key) {
+        var branch = {
+            key = key,
+            depth = 0,
+            prevHashes = [],
+            containers = [],
+            containsKey = false
+        }
+        var iContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
+        branch.prevHashes[0] = this.rootHash;
+        branch.containers[0] = iContainer;
+        var nextContainerHash = iContainer.follow(elementHash);
+        while(nextContainerHash !== '') {
+            if(nextContainerHash === true) {
+                branch.containsKey = true;
+                break;
+            }
+            iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
+            branch.depth++;
+            if(iContainer === null
+            || iContainer === undefined) {
+                throw Error('iContainer object not found');
+            }
+            branch.prevHashes.push(nextContainerHash);
+            branch.containers.push(iContainer);
+            nextContainerHash = iContainer.follow(elementHash);
+        }
+        return branch;
+    }
 
+	async add(element) {
         if(this.readOny) {
             throw Error('Attempt to edit a read only hash linked tree');
         }
-
 		var elementHash = await this.validate(element);
-
 //		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + elementHash);
-
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
-
 			logger.debug("First insert, init root with \'" + elementHash + "\'");
-
 			await this.init(elementHash);
-
 		} else {
-
-			var prevBranchHashes = new Array();
-			var branch = new Array();
-
-			var iContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
-
-			logger.debug('root->' + JSON.stringify(iContainer, null, 2));
-
-			var depth = 0;
-			prevBranchHashes[0] = this.rootHash;//root hash
-			branch[0] = iContainer;
-
-			var nextContainerHash = iContainer.follow(elementHash);
-
-			//Get to last container, storing the entire branch
-			while(nextContainerHash !== '') {
-
-				if(nextContainerHash === true) {
-					throw Error('element already in set');
-				}
-
-//				logger.log('info', 'follow->' + nextContainerHash);
-
-				iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
-				depth++;
-
-//				logger.log('info', 'depth[' + depth + ']->' + JSON.stringify(iContainer, null, 2));
-
-				if(iContainer == null
-				|| iContainer == undefined) {
-					throw Error('iContainer object not found');
-				}
-
-				prevBranchHashes.push(nextContainerHash);
-				branch.push(iContainer);
-
-				nextContainerHash = iContainer.follow(elementHash);
-
-			}
-
-			//logger.log('info', "Destination container prev state: " + JSON.stringify(iContainer, null, 2));
-
+            const branch = this.getBranch(key);
+            if(branch.containsKey) {
+                throw Error('element already in set');
+            }
 			//Leaf add
+            var iContainer = branch.containers[branch.depth];
 			iContainer.add(elementHash);
-
-//			logger.log('info', "Inserted new at depth=" + depth
-//				+ " -> Container: "  + JSON.stringify(iContainer, null, 2));
-
 			//Perform split if numElements == degree
 			while(iContainer.numElements === this.degree) {
 
@@ -247,7 +230,7 @@ export class HashLinkedTree {
 					//Free previous resource?
 
 				} else {
-					//this shoould never happen?
+					//this should never happen?
 					throw Error('this was unexpected, check code');
 				}
 
@@ -282,35 +265,55 @@ export class HashLinkedTree {
             throw Error('Tree is empty');
 
 		} else {
-			// var prevBranchHashes = new Array();
-			// var branch = new Array();
-
-            var iContainer;
-			var nextContainerHash = this.rootHash;
-            while(nextContainerHash !== true) {
-                iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
-                nextContainerHash  = await iContainer.follow(key);
-                if(nextContainerHash === '') {
-                    throw Error('Element does not exist in tree');
-                }
+            const branch = await this.getBranch(key);
+            if(branch.containsKey === false) {
+                throw Error('Element does not exist in tree');
             }
-            const ownerContainer = iContainer;
+            const ownerContainer = branch.containers[branch.depth];
             const [leftKey, leftContainerKey, rightContainerKey] = ownerContainer.remove(key);
-            if(leftContainerKey !== '') {
-                const leftContainer = await TreeContainer.fromResource(leftContainerKey, this.ownerID);
-                const [downKey, downChild] = await leftContainer.popRight();
-                if(leftContainer.numElements == 0) {
-                    if(leftKey !== '') {
-                        ownerContainer.add(downKey, downChild);
-                        //"steal from left"
-                        const [leftLeftKey, leftLeftChild] = ownerContainer.remove(leftKey);
-                        leftContainer.add(leftKey, leftLeftChild);
+            const minElements = Math.floor(this.order/2);
+            if(leftContainerKey === '') { //is leaf
+                if(ownerContainer.numElements < minElements) {
+                    if(depth > 0) {
+                        const parentContainer = branch.container[depth-1];
+                        const [leftNeighborKey, rightNeighborKey, parentKey] = parentContainer.popChild(branch.prevHashes[depth]);
+                        const leftNeighbor = await TreeContainer.fromResource(leftNeighborKey, this.ownerID);
+                        const rightNeighbor = await TreeContainer.fromResource(rightNeighborKey, this.ownerID);
+                        if(leftNeighbor.numElements > minElements) {
+                            const [neighborKey, neighborChild] = leftNeighbor.popRight();
+                            parentNode.add(neighborKey, neighborChild);
+                            ownerContainer.add(parentKey, leftNeighborKey); //todo use new leftNeighborKey
+                        } else
+                        if(rightNeighbor.numElements > minElements) {
+                            const [neighborKey, neighborChild] = rightNeighbor.popLeft();
+                            parentNode.add(neighborKey, neighborChild);
+                            ownerContainer.add(parentKey, rightNeighborKey); //todo use new rightNeighborKey
+                        } else {
+                            rightNeighbor.mergeLeft(leftNeighbor);
+                            //rightNeighbor.add(parentKey);
+                        }
                     } else {
-                        //merge right
-                        rightContainer.add(downKey, downChild);
+                        //this is the root node
+                        if(ownerContainer.numElements === 0) {
+                            //removed last element from list
+                            this.rootHash = '';
+                        }
                     }
-                } else {
+                }
+            } else { //internal node
+                const leftContainer = await TreeContainer.fromResource(leftContainerKey, this.ownerID);
+                const rightContainer = await TreeContainer.fromResource(rightContainerKey, this.ownerID);
+                if(leftContainer.numElements > minElements) {
+                    const [downKey, downChild] = await leftContainer.popRight();
                     ownerContainer.add(downKey, downChild);
+                } else
+                if(rightContainer.numElements > minElements) {
+                    const [downKey, downChild] = await rightContainer.popLeft();
+                    ownerContainer.add(downKey, downChild);
+                } else {
+                    //case III, only one that causes tree shrink
+                    //merge left and right
+                    rightContainer.mergeLeft(leftContainer);
                 }
             }
         }
