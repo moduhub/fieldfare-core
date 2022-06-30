@@ -22,29 +22,22 @@ export class RemoteHost {
 		this.pendingRequests = new Map();
 	}
 
-	send(message) {
-
+	async send(message) {
 		if(this.id == undefined) {
 			throw Error('undefined remote host address');
 		}
-
 		if(this.channels.size == 0) {
 			throw Error('no assigned channels');
 		}
-
 		message.setDestinationAddress(this.id);
-
 		for(const channel of this.channels) {
-
-			// logger.log('info', "Dispatching message to "
-			// 	+ channel.type
-			// 	+ ' channel ('
-			// 	+ '-'//JSON.stringify(channel.info)
-			// 	+ ')');
-
-			channel.send(message);
+			try {
+				await channel.send(message);
+			} catch(error) {
+				logger.warn("Channel offline, removing from list");
+				this.channels.delete(channel);
+			}
 		}
-
 	}
 
 	assignChannel(channel) {
