@@ -104,7 +104,8 @@ export class TreeContainer {
     }
 
     //1) key is deleted
-    //2) [leftKey, leftChild] is retuned
+	//2) Left child is poped out
+    //3) [leftKey, leftChild, rightChild] is retuned
     remove(key) {
         const index = this.keys.indexOf(key);
         if(index === -1) {
@@ -123,11 +124,8 @@ export class TreeContainer {
     }
 
 	updateChild(prev, current) {
-
-		var index = undefined;
-
+		var index;
 //		logger.log('info', ">>> Updating child " + prev + "->" + current);
-
 		for(var i=0; i<this.numElements+1; i++) {
 			if(this.children[i] === prev) {
 				index = i;
@@ -135,11 +133,9 @@ export class TreeContainer {
 				break;
 			}
 		}
-
 		if(index === undefined) {
 			throw Error('child not found in container');
 		}
-
 		return index;
 	}
 

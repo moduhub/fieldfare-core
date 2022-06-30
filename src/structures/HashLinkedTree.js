@@ -12,47 +12,33 @@
 export class HashLinkedTree {
 
 	constructor(degree=5, rootHash) {
-
-		if(degree <= 0
-		|| degree > 10
-		|| degree === undefined
-		|| degree === null) {
-			throw Error('invalid tree order value');
+		if(Number.isInteger(degree) === false
+        || degree < 2
+		|| degree > 10) {
+			throw Error('invalid tree degree: ' + degree);
 		}
-
 		this.degree = degree;
 		this.setState(rootHash);
-
 	}
 
     setOwnerID(id) {
-
         ResourcesManager.validateKey(id);
-
         this.ownerID = id;
-
         if(id !== host.id) {
             this.readOnly = true;
         }
     }
 
 	setState(state) {
-
 		if(state === null
 		|| state === undefined
 		|| state === '') {
-
 			this.rootHash = null;
-
 		} else {
-
 			ResourcesManager.validateKey(state);
-
 			//TODO: root element structure validation?
-
 			this.rootHash = state;
 		}
-
 	}
 
 	getState() {
@@ -72,12 +58,9 @@ export class HashLinkedTree {
 	}
 
 	async validate(element, storeFlag) {
-
 		var elementHash;
-
 		//Treat objects or hashes deppending on param format
 		if(typeof element === 'object') {
-
 			if(storeFlag == null
 			|| storeFlag == undefined
 			|| storeFlag == false) {
@@ -85,185 +68,128 @@ export class HashLinkedTree {
 			} else {
 				elementHash = await ResourcesManager.storeResourceObject(element);
 			}
-
 		} else
 		if(Utils.isBase64(element)) {
-
 			elementHash = element;
-
 		} else {
 			throw Error('invalid element type');
 		}
-
 		return elementHash;
 	}
 
     //Get to last container, storing the entire branch
     async getBranch(key) {
         var branch = {
-            key = key,
-            depth = 0,
-            prevHashes = [],
-            containers = [],
-            containsKey = false
+            key: key,
+            depth: 0,
+            containerKeys: [],
+            containers: [],
+            containsKey: false
         }
         var iContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
-        branch.prevHashes[0] = this.rootHash;
+        branch.containerKeys[0] = this.rootHash;
         branch.containers[0] = iContainer;
-        var nextContainerHash = iContainer.follow(elementHash);
-        while(nextContainerHash !== '') {
-            if(nextContainerHash === true) {
+        var nextContainerKey = iContainer.follow(key);
+        while(nextContainerKey !== '') {
+            if(nextContainerKey === true) {
                 branch.containsKey = true;
                 break;
             }
-            iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
+            iContainer = await TreeContainer.fromResource(nextContainerKey, this.ownerID);
             branch.depth++;
             if(iContainer === null
             || iContainer === undefined) {
                 throw Error('iContainer object not found');
             }
-            branch.prevHashes.push(nextContainerHash);
+            branch.containerKeys.push(nextContainerKey);
             branch.containers.push(iContainer);
-            nextContainerHash = iContainer.follow(elementHash);
+            nextContainerKey = iContainer.follow(key);
         }
         return branch;
+    }
+
+    async updateBranch(branch, depth) {
+        if(depth === undefined) {
+            depth = branch.depth;
+        }
+        while(depth > 0) {
+            const newContainerKey = await ResourcesManager.storeResourceObject(branch.containers[depth]);
+			// logger.log('info',   "depth: " + depth
+			// 	+ "current: " + currentContainerHash
+			// 	+ " prev: " + prevBranchHashes[depth]);
+            if(newContainerKey !== branch.containerKeys[depth]) {
+                branch.containers[depth-1].updateChild(branch.containerKeys[depth], newContainerKey);
+                //Free previous resource?
+            } else {
+                //this should never happen?
+                throw Error('this was unexpected, check code');
+            }
+            depth--;
+        }
+        const newRoot = await ResourcesManager.storeResourceObject(branch.containers[0]);
+        return newRoot;
     }
 
 	async add(element) {
         if(this.readOny) {
             throw Error('Attempt to edit a read only hash linked tree');
         }
-		var elementHash = await this.validate(element);
-//		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + elementHash);
+		var key = await this.validate(element);
+//		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + key);
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
-			logger.debug("First insert, init root with \'" + elementHash + "\'");
-			await this.init(elementHash);
+			await this.init(key);
 		} else {
-            const branch = this.getBranch(key);
+            const branch = await this.getBranch(key);
             if(branch.containsKey) {
                 throw Error('element already in set');
             }
 			//Leaf add
+            var depth = branch.depth;
             var iContainer = branch.containers[branch.depth];
-			iContainer.add(elementHash);
-			//Perform split if numElements == degree
+			iContainer.add(key);
+            //Check split criteria
 			while(iContainer.numElements === this.degree) {
-
 //				logger.log('info', "SPLIT! Depth:" + depth);
-
 				var rightContainer = new TreeContainer();
-
 				var meanElement = iContainer.split(rightContainer);
-
 				var leftContainer = iContainer;
-
-				var leftContainerHash = await ResourcesManager.storeResourceObject(leftContainer);
-				var rightContainerHash = await ResourcesManager.storeResourceObject(rightContainer);
-
-//				logger.log('info', "Mean element: " + meanElement);
-//				logger.log('info', "Left (" + leftContainerHash + "): "  + JSON.stringify(leftContainer, null, 2));
-//				logger.log('info', "Right (" + rightContainerHash + "): "  + JSON.stringify(rightContainer, null, 2));
-
-				// After split:
-				// * Mean element is inserted in upper container
-				// * May split recursively down to root
-
+				var leftContainerKey = await ResourcesManager.storeResourceObject(leftContainer);
+                var rightContainerKey = await ResourcesManager.storeResourceObject(rightContainer);
 				if(depth === 0) { //ROOT SPLIT
-
-					//create new root from scratch
-					var newRoot = new TreeContainer(leftContainerHash);
-
-					newRoot.add(meanElement, rightContainerHash);
-
-					branch.unshift(newRoot);
-
+					var newRoot = new TreeContainer(leftContainerKey);
+					newRoot.add(meanElement, rightContainerKey);
+					branch.containers.unshift(newRoot);
 //					logger.log('info', "New tree root: " + JSON.stringify(newRoot, null , 2)
-//						+ " -> " + branch[0]);
-
+//						+ " -> " + branch.containers[0]);
 					break;
-
 				} else {
-
 					//Add element to lower (closer to root) container and
 					// continue split check
-					iContainer = branch[depth-1];
-
+					iContainer = branch.containers[depth-1];
 //					logger.log('info', "Updating branch at depth=" + depth
 //						+ "\n>prevHash: " + prevBranchHashes[depth]
-//						+ "\n>currentHash: " + leftContainerHash);
-
-//					logger.log('info', ">>> Depth lowered to: " + depth);
-//					logger.log('info', ">>> iContainer prev state: " + JSON.stringify(iContainer, null, 2));
-
-					iContainer.updateChild(prevBranchHashes[depth], leftContainerHash);
-					iContainer.add(meanElement, rightContainerHash);
-
-//					logger.log('info', ">>> iContainer after state: " + JSON.stringify(iContainer, null, 2));
-
+//						+ "\n>currentHash: " + leftContainerKey);
+					iContainer.updateChild(branch.containerKeys[depth], leftContainerKey);
+					iContainer.add(meanElement, rightContainerKey);
 					depth--;
 				}
-
 			}
-
-			//Split may or may not have ocurred
-			// At this point, depth contains the lowest container that changed
-			// and branch must now update everything down to root
-			// with new hash linkage
-
-//			logger.log('info', "Branch length: " + branch.length
-//				+ " Starting branch update at depth="+depth);
-
-			//Update branch down (up?) to root
-			while(depth > 0) {
-
-				const currentContainerHash = await ResourcesManager.storeResourceObject(branch[depth]);
-
-//				logger.log('info',   "depth: " + depth
-//					+ "current: " + currentContainerHash
-//					+ " prev: " + prevBranchHashes[depth]);
-
-				if(currentContainerHash !== prevBranchHashes[depth]) {
-
-					branch[depth-1].updateChild(prevBranchHashes[depth], currentContainerHash);
-
-					//Free previous resource?
-
-				} else {
-					//this should never happen?
-					throw Error('this was unexpected, check code');
-				}
-
-				depth--;
-
-			}
-
-			//Update root
-			this.rootHash = await ResourcesManager.storeResourceObject(branch[0]);
-
-			//Dump previous root?
-
+			this.rootHash = await this.updateBranch(branch, depth);
 //			logger.log('info', ">>> Tree.add finished, new root is " + this.rootHash);
 		}
-
 		return this.rootHash;
 	}
 
     async remove(element) {
-
         if(this.readOny) {
             throw Error('Attempt to edit a read only hash linked tree');
         }
-
 		var key = await this.validate(element);
-
 //		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + key);
-
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
-
             throw Error('Tree is empty');
-
 		} else {
             const branch = await this.getBranch(key);
             if(branch.containsKey === false) {
@@ -320,88 +246,58 @@ export class HashLinkedTree {
     }
 
 	async has(element) {
-
 		const elementHash = await this.validate(element, false);
-
 //		logger.log('info', "tree.has(" + elementHash + ")");
-
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
-
 			return false;
-
 		} else {
-
 			var iContainer;
 			var nextContainerHash = this.rootHash;
 			var depth = 0;
-
 			do {
-
 				iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
-
 //				logger.log('info', "search["+depth+"]: " + JSON.stringify(iContainer, null, 2));
-
 				nextContainerHash = iContainer.follow(elementHash);
 				depth++;
-
 //				logger.log('info', "follow->" + nextContainerHash);
-
 				if(nextContainerHash === true) {
 //					logger.log('info', "Element found");
 					return true;
 				}
-
 			} while(nextContainerHash !== '');
-
 //			logger.log('info', "Element NOT found");
-
 			return false;
-
 		}
-
 	}
 
 	async* [Symbol.asyncIterator]() {
-
 		var branch = [];
-
 		if(this.rootHash != null
 		&& this.rootHash != undefined) {
-
 			var rootContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
-
 			for await(const element of rootContainer.iterator(this.ownerID)) {
 				yield element;
 			}
-
 		}
 	}
 
 	async isEmpty() {
-
 		if(this.rootHash
 		&& this.rootHash !== null
 		&& this.rootHash !== undefined) {
-
 			const rootElement = await ResourcesManager.getResourceObject(this.rootHash, this.ownerID);
-
 			if(rootElement.numElements > 0) {
 				return true;
 			}
-
 		}
-
 		return false;
 	}
 
 	diff(other) {
-
 		var newElements = new Set();
-
 		//experimental function, returns a set of element hashes
 		// that is present in the other tree but not on this one
-
 		return newElements;
 	}
 };
