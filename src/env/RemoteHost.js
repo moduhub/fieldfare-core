@@ -31,9 +31,17 @@ export class RemoteHost {
 		}
 		message.setDestinationAddress(this.id);
 		for(const channel of this.channels) {
-			try {
-				await channel.send(message);
-			} catch(error) {
+			var killFlag = false;
+			if(channel.active()) {
+				try {
+					await channel.send(message);
+				} catch(error) {
+					killFlag = true;
+				}
+			} else {
+				killFlag = true;
+			}
+			if(killFlag) {
 				logger.warn("Channel offline, removing from list");
 				this.channels.delete(channel);
 			}
@@ -57,20 +65,41 @@ export class RemoteHost {
 	}
 
 	isActive() {
-
-		if(this.lastMessageTime !== undefined
-		&& this.lastMessageTime !== null) {
-
-			var timeSinceLastMessage = Date.now() - this.lastMessageTime;
-
-			logger.log("time since last message: " + timeSinceLastMessage);
-
-			if(timeSinceLastMessage < 10000) {
-				return true;
+		var numActiveChannels = 0;
+		for(const channel of this.channels) {
+			if(channel.active()) {
+				numActiveChannels++;
 			}
 		}
-
+		if(numActiveChannels > 0) {
+			if(this.lastMessageTime !== undefined
+			&& this.lastMessageTime !== null) {
+				var timeSinceLastMessage = Date.now() - this.lastMessageTime;
+				logger.log("time since last message: " + timeSinceLastMessage);
+				if(timeSinceLastMessage < 10000) {
+					return true;
+				}
+			}
+		}
 		return false;
+	}
+
+	becomeActive() {
+		if(this.isActive() === false) {
+			return new Promise((resolve, reject) => {
+				var count = 0;
+				const interval = setInterval(() => {
+					if(this.isActive()){
+						clearInterval(interval);
+						resolve();
+					}
+					if(++count > 10) {
+						clearInterval(interval);
+						reject(new Error('become active timeout'));
+					}
+				}, 1000);
+			});
+		}
 	}
 
 	async treatMessage(message, channel) {
