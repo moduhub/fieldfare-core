@@ -101,13 +101,13 @@ export const Utils = {
 
 		for(const prop in params) {
 			if(expectedNames.includes(prop) === false) {
-				throw Error('unxpected parameter: ' + prop);
+				throw Error('validation failed, unxpected parameter: ' + prop);
 			}
 		}
 
 		for(const name of expectedNames) {
 			if(name in params === false) {
-				throw Error('missing parameter: ' + name);
+				throw Error('validation failed, missing parameter: ' + name);
 			}
 		}
 	},
