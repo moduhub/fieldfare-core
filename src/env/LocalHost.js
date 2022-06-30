@@ -21,6 +21,8 @@ export const localHost = {
 	requests: new Map(),
 	services: new Map(),
 	environments: new Set(),
+	webportTransceivers: new Map(),
+	webportChannels: new Map(),
 	stateHash: ''
 };
 
@@ -87,17 +89,28 @@ export const LocalHost = {
 
 		// logger.log('info', 'HOST ID: ' + localHost.id);
 
-		setInterval(() => {
-
+		setInterval(async () => {
 			// logger.log('info', "Host is announcing to "
 			// 	+ localHost.remoteHosts.size + " remote hosts and "
 			// 	+ localHost.bootChannels.size + ' boot channels');
+			for (const [id,host] of localHost.remoteHosts) {
+				if (host.isActive()) {
+					try {
+						await LocalHost.announce(host);
+					} catch(error) {
+						logger.warn('Announce to ' + id + ' failed' + error);
+					}
+				}
+			}
 
-			for (const [id,host] of localHost.remoteHosts) 		LocalHost.announce(host);
-			for (const channel of localHost.bootChannels) 	LocalHost.announce(channel);
-
+			for (const channel of localHost.bootChannels) {
+				if(channel.active()) {
+					LocalHost.announce(channel);
+				} else {
+					localHost.bootChannels.delete(channel);
+				}
+			}
 		}, 10000);
-
 	},
 
 	addEnvironment(env) {
@@ -142,31 +155,21 @@ export const LocalHost = {
 	},
 
 	updateState() {
-
 		var hostState = new Object;
-
 		for(const [uuid, service] of localHost.services) {
-
 			// const serviceName = service.definition.name;
 			const serviceState = service.updateState();
-
 			hostState[uuid] = serviceState;
-
 		}
-
 		return hostState;
 	},
 
 	async registerRemoteHost(hostid) {
-
 		var remoteHost = localHost.remoteHosts.get(hostid);
-
 		//Check if host exists
 		if(remoteHost === undefined) {
-
 			remoteHost = new RemoteHost(hostid);
 			localHost.remoteHosts.set(hostid, remoteHost);
-
 			for(const env of localHost.environments) {
 				const servicesList = await env.getServicesForHost(hostid);
 				if(servicesList.length > 0) {
@@ -175,21 +178,16 @@ export const LocalHost = {
 					logger.log('info', 'no services assigned to host ' + hostid);
 				}
 			}
-
 		}
-
 		return remoteHost;
 	},
 
 	getEnvironment(uuid) {
-
 		for(const env of localHost.environments) {
-
 			if(env.uuid === uuid) {
 				return env;
 			}
 		}
-
 		return null;
 	},
 
@@ -202,89 +200,53 @@ export const LocalHost = {
 	},
 
 	dispatchRequest(hash, request) {
-
 		// logger.debug("Forwarding request to request.destination: " + JSON.stringify(request.destination));
-
 		localHost.requests.set(hash, request);
-
 		var destinationHost = localHost.remoteHosts.get(request.destination);
-
 		if(destinationHost != undefined) {
-
 			request.source = localHost.id;
-
 			destinationHost.send(request);
-
 		} else {
-
 			throw Error('dispatchRequest failed: destination is unknown');
-
 			//TODO: routing here
 		}
-
 	},
 
 	async bootChannel(channel) {
-
 		localHost.bootChannels.add(channel);
-
 		channel.onMessageReceived = async (message) => {
-
 			//logger.debug("Received message from boot channel: " + JSON.stringify(message));
-
 			if(message.service === 'announce') {
-
 //				logger.log('info', "message.source: " + message.source);
 //				logger.log('info', "message.destination: " + message.destination);
-
 				// Reject indirect announce in boot channel
 //				if(!message.hasOwnProperty('source')
 //				&& !message.hasOwnProperty('destination')) {
-
 					var remoteId = message.data.id;
-
 					// logger.log('info', "Received direct announce from boot channel. Host ID: " + remoteId);
-
 					var remoteHost = localHost.remoteHosts.get(remoteId);
-
 					//register channel to remote host
 					if(remoteHost === undefined) {
-
 						// logger.log('info', "Host was not registered. Creating new... ");
-
 						remoteHost = await LocalHost.registerRemoteHost(remoteId);
-
 					}
-
 					remoteHost.assignChannel(channel);
-
 					channel.onMessageReceived(message);
-
 					//remove localHost channel from boot list
-					localHost.bootChannels.clear(channel);
-
+					localHost.bootChannels.delete(channel);
 //				} else {
-//
 //					logger.log('info', "Message is not direct, reject from boot channel:" + JSON.stringify(message));
 //				}
-
 			} else {
 				// logger.log('info', "Message service not announce! Service: " + message.service);
 			}
-
 		};
-
 		//no source nor destination address, direct message
 		try {
-
 			LocalHost.announce(channel);
-
 		} catch (error) {
-
 			throw Error('Host.bootChannel.send() failed', {cause:error});
-
 		}
-
 	},
 
 	async signMessage(message) {
@@ -338,35 +300,64 @@ export const LocalHost = {
 
 		message.setSourceAddress(localHost.id);
 
-		if(typeof (destination.send) === 'function') {
-			return destination.send(message);
+		if(typeof (destination.send) !== 'function') {
+			throw Error('destination ' + JSON.stringify(destination) + ' not send-able');
 		}
 
-		throw Error('destination ' + JSON.stringify(destination) + ' not send-able');
+		return destination.send(message);
+	},
 
+	assignWebportTransceiver(protocol, transceiver) {
+		localHost.webportTransceivers.set(protocol, transceiver);
+	},
+
+	async connectWebport(webportInfo) {
+		Utils.validateParameters(webportInfo, ['protocol', 'address', 'port', 'hostid']);
+		const webportKey = await ResourcesManager.generateKeyForObject(webportInfo);
+		const transceiver = localHost.webportTransceivers.get(webportInfo.protocol);
+		if(transceiver === undefined || transceiver === null) {
+			throw Error('Unsuported protocol: ' + webportInfo.protocol);
+		}
+		const channel = localHost.webportChannels.get(webportKey);
+		if(channel) {
+			if(channel.active()) {
+				return channel;
+			} else {
+				localHost.webportChannels.clear(webportKey);
+			}
+		}
+		const newChannel = await transceiver.newChannel(webportInfo.address, webportInfo.port);
+		localHost.webportChannels.set(webportKey, newChannel);
+		LocalHost.bootChannel(newChannel);
+		return newChannel;
+	},
+
+	async serveWebport(webportInfo) {
+		throw Error('not implemented');
 	},
 
 	async establish(remoteHostID) {
-
 		logger.debug("host.establish: " + remoteHostID);
-
-		const remoteHost = localHost.remoteHosts.get(snapshotProviderID);
-
+		var remoteHost = localHost.remoteHosts.get(remoteHostID);
 		if(remoteHost === undefined
-		|| remoteHost === null
-		|| remoteHost.isActive() === false) {
-
-			// //attemp connection to webport assigned to localHost host
-			// const webport = await env.getWebport(snapshotProviderID);
-			//
-			// await host.connectWebport(webport);
-			//
-			throw Error('function not implemented');
-
+		|| remoteHost === null) {
+			remoteHost = await LocalHost.registerRemoteHost(remoteHostID);
 		}
-
-		logger.log('info', "Remote host " + snapshotProviderID + " is active");
-
+		if(remoteHost.isActive() === false) {
+			for(const env of localHost.environments) {
+				const webports = await env.getWebports(remoteHostID);
+				for(const webport of webports) {
+					try {
+						await LocalHost.connectWebport(webport);
+						await remoteHost.becomeActive();
+						return remoteHost;
+					} catch(error) {
+						logger.warn('Connect to webport failed: ' + error);
+					}
+				}
+			}
+		}
+		logger.log('info', "Remote host " + remoteHostID + " is active");
 		return remoteHost;
 	}
 
