@@ -198,36 +198,24 @@ export class Environment extends VersionedData {
 	}
 
 	async establishProvidersOf(serviceUUID, howMany=1) {
-
         logger.debug('establishProvidersOf: ' + serviceUUID + ' howMany: ' + howMany);
-
 		var newProviders = [];
-
-		//Establish new
 		const providers = await this.getProviders(serviceUUID);
-
 		logger.debug("providers: " + providers);
-
 		for await (const providerID of providers) {
-
 			logger.debug("providerID: " + providerID);
-
 			if(this.activeHosts.has(providerID) === false) {
-
 				try {
 					const remoteHost = await LocalHost.establish(providerID);
 					newProviders.push(remoteHost);
 				} catch (error) {
 					logger.log('info', "Failed to reach host " + providerID + ' cause: ' + error);
 				}
-
 			} else {
 				logger.debug('host ' + providerID + ' already established');
 			}
 		}
-
 		//throw Error('Unable to find a provider for service ' + serviceUUID);
-
 		return newProviders;
 	}
 
