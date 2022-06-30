@@ -25,16 +25,15 @@ export class WebClientTransceiver extends Transceiver {
 			var rNewChannel = {
 				type: 'wsClient',
 				send: (message) => {
-					return new Promise((resolve, reject) => {
-						var stringifiedMessage = JSON.stringify(message, message.jsonReplacer);
-						//logger.log('info', "calling ws socket send, with message: " + stringifiedMessage);
-						if(socket.readyState !== WebSocket.OPEN) {
-							reject(new Error('websocket in invalid state'));
-						}
-						socket.send(stringifiedMessage);
-						resolve();
-					});
-
+					var stringifiedMessage = JSON.stringify(message, message.jsonReplacer);
+					//logger.log('info', "calling ws socket send, with message: " + stringifiedMessage);
+					socket.send(stringifiedMessage);
+				},
+				active: () => {
+					if(socket.readyState !== WebSocket.OPEN) {
+						return false;
+					}
+					return true;
 				},
 				info: {
 					socket: socket

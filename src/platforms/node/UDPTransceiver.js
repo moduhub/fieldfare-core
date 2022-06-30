@@ -49,6 +49,7 @@ export class UDPTransceiver extends Transceiver {
 					assignedChannel = {
 						type : 'udp',
 						send : (message) => { this.send(message, assignedChannel);},
+						active: () => {return true;},
 						info : {
 							address: rinfo.address,
 							port: rinfo.port
