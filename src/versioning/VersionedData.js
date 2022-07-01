@@ -295,24 +295,20 @@ export class VersionedData {
 	}
 
 	async auth(id, strict=true) {
-
 		if(Utils.isBase64(id) == false) {
 			throw Error('invalid id parameter');
 		}
-
 		const admins = this.elements.get('admins');
-
-		if(await admins.isEmpty() !== false) {
-			if(await admins.has(id) === false) {
-				throw Error('not authorized');
-			}
-		} else {
+		if(await admins.isEmpty()) {
 			if(strict) {
 				throw Error('strict auth failed, admin group empty');
 			}
+		} else {
+			if(await admins.has(id) === false) {
+				throw Error('not authorized');
+			}
 		}
-
-		logger.log('info', '>> ' + id + ' auth OK');
+		logger.debug('>> ' + id + ' auth OK');
 	}
 
 	async applyAddAdmin(issuer, params, merge=false) {

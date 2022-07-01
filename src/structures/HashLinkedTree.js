@@ -335,20 +335,15 @@ export class HashLinkedTree {
 	}
 
 	async isEmpty() {
-
 		if(this.rootHash
 		&& this.rootHash !== null
 		&& this.rootHash !== undefined) {
-
 			const rootElement = await ResourcesManager.getResourceObject(this.rootHash, this.ownerID);
-
 			if(rootElement.numElements > 0) {
-				return true;
+				return false;
 			}
-
 		}
-
-		return false;
+		return true;
 	}
 
 	diff(other) {
