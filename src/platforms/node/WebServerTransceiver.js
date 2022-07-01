@@ -13,10 +13,8 @@ import {logger} from '../../basic/Log';
 
 export class WebServerTransceiver extends Transceiver {
 
-	constructor(port) {
+	constructor() {
 		super();
-
-		this.port = port;
 
 		this.server = http.createServer((request, response) => {
 			this.treatHttpRequest(request, response);
@@ -40,12 +38,15 @@ export class WebServerTransceiver extends Transceiver {
 		});
 	}
 
-	open() {
-
+	serve(address, port) {
+		if(this.port) {
+			throw Error('Cannot serve more than one WS port');
+		}
+		this.port = port;
+		logger.info('Opening WS server port: ' + webport.port)
 		this.server.listen(this.port, () => {
 			logger.log('info', (new Date()) + ' WS Server is listening on port ' + this.port);
 		});
-
 	}
 
 	treatHttpRequest(request, response) {

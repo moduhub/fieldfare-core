@@ -454,7 +454,18 @@ export async function main(args) {
     try {
         await ffinit.setupLocalHost();
         env = await ffinit.setupEnvironment();
-        await ffinit.initWebports(env);
+        const envWebports = env.elements.get('webports');
+        if(await envWebports.isEmpty()) {
+            const bootWebports = await ffinit.getBootWebports();
+            for(const webport of bootWebports) {
+                try {
+                    await LocalHost.connectWebport(webport);
+                    break;
+                } catch (error) {
+                    logger.error("Cannot reach " + webport.address + " at port " + webport.port + ' cause: ' + error);
+                }
+            }
+        }
     } catch (error) {
         console.error('Fieldfare initialization failed: ' + error.stack);
         process.exit(1);

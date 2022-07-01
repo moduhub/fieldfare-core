@@ -312,7 +312,12 @@ export const LocalHost = {
 	},
 
 	async connectWebport(webportInfo) {
-		Utils.validateParameters(webportInfo, ['protocol', 'address', 'port', 'hostid']);
+		try {
+			Utils.validateParameters(webportInfo, ['protocol', 'address', 'port', 'hostid']);
+		} catch(error) {
+			//Accept both forms
+			Utils.validateParameters(webportInfo, ['protocol', 'address', 'port']);
+		}
 		const webportKey = await ResourcesManager.generateKeyForObject(webportInfo);
 		const transceiver = localHost.webportTransceivers.get(webportInfo.protocol);
 		if(transceiver === undefined || transceiver === null) {
@@ -333,7 +338,21 @@ export const LocalHost = {
 	},
 
 	async serveWebport(webportInfo) {
-		throw Error('not implemented');
+		try {
+			Utils.validateParameters(webportInfo, ['protocol', 'address', 'port', 'hostid']);
+		} catch(error) {
+			//Accept both forms
+			Utils.validateParameters(webportInfo, ['protocol', 'address', 'port']);
+		}
+		const transceiver = localHost.webportTransceivers.get(webportInfo.protocol);
+		if(transceiver === undefined || transceiver === null) {
+			throw Error('Unsuported protocol');
+		}
+		transceiver.onNewChannel = (newChannel) => {
+			logger.debug('[Served Webport] onNewChannel');
+			LocalHost.bootChannel(newChannel);
+		};
+		await transceiver.serve(webportInfo.address, webportInfo.port);
 	},
 
 	async establish(remoteHostID) {
