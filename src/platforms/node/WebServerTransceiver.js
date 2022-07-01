@@ -43,7 +43,7 @@ export class WebServerTransceiver extends Transceiver {
 			throw Error('Cannot serve more than one WS port');
 		}
 		this.port = port;
-		logger.info('Opening WS server port: ' + webport.port)
+		logger.info('Opening WS server port: ' + port)
 		this.server.listen(this.port, () => {
 			logger.log('info', (new Date()) + ' WS Server is listening on port ' + this.port);
 		});
