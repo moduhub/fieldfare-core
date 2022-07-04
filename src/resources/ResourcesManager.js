@@ -163,7 +163,7 @@ export class ResourcesManager {
 					logger.debug('get resource request retry ' + attempts + ' of ' + retryCount-1);
 				}
 
-				request = new Request('resource', 1000, {
+				request = new Request('resource', 3000, {
 					hash: hash
 				});
 
