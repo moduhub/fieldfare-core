@@ -1,6 +1,6 @@
 {
   "name": "fieldfare",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Backend framework for distributed networks",
   "main": "./src/platforms/shared/CommonExports.js",
   "bin": {
