@@ -329,7 +329,6 @@ export const LocalHost = {
 		const channel = localHost.webportChannels.get(webportKey);
 		if(channel) {
 			if(channel.active()) {
-				LocalHost.bootChannel(channel);
 				return channel;
 			} else {
 				localHost.webportChannels.delete(webportKey);
@@ -378,6 +377,7 @@ export const LocalHost = {
 						logger.warn('Connect to webport failed: ' + error);
 					}
 				}
+				throw Error('cannot reach remote host');
 			}
 		}
 		logger.log('info', "Remote host " + remoteHostID + " is active");
