@@ -26,6 +26,9 @@ export const localHost = {
 	stateHash: ''
 };
 
+//For debug purposes only
+global.localHost = localHost;
+
 export const LocalHost = {
 
 	getID() {
@@ -326,9 +329,10 @@ export const LocalHost = {
 		const channel = localHost.webportChannels.get(webportKey);
 		if(channel) {
 			if(channel.active()) {
+				LocalHost.bootChannel(channel);
 				return channel;
 			} else {
-				localHost.webportChannels.clear(webportKey);
+				localHost.webportChannels.delete(webportKey);
 			}
 		}
 		const newChannel = await transceiver.newChannel(webportInfo.address, webportInfo.port);
