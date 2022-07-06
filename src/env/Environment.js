@@ -208,7 +208,10 @@ export class Environment extends VersionedData {
 			if(this.activeHosts.has(providerID) === false) {
 				try {
 					const remoteHost = await LocalHost.establish(providerID);
-					newProviders.push(remoteHost);
+					const numNewProviders = newProviders.push(remoteHost);
+					if(numNewProviders >= howMany) {
+						break;
+					}
 				} catch (error) {
 					logger.log('info', "Failed to reach host " + providerID + ' cause: ' + error);
 				}
