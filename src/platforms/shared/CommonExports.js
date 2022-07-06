@@ -24,4 +24,5 @@ export * from '../../versioning/VersionChain';
 export * from '../../versioning/VersionedData';
 export * from '../../versioning/VersionStatement';
 
+export * from './CommonSetup';
 export * from './WebClientTransceiver';
