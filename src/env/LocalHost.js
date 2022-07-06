@@ -1,7 +1,8 @@
-/*
- * To change localHost license header, choose License Headers in Project Properties.
- * To change localHost template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2022 Adan Kvitschal
+ * ISC LICENSE
  */
 
 import {ResourcesManager} from '../resources/ResourcesManager';
@@ -377,7 +378,7 @@ export const LocalHost = {
 						logger.warn('Connect to webport failed: ' + error);
 					}
 				}
-				throw Error('cannot reach remote host');
+				throw Error('all webports unreachable');
 			}
 		}
 		logger.log('info', "Remote host " + remoteHostID + " is active");
