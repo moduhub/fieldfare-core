@@ -5,9 +5,9 @@ import {
     logger
 } from 'fieldfare';
 
-const numCreatedElements = 1000;
-const numNonExistingElements = 100;
-const numRemovedElements = 100;
+const numCreatedElements = 100;
+const numNonExistingElements = Math.floor(numCreatedElements/5);
+const numRemovedElements = 2;//Math.floor(numCreatedElements/5);
 const numExistingElements = numCreatedElements-numRemovedElements;
 
 const gSalt = 'hlt';
@@ -59,12 +59,19 @@ test('Store '+numCreatedElements+' elements', async () => {
     for(const element of createdElements) {
         await tree.add(element);
     }
+    return;
 });
 
 test('Remove '+numRemovedElements+' elements', async () => {
     for(const element of removedElements) {
         await tree.remove(element);
     }
+    return;
+});
+
+test('Attempt to remove elements that do not exist', async () => {
+    //todo
+    //check: tree root must remain unchanged
 });
 
 test('Iterate tree elements', async () => {
@@ -92,7 +99,7 @@ test('Check non-existance of '+(numNonExistingElements)+' false elements', async
     }
 });
 
-test('Check non-existance of '+(numNonExistingElements)+' removed elements', async () => {
+test('Check non-existance of '+(numRemovedElements)+' removed elements', async () => {
     for(const element of removedElements) {
         const hasElement = await tree.has(element);
         expect(hasElement).toBe(false);
