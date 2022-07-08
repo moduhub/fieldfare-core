@@ -10,7 +10,8 @@
   },
   "scripts": {
     "start": "node test/Environment/EnvTestHost1.js",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest"
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest",
+    "debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
   },
   "repository": {
     "type": "git",
