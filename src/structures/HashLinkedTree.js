@@ -5,6 +5,7 @@
  */
 
  import {ResourcesManager} from '../resources/ResourcesManager';
+ import {TreeBranch} from './TreeBranch';
  import {TreeContainer} from './TreeContainer';
  import {Utils} from '../basic/Utils';
  import {logger} from '../basic/Log';
@@ -77,59 +78,6 @@ export class HashLinkedTree {
 		return elementHash;
 	}
 
-    //Get to last container, storing the entire branch
-    async getBranch(key) {
-        var branch = {
-            key: key,
-            depth: 0,
-            containerKeys: [],
-            containers: [],
-            containsKey: false
-        }
-        var iContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
-        branch.containerKeys[0] = this.rootHash;
-        branch.containers[0] = iContainer;
-        var nextContainerKey = iContainer.follow(key);
-        while(nextContainerKey !== '') {
-            if(nextContainerKey === true) {
-                branch.containsKey = true;
-                break;
-            }
-            iContainer = await TreeContainer.fromResource(nextContainerKey, this.ownerID);
-            branch.depth++;
-            if(iContainer === null
-            || iContainer === undefined) {
-                throw Error('iContainer object not found');
-            }
-            branch.containerKeys.push(nextContainerKey);
-            branch.containers.push(iContainer);
-            nextContainerKey = iContainer.follow(key);
-        }
-        return branch;
-    }
-
-    async updateBranch(branch, depth) {
-        if(depth === undefined) {
-            depth = branch.depth;
-        }
-        while(depth > 0) {
-            const newContainerKey = await ResourcesManager.storeResourceObject(branch.containers[depth]);
-			// logger.log('info',   "depth: " + depth
-			// 	+ "current: " + currentContainerHash
-			// 	+ " prev: " + prevBranchHashes[depth]);
-            if(newContainerKey !== branch.containerKeys[depth]) {
-                branch.containers[depth-1].updateChild(branch.containerKeys[depth], newContainerKey);
-                //Free previous resource?
-            } else {
-                //this should never happen?
-                throw Error('this was unexpected, check code');
-            }
-            depth--;
-        }
-        const newRoot = await ResourcesManager.storeResourceObject(branch.containers[0]);
-        return newRoot;
-    }
-
 	async add(element) {
         if(this.readOny) {
             throw Error('Attempt to edit a read only hash linked tree');
@@ -140,7 +88,8 @@ export class HashLinkedTree {
 		|| this.rootHash == undefined) {
 			await this.init(key);
 		} else {
-            const branch = await this.getBranch(key);
+            const branch = new TreeBranch(this.ownerID, this.rootHash);
+            await branch.getToKey(key);
             if(branch.containsKey) {
                 throw Error('element already in set');
             }
@@ -175,7 +124,7 @@ export class HashLinkedTree {
 					depth--;
 				}
 			}
-			this.rootHash = await this.updateBranch(branch, depth);
+			this.rootHash = await branch.update(depth);
 //			logger.log('info', ">>> Tree.add finished, new root is " + this.rootHash);
 		}
 		return this.rootHash;
@@ -191,20 +140,27 @@ export class HashLinkedTree {
 		|| this.rootHash == undefined) {
             throw Error('Tree is empty');
 		} else {
-            const branch = await this.getBranch(key);
+            const branch = new TreeBranch(this.ownerID, this.rootHash);
+            await branch.getToKey(key);
             if(branch.containsKey === false) {
                 throw Error('Element does not exist in tree');
             }
             const ownerContainer = branch.containers[branch.depth];
+            //debugger;
+            console.log('original ownerContainer: ' + JSON.stringify(ownerContainer, null, 2));
             const [leftKey, leftContainerKey, rightContainerKey] = ownerContainer.remove(key);
-            const minElements = Math.floor(this.order/2);
-            if(leftContainerKey === '') { //is leaf
-                if(ownerContainer.numElements < minElements) {
+            console.log('ownerContainer after key '+key+' was removed: ' + JSON.stringify(ownerContainer, null, 2));
+            const minElements = Math.floor(this.degree/2);
+            if(ownerContainer.numElements < minElements) {
+                console.log('Num elements underflow, must reorganize!');
+                if(leftContainerKey === '') { //is leaf
+                    console.log('Container is a leaf, case I');
                     if(depth > 0) {
                         const parentContainer = branch.container[depth-1];
                         const [leftNeighborKey, rightNeighborKey, parentKey] = parentContainer.popChild(branch.prevHashes[depth]);
                         const leftNeighbor = await TreeContainer.fromResource(leftNeighborKey, this.ownerID);
                         const rightNeighbor = await TreeContainer.fromResource(rightNeighborKey, this.ownerID);
+                        //debugger;
                         if(leftNeighbor.numElements > minElements) {
                             const [neighborKey, neighborChild] = leftNeighbor.popRight();
                             parentNode.add(neighborKey, neighborChild);
@@ -225,23 +181,42 @@ export class HashLinkedTree {
                             this.rootHash = '';
                         }
                     }
+                } else { //internal node
+                    console.log('Container is internal, case II');
+                    // const leftContainer = await TreeContainer.fromResource(leftContainerKey, this.ownerID);
+                    // const rightContainer = await TreeContainer.fromResource(rightContainerKey, this.ownerID);
+                    // console.log('original leftContainer: ' + JSON.stringify(leftContainer, null, 2));
+                    // console.log('original rightContainer: ' + JSON.stringify(rightContainer, null, 2));
+                    const leftBranch = new TreeBranch(this.ownerID, leftContainerKey);
+                    await leftBranch.getToRightmostLeaf();
+                    const leftStealLeaf = leftBranch.containers[leftBranch.depth];
+                    const rightBranch = new TreeBranch(this.ownerID, leftContainerKey);
+                    await rightContainer.getToLeftmostLeaf();
+                    const rightStealLeaf = rightBranch.containers[rightBranch.depth];
+                    if(leftStealLeaf.numElements > minElements) {
+                        console.log('Stealing from left subtree');
+                        const stolenKey = await leftStealLeaf.pop();
+                        const newLeftContainerKey = await leftBranch.update();
+                        ownerContainer.add(stolenKey, newLeftContainerKey); //or downChild???
+                        console.log('[final] Owner after steal from left: ' + JSON.stringify(ownerContainer, null, 2));
+                        debugger;
+                    } else
+                    if(rightStealLeaf.numElements > minElements) {
+                        const [downKey, downChild] = await rightContainer.popLeft();
+                        ownerContainer.add(downKey, downChild);
+                        console.log('[final] Owner after steal from right: ' + JSON.stringify(ownerContainer, null, 2));
+                        debugger;
+                    } else {
+                        //case III, only one that causes tree shrink
+                        //merge left and right
+                        throw Error('not implemented!');
+                        rightContainer.mergeLeft(leftContainer, 'which key?');
+                    }
                 }
-            } else { //internal node
-                const leftContainer = await TreeContainer.fromResource(leftContainerKey, this.ownerID);
-                const rightContainer = await TreeContainer.fromResource(rightContainerKey, this.ownerID);
-                if(leftContainer.numElements > minElements) {
-                    const [downKey, downChild] = await leftContainer.popRight();
-                    ownerContainer.add(downKey, downChild);
-                } else
-                if(rightContainer.numElements > minElements) {
-                    const [downKey, downChild] = await rightContainer.popLeft();
-                    ownerContainer.add(downKey, downChild);
-                } else {
-                    //case III, only one that causes tree shrink
-                    //merge left and right
-                    rightContainer.mergeLeft(leftContainer, 'which key?');
-                }
+            } else {
+                console.log('container num keys greater than minimum, all done!');
             }
+            await this.updateBranch(branch);
         }
     }
 
