@@ -11,6 +11,14 @@ export class TreeBranch {
         this.containsKey: false;
     }
 
+    append(other) {
+        this.depth += other.depth;
+        this.containers = [this.containers, ...other.containers];
+        this.containerKeys = [this.containerKeys, ...other.containerKeys];
+        this.key = other.key;
+        this.containsKey = other.containsKey;
+    }
+
     async getToKey(key) {
         this.key = key;
         var iContainer = await TreeContainer.fromResource(this.origin, this.ownerID);
