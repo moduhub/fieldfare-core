@@ -43,6 +43,35 @@ export class TreeBranch {
         throw Error('not implemented');
     }
 
+    async rebalance() {
+        var depth = this.depth;
+        while(depth > 0) {
+            var iContainer = this.containers[depth--];
+            if(iContainer.numElements < minElements) {
+                const parentContainer = this.container[depth-1];
+                const [leftSiblingKey, rightSiblingKey, parentKey] = parentContainer.popChild(branch.prevHashes[depth]);
+                const leftSibling = await TreeContainer.fromResource(leftSiblingKey, this.ownerID);
+                const rightSibling = await TreeContainer.fromResource(rightSiblingKey, this.ownerID);
+                //debugger;
+                if(leftSibling.numElements > minElements) {
+                    //rotate from left
+                    const [rotatedKey, rotatedChildKey] = leftSibling.pop();
+                    parentNode.substituteKey(parentKey, rotatedKey);
+                    iContainer.unshift(parentKey, rotatedChildKey);
+                } else
+                if(rightSibling.numElements > minElements) {
+                    //rotate from right
+                    const [rotatedKey, rotatedChildKey] = rightSibling.shift();
+                    parentNode.substituteKey(parentKey, rotatedKey);
+                    iContainer.push(parentKey, rightSiblingKey);
+                } else {
+                    //Choice between left or right merge is free
+                    iContainer.mergeLeft(leftSibling, parentKey);
+                }
+            }
+        }
+    }
+
     async update(depth) {
         if(depth === undefined) {
             depth = this.depth;
@@ -61,7 +90,10 @@ export class TreeBranch {
             }
             depth--;
         }
-        const newRoot = await ResourcesManager.storeResourceObject(this.containers[0]);
+        var newRoot = '';
+        if(this.containers[0].numElements > 0) { //removed last element from list?
+            newRoot = await ResourcesManager.storeResourceObject(this.containers[0]);
+        }
         return newRoot;
     }
 }

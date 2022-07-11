@@ -146,77 +146,40 @@ export class HashLinkedTree {
                 throw Error('Element does not exist in tree');
             }
             const ownerContainer = branch.containers[branch.depth];
-            //debugger;
             console.log('original ownerContainer: ' + JSON.stringify(ownerContainer, null, 2));
-            const [leftKey, leftContainerKey, rightContainerKey] = ownerContainer.remove(key);
-            console.log('ownerContainer after key '+key+' was removed: ' + JSON.stringify(ownerContainer, null, 2));
             const minElements = Math.floor(this.degree/2);
-            if(ownerContainer.numElements < minElements) {
-                console.log('Num elements underflow, must reorganize!');
-                if(leftContainerKey === '') { //is leaf
-                    console.log('Container is a leaf, case I');
-                    if(depth > 0) {
-                        const parentContainer = branch.container[depth-1];
-                        const [leftNeighborKey, rightNeighborKey, parentKey] = parentContainer.popChild(branch.prevHashes[depth]);
-                        const leftNeighbor = await TreeContainer.fromResource(leftNeighborKey, this.ownerID);
-                        const rightNeighbor = await TreeContainer.fromResource(rightNeighborKey, this.ownerID);
-                        //debugger;
-                        if(leftNeighbor.numElements > minElements) {
-                            const [neighborKey, neighborChild] = leftNeighbor.popRight();
-                            parentNode.add(neighborKey, neighborChild);
-                            ownerContainer.add(parentKey, leftNeighborKey); //todo use new leftNeighborKey
-                        } else
-                        if(rightNeighbor.numElements > minElements) {
-                            const [neighborKey, neighborChild] = rightNeighbor.popLeft();
-                            parentNode.add(neighborKey, neighborChild);
-                            ownerContainer.add(parentKey, rightNeighborKey); //todo use new rightNeighborKey
-                        } else {
-                            //Choice between left or right merge is free
-                            ownerContainer.mergeLeft(leftNeighbor, parentKey);
-                        }
-                    } else {
-                        //this is the root node
-                        if(ownerContainer.numElements === 0) {
-                            //removed last element from list
-                            this.rootHash = '';
-                        }
-                    }
-                } else { //internal node
-                    console.log('Container is internal, case II');
-                    // const leftContainer = await TreeContainer.fromResource(leftContainerKey, this.ownerID);
-                    // const rightContainer = await TreeContainer.fromResource(rightContainerKey, this.ownerID);
-                    // console.log('original leftContainer: ' + JSON.stringify(leftContainer, null, 2));
-                    // console.log('original rightContainer: ' + JSON.stringify(rightContainer, null, 2));
-                    const leftBranch = new TreeBranch(this.ownerID, leftContainerKey);
-                    await leftBranch.getToRightmostLeaf();
-                    const leftStealLeaf = leftBranch.containers[leftBranch.depth];
-                    const rightBranch = new TreeBranch(this.ownerID, leftContainerKey);
-                    await rightContainer.getToLeftmostLeaf();
-                    const rightStealLeaf = rightBranch.containers[rightBranch.depth];
-                    if(leftStealLeaf.numElements > minElements) {
-                        console.log('Stealing from left subtree');
-                        const stolenKey = await leftStealLeaf.pop();
-                        const newLeftContainerKey = await leftBranch.update();
-                        ownerContainer.add(stolenKey, newLeftContainerKey); //or downChild???
-                        console.log('[final] Owner after steal from left: ' + JSON.stringify(ownerContainer, null, 2));
-                        debugger;
-                    } else
-                    if(rightStealLeaf.numElements > minElements) {
-                        const [downKey, downChild] = await rightContainer.popLeft();
-                        ownerContainer.add(downKey, downChild);
-                        console.log('[final] Owner after steal from right: ' + JSON.stringify(ownerContainer, null, 2));
-                        debugger;
-                    } else {
-                        //case III, only one that causes tree shrink
-                        //merge left and right
-                        throw Error('not implemented!');
-                        rightContainer.mergeLeft(leftContainer, 'which key?');
-                    }
+            if(ownerContainer.isLeaf()) {
+                ownerContainer.remove(key);
+                console.log('ownerContainer after key '+key+' was removed: ' + JSON.stringify(ownerContainer, null, 2));
+                if(ownerContainer.numElements < minElements
+                && branch.depth > 0) {
+                    await branch.rebalance();
                 }
             } else {
-                console.log('container num keys greater than minimum, all done!');
+                const leftBranch = new TreeBranch(this.ownerID, leftContainerKey);
+                await leftBranch.getToRightmostLeaf();
+                const leftStealLeaf = leftBranch.containers[leftBranch.depth];
+                const rightBranch = new TreeBranch(this.ownerID, rightContainerKey);
+                await rightContainer.getToLeftmostLeaf();
+                const rightStealLeaf = rightBranch.containers[rightBranch.depth];
+                var stolenKey;
+                if(leftStealLeaf.numElements > rightStealLeaf.numElements) {
+                    stolenKey = await leftStealLeaf.pop();
+                    console.log('Stealing '+stolenKey+'from left subtree');
+                    branch += leftBranch;
+                    debugger;
+                } else {
+                    console.log('Stealing from left subtree');
+                    var stolenKey = await leftStealLeaf.pop();
+                    const newLeftContainerKey = await leftBranch.update();
+                    ownerContainer.add(stolenKey, newLeftContainerKey); //or downChild???
+                    console.log('[final] Owner after steal from left: ' + JSON.stringify(ownerContainer, null, 2));
+                    debugger;
+                }
+                ownerContainer.substituteKey(key, stolenKey);
+                console.log('[final] Owner after steal: ' + JSON.stringify(ownerContainer, null, 2));
             }
-            await this.updateBranch(branch);
+            this.rootHash = await branch.update();
         }
     }
 
