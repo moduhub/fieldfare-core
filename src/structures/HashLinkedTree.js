@@ -160,24 +160,28 @@ export class HashLinkedTree {
                 await leftBranch.getToRightmostLeaf();
                 const leftStealLeaf = leftBranch.containers[leftBranch.depth];
                 const rightBranch = new TreeBranch(this.ownerID, rightContainerKey);
-                await rightContainer.getToLeftmostLeaf();
+                await rightBranch.getToLeftmostLeaf();
                 const rightStealLeaf = rightBranch.containers[rightBranch.depth];
                 var stolenKey;
                 if(leftStealLeaf.numElements > rightStealLeaf.numElements) {
-                    stolenKey = await leftStealLeaf.pop();
-                    console.log('Stealing '+stolenKey+'from left subtree');
-                    branch += leftBranch;
+                    const [poppedKey, poppedSiblingKey] = await leftStealLeaf.pop();
+                    stolenKey = poppedKey;
+                    console.log('Stealing '+stolenKey+' from left subtree');
+                    branch.append(leftBranch);
                     debugger;
                 } else {
-                    console.log('Stealing from left subtree');
-                    var stolenKey = await leftStealLeaf.pop();
-                    const newLeftContainerKey = await leftBranch.update();
-                    ownerContainer.add(stolenKey, newLeftContainerKey); //or downChild???
-                    console.log('[final] Owner after steal from left: ' + JSON.stringify(ownerContainer, null, 2));
+                    const [shiftedKey, shiftedSiblingKey] = await leftStealLeaf.shift();
+                    stolenKey = shiftedKey;
+                    console.log('Stealing '+stolenKey+' from right subtree');
+                    branch.append(rightBranch);
                     debugger;
                 }
                 ownerContainer.substituteKey(key, stolenKey);
-                console.log('[final] Owner after steal: ' + JSON.stringify(ownerContainer, null, 2));
+                console.log('Owner after steal: ' + JSON.stringify(ownerContainer, null, 2));
+                const branchLeaf = branch.containers[branch.depth].
+                if(branchLeaf.numElements < minElements) {
+                    await branch.rebalance();
+                }
             }
             this.rootHash = await branch.update();
         }

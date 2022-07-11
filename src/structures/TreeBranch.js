@@ -53,28 +53,35 @@ export class TreeBranch {
 
     async rebalance() {
         var depth = this.depth;
-        while(depth > 0) {
-            var iContainer = this.containers[depth--];
+        while(depth > 1) {
+            const iContainerKey = this.containerKeys[depth]
+            const iContainer = this.containers[depth];
+            deph--;
+            const parentContainer = this.container[depth];
             if(iContainer.numElements < minElements) {
-                const parentContainer = this.container[depth-1];
-                const [leftSiblingKey, rightSiblingKey, parentKey] = parentContainer.popChild(branch.prevHashes[depth]);
+                const [leftSiblingKey, leftKey] = parentContainer.getLeftSibling(iContainerKey);
                 const leftSibling = await TreeContainer.fromResource(leftSiblingKey, this.ownerID);
-                const rightSibling = await TreeContainer.fromResource(rightSiblingKey, this.ownerID);
-                //debugger;
-                if(leftSibling.numElements > minElements) {
-                    //rotate from left
+                if(leftSibling.numElements > minElements) { //rotate from left
+                    debugger;
                     const [rotatedKey, rotatedChildKey] = leftSibling.pop();
-                    parentNode.substituteKey(parentKey, rotatedKey);
+                    parentContainer.substituteKey(parentKey, rotatedKey);
+                    const newLeftSiblingKey = await ResourcesManager.storeResourceObject(leftSibling);
+                    parentContainer.updateChild(leftSiblingKey, newLeftSiblingKey);
                     iContainer.unshift(parentKey, rotatedChildKey);
-                } else
-                if(rightSibling.numElements > minElements) {
-                    //rotate from right
-                    const [rotatedKey, rotatedChildKey] = rightSibling.shift();
-                    parentNode.substituteKey(parentKey, rotatedKey);
-                    iContainer.push(parentKey, rightSiblingKey);
                 } else {
-                    //Choice between left or right merge is free
-                    iContainer.mergeLeft(leftSibling, parentKey);
+                    const [rightSiblingKey, rightKey] = parentContainer.getRightSibling(iContainerKey);
+                    const rightSibling = await TreeContainer.fromResource(rightSiblingKey, this.ownerID);
+                    if(rightSibling.numElements > minElements) { //rotate from right
+                        debugger;
+                        const [rotatedKey, rotatedChildKey] = rightSibling.shift();
+                        parentNode.substituteKey(parentKey, rotatedKey);
+                        iContainer.push(parentKey, rightSiblingKey);
+                    } else {
+                        debugger;
+                        //Choice between left or right merge is free
+                        parentContainer.popChild(iContainerKey);
+                        iContainer.mergeLeft(leftSibling, parentKey);
+                    }
                 }
             }
         }
