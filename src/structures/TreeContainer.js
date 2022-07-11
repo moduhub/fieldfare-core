@@ -89,14 +89,26 @@ export class TreeContainer {
 
 	}
 
-	popLeft() {
+	unshift(key, leftChild) {
+		this.keys.unshift(key);
+        this.children.unshift(leftChild);
+        return (++this.numElements);
+	}
+
+	shift() {
         const leftmostKey = this.keys.shift();
         const leftmostChild = this.children.shift();
         this.numElements--;
         return [leftmostKey, leftmostChild];
     }
 
-    popRight() {
+	push(key, rightChild) {
+		this.keys.push(key);
+		this.children.push(rightChild);
+		return (++this.numElements);
+	}
+
+    pop() {
         const rightmostKey = this.keys.pop();
         const rightmostChild = this.children.pop();
         this.numElements--;
