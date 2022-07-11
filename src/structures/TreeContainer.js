@@ -89,7 +89,7 @@ export class TreeContainer {
 
 	}
 
-	unshift(key, leftChild) {
+	unshift(key, leftChild='') {
 		this.keys.unshift(key);
         this.children.unshift(leftChild);
         return (++this.numElements);
@@ -99,10 +99,10 @@ export class TreeContainer {
         const leftmostKey = this.keys.shift();
         const leftmostChild = this.children.shift();
         this.numElements--;
-        return [leftmostKey, leftmostChild];
+		return [leftmostKey, leftmostChild];
     }
 
-	push(key, rightChild) {
+	push(key, rightChild='') {
 		this.keys.push(key);
 		this.children.push(rightChild);
 		return (++this.numElements);
@@ -112,7 +112,7 @@ export class TreeContainer {
         const rightmostKey = this.keys.pop();
         const rightmostChild = this.children.pop();
         this.numElements--;
-        return [rightmostKey, rightmostChild];
+		return [rightmostKey, rightmostChild];
     }
 
     //1) key is deleted
@@ -121,7 +121,7 @@ export class TreeContainer {
     remove(key) {
         const index = this.keys.indexOf(key);
         if(index === -1) {
-            throw Error('Element not found');
+            throw Error('key not found');
         }
         var leftKey = '';
         if(index > 0){
@@ -134,6 +134,42 @@ export class TreeContainer {
         this.numElements--;
         return [leftKey, leftChild, rightChild];
     }
+
+	substituteKey(oldKey, newKey) {
+		const index = this.keys.indexOf(oldKey);
+		if(index === -1) {
+			throw Error('old key not found');
+		}
+		this.keys[index] = newKey;
+	}
+
+	getLeftSibling(childKey) {
+		const index = this.children.indexOf(childKey);
+		if(index === -1) {
+			throw Error('old key not found');
+		}
+		var leftSibling = '';
+		var leftKey = '';
+		if(index > 0) {
+			leftSibling = this.children[index-1];
+			leftKey = this.keys[index-1];
+		}
+		return [leftSibling, leftKey];
+	}
+
+	getRightSibling(childKey) {
+		const index = this.children.indexOf(childKey);
+		if(index === -1) {
+			throw Error('old key not found');
+		}
+		var rightSibling = '';
+		var rightKey = '';
+		if(index < this.numElements) {
+			rightSibling = this.children[index+1];
+			rightKey = this.keys[index+1];
+		}
+		return [rightSibling, rightKey];
+	}
 
 	updateChild(prev, current) {
 		var index;
