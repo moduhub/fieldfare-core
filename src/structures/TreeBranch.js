@@ -48,11 +48,28 @@ export class TreeBranch {
     }
 
     async getToLeftmostLeaf() {
-        throw Error('not implemented');
+        var nextContainerKey = this.origin;
+        this.depth = 0;
+        while(nextContainerKey !== '') {
+            const iContainer = await ResourcesManager.getResourceObject(nextKey, this.ownerID);
+            this.depth++;
+            this.containerKeys.push(nextContainerKey);
+            this.containers.push(iContainer);
+            nextContainerKey = iContainer.getRightmostChild();
+        }
     }
 
     async getToRightmostLeaf() {
-        throw Error('not implemented');
+        var nextContainerKey = this.origin;
+        this.depth = 0;
+        while(nextContainerKey !== '') {
+            const iContainer = await ResourcesManager.getResourceObject(nextKey, this.ownerID);
+            this.depth++;
+            this.containerKeys.push(nextContainerKey);
+            this.containers.push(iContainer);
+            nextContainerKey = iContainer.getLeftmostChild();
+        }
+    }
 
     async split(maxElements) {
         var iContainer = this.containers[this.depth-1];
