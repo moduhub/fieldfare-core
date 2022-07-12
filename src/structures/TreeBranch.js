@@ -21,8 +21,8 @@ export class TreeBranch {
 
     append(other) {
         this.depth += other.depth;
-        this.containers = [this.containers, ...other.containers];
-        this.containerKeys = [this.containerKeys, ...other.containerKeys];
+        this.containers = [...this.containers, ...other.containers];
+        this.containerKeys = [...this.containerKeys, ...other.containerKeys];
         this.key = other.key;
         this.containsKey = other.containsKey;
     }
@@ -53,7 +53,7 @@ export class TreeBranch {
         var nextContainerKey = this.origin;
         this.depth = 0;
         while(nextContainerKey !== '') {
-            const iContainer = await ResourcesManager.getResourceObject(nextContainerKey, this.ownerID);
+            const iContainer = await TreeContainer.fromResource(nextContainerKey, this.ownerID);
             this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
@@ -65,7 +65,7 @@ export class TreeBranch {
         var nextContainerKey = this.origin;
         this.depth = 0;
         while(nextContainerKey !== '') {
-            const iContainer = await ResourcesManager.getResourceObject(nextContainerKey, this.ownerID);
+            const iContainer = await TreeContainer.fromResource(nextContainerKey, this.ownerID);
             this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);

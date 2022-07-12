@@ -133,12 +133,13 @@ export class HashLinkedTree {
                     await branch.rebalance();
                 }
             } else {
+                const [leftContainerKey, rightContainerKey] = ownerContainer.getChildrenAroundKey(key);
                 const leftBranch = new TreeBranch(this.ownerID, leftContainerKey);
                 await leftBranch.getToRightmostLeaf();
-                const leftStealLeaf = leftBranch.containers[leftBranch.depth];
+                const leftStealLeaf = leftBranch.getLastContainer();
                 const rightBranch = new TreeBranch(this.ownerID, rightContainerKey);
                 await rightBranch.getToLeftmostLeaf();
-                const rightStealLeaf = rightBranch.containers[rightBranch.depth];
+                const rightStealLeaf = rightBranch.getLastContainer();
                 debugger;
                 var stolenKey;
                 if(leftStealLeaf.numElements > rightStealLeaf.numElements) {
@@ -148,7 +149,7 @@ export class HashLinkedTree {
                     branch.append(leftBranch);
                     debugger;
                 } else {
-                    const [shiftedKey, shiftedSiblingKey] = await leftStealLeaf.shift();
+                    const [shiftedKey, shiftedSiblingKey] = await rightStealLeaf.shift();
                     stolenKey = shiftedKey;
                     console.log('Stealing '+stolenKey+' from right subtree');
                     branch.append(rightBranch);
@@ -156,7 +157,8 @@ export class HashLinkedTree {
                 }
                 ownerContainer.substituteKey(key, stolenKey);
                 console.log('Owner after steal: ' + JSON.stringify(ownerContainer, null, 2));
-                const branchLeaf = branch.containers[branch.depth];
+                const branchLeaf = branch.getLastContainer();
+                debugger;
                 if(branchLeaf.numElements < minElements) {
                     await branch.rebalance();
                 }
