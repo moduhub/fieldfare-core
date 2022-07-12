@@ -146,6 +146,14 @@ export class TreeContainer {
 		this.keys[index] = newKey;
 	}
 
+	getChildrenAroundKey(key) {
+		const index = this.keys.indexOf(key);
+		if(index === -1) {
+			throw Error('key not found');
+		}
+		return [this.children[index],this.children[index+1]];
+	}
+
 	getLeftmostChild() {
 		return this.children[0];
 	}
