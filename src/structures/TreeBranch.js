@@ -101,36 +101,36 @@ export class TreeBranch {
         }
     }
 
-    async rebalance() {
+    async rebalance(minElements) {
         var depth = this.depth;
         while(depth > 1) {
             const iContainerKey = this.containerKeys[depth]
             const iContainer = this.containers[depth];
-            deph--;
-            const parentContainer = this.container[depth];
+            const parentContainer = this.container[depth-1];
             if(iContainer.numElements < minElements) {
                 const [leftSiblingKey, leftKey] = parentContainer.getLeftSibling(iContainerKey);
                 const leftSibling = await TreeContainer.fromResource(leftSiblingKey, this.ownerID);
                 if(leftSibling.numElements > minElements) { //rotate from left
                     debugger;
                     const [rotatedKey, rotatedChildKey] = leftSibling.pop();
-                    parentContainer.substituteKey(parentKey, rotatedKey);
+                    parentContainer.substituteKey(leftKey, rotatedKey);
                     const newLeftSiblingKey = await ResourcesManager.storeResourceObject(leftSibling);
                     parentContainer.updateChild(leftSiblingKey, newLeftSiblingKey);
-                    iContainer.unshift(parentKey, rotatedChildKey);
+                    iContainer.unshift(leftKey, rotatedChildKey);
                 } else {
                     const [rightSiblingKey, rightKey] = parentContainer.getRightSibling(iContainerKey);
                     const rightSibling = await TreeContainer.fromResource(rightSiblingKey, this.ownerID);
                     if(rightSibling.numElements > minElements) { //rotate from right
                         debugger;
                         const [rotatedKey, rotatedChildKey] = rightSibling.shift();
-                        parentNode.substituteKey(parentKey, rotatedKey);
-                        iContainer.push(parentKey, rightSiblingKey);
+                        const newRightSiblingKey = await ResourcesManager.storeResourceObject(rightSibling);
+                        parentContainer.updateChild(rightSiblingKey, newRightSiblingKey);
+                        parentNode.substituteKey(rightKey, rotatedKey);
+                        iContainer.push(rightKey, rightSiblingKey);
                     } else {
                         debugger;
                         //Choice between left or right merge is free
-                        parentContainer.popChild(iContainerKey);
-                        iContainer.mergeLeft(leftSibling, parentKey);
+                        branch.containers[depth] = parentContainer.mergeChildren(leftKey);
                     }
                 }
             }
