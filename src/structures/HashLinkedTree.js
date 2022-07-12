@@ -94,36 +94,12 @@ export class HashLinkedTree {
                 throw Error('element already in set');
             }
 			//Leaf add
-            var depth = branch.depth;
-            var iContainer = branch.containers[branch.depth];
+            var iContainer = branch.getLastContainer();
 			iContainer.add(key);
-            //Check split criteria
-			while(iContainer.numElements === this.degree) {
-//				logger.log('info', "SPLIT! Depth:" + depth);
-				var rightContainer = new TreeContainer();
-				var meanElement = iContainer.split(rightContainer);
-				var leftContainer = iContainer;
-				var leftContainerKey = await ResourcesManager.storeResourceObject(leftContainer);
-                var rightContainerKey = await ResourcesManager.storeResourceObject(rightContainer);
-				if(depth === 0) { //ROOT SPLIT
-					var newRoot = new TreeContainer(leftContainerKey);
-					newRoot.add(meanElement, rightContainerKey);
-					branch.containers.unshift(newRoot);
-//					logger.log('info', "New tree root: " + JSON.stringify(newRoot, null , 2)
-//						+ " -> " + branch.containers[0]);
-					break;
-				} else {
-					//Add element to lower (closer to root) container and
-					// continue split check
-					iContainer = branch.containers[depth-1];
-//					logger.log('info', "Updating branch at depth=" + depth
-//						+ "\n>prevHash: " + prevBranchHashes[depth]
-//						+ "\n>currentHash: " + leftContainerKey);
-					iContainer.updateChild(branch.containerKeys[depth], leftContainerKey);
-					iContainer.add(meanElement, rightContainerKey);
-					depth--;
-				}
-			}
+            const maxElements = this.degree;
+            if(iContainer.numElements === iContainer) {
+                await branch.split(maxElements);
+            }
 			this.rootHash = await branch.update(depth);
 //			logger.log('info', ">>> Tree.add finished, new root is " + this.rootHash);
 		}

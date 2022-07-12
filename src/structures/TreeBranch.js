@@ -49,6 +49,35 @@ export class TreeBranch {
 
     async getToRightmostLeaf() {
         throw Error('not implemented');
+
+    async split(maxElements) {
+        var iContainer = this.containers[this.depth-1];
+        var depth = this.depth;
+        while(iContainer.numElements === maxElements) {
+            const rightContainer = new TreeContainer();
+            const meanElement = iContainer.split(rightContainer);
+            const leftContainer = iContainer;
+            const leftContainerKey = await ResourcesManager.storeResourceObject(leftContainer);
+            const rightContainerKey = await ResourcesManager.storeResourceObject(rightContainer);
+            if(depth === 1) { //ROOT SPLIT
+                const newRoot = new TreeContainer(leftContainerKey);
+                newRoot.add(meanElement, rightContainerKey);
+                this.containerKeys.unshift('');
+                this.containers.unshift(newRoot);
+                this.depth++;
+//					logger.log('info', "New tree root: " + JSON.stringify(newRoot, null , 2)
+//						+ " -> " + this.containers[0]);
+                break;
+            } else {
+                iContainer = this.containers[depth-1];
+//					logger.log('info', "Updating this at depth=" + depth
+//						+ "\n>prevHash: " + prevBranchHashes[depth]
+//						+ "\n>currentHash: " + leftContainerKey);
+                iContainer.updateChild(this.containerKeys[depth], leftContainerKey);
+                iContainer.add(meanElement, rightContainerKey);
+                depth--;
+            }
+        }
     }
 
     async rebalance() {
