@@ -43,6 +43,15 @@ export class TreeContainer {
 		return newContainer;
 	}
 
+	isLeaf() {
+		for(const child of this.children) {
+			if(child !== '') {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	add(key, rightChild) {
 
 		//Parameters validation
@@ -141,6 +150,14 @@ export class TreeContainer {
 			throw Error('old key not found');
 		}
 		this.keys[index] = newKey;
+	}
+
+	getLeftmostChild() {
+		return this.children[0];
+	}
+
+	getRightmostChild() {
+		return this.children[this.numElements];
 	}
 
 	getLeftSibling(childKey) {
