@@ -87,28 +87,26 @@ export class TreeBranch {
         }
     }
 
-    async update(depth) {
-        if(depth === undefined) {
+    async update(pDepth) {
+        var depth = pDepth;
+        if(pDepth === undefined) {
             depth = this.depth;
         }
-        while(depth > 0) {
-            const newContainerKey = await ResourcesManager.storeResourceObject(this.containers[depth]);
-            // logger.log('info',   "depth: " + depth
-            // 	+ "current: " + currentContainerHash
-            // 	+ " prev: " + prevBranchHashes[depth]);
-            if(newContainerKey !== this.containerKeys[depth]) {
-                this.containers[depth-1].updateChild(this.containerKeys[depth], newContainerKey);
-                //Free previous resource?
-            } else {
-                //this should never happen?
-                throw Error('this was unexpected, check code');
-            }
-            depth--;
-        }
-        var newRoot = '';
         if(this.containers[0].numElements > 0) { //removed last element from list?
-            newRoot = await ResourcesManager.storeResourceObject(this.containers[0]);
+            while(depth > 1) {
+                const parentContainer = this.containers[depth-2];
+                const iContainer = this.containers[depth-1];
+                const prevContainerKey = this.containerKeys[depth-1];
+                const newContainerKey = await ResourcesManager.storeResourceObject(iContainer);
+                this.containerKeys[depth-1] = newContainerKey;
+                parentContainer.updateChild(prevContainerKey, newContainerKey);
+                depth--;
+            }
+            this.containerKeys[0] = await storeResourceObject(this.containers[0]);
+        } else {
+            this.depth = 0;
+            this.containerKeys[0] = '';
         }
-        return newRoot;
+        return this.containerKeys[0];
     }
 }
