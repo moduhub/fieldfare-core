@@ -121,7 +121,7 @@ export class HashLinkedTree {
             if(branch.containsKey === false) {
                 throw Error('Element does not exist in tree');
             }
-            const ownerContainer = branch.containers[branch.depth];
+            const ownerContainer = branch.getLastContainer();
             console.log('original ownerContainer: ' + JSON.stringify(ownerContainer, null, 2));
             const minElements = Math.floor(this.degree/2);
             if(ownerContainer.isLeaf()) {
@@ -138,6 +138,7 @@ export class HashLinkedTree {
                 const rightBranch = new TreeBranch(this.ownerID, rightContainerKey);
                 await rightBranch.getToLeftmostLeaf();
                 const rightStealLeaf = rightBranch.containers[rightBranch.depth];
+                debugger;
                 var stolenKey;
                 if(leftStealLeaf.numElements > rightStealLeaf.numElements) {
                     const [poppedKey, poppedSiblingKey] = await leftStealLeaf.pop();
@@ -154,7 +155,7 @@ export class HashLinkedTree {
                 }
                 ownerContainer.substituteKey(key, stolenKey);
                 console.log('Owner after steal: ' + JSON.stringify(ownerContainer, null, 2));
-                const branchLeaf = branch.containers[branch.depth].
+                const branchLeaf = branch.containers[branch.depth];
                 if(branchLeaf.numElements < minElements) {
                     await branch.rebalance();
                 }

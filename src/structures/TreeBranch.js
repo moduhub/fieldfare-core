@@ -9,10 +9,14 @@ export class TreeBranch {
     constructor(ownerID, origin) {
         this.ownerID = ownerID;
         this.origin = origin;
-        this.depth= 0;
+        this.depth = 0;
         this.containerKeys = [];
         this.containers = [];
-        this.containsKey: false;
+        this.containsKey = false;
+    }
+
+    getLastContainer() {
+        return this.containers[this.depth-1];
     }
 
     append(other) {
@@ -29,17 +33,18 @@ export class TreeBranch {
         this.containerKeys[0] = this.origin;
         this.containers[0] = iContainer;
         var nextContainerKey = iContainer.follow(key);
+        this.depth = 1;
         while(nextContainerKey !== '') {
             if(nextContainerKey === true) {
                 this.containsKey = true;
                 break;
             }
             iContainer = await TreeContainer.fromResource(nextContainerKey, this.ownerID);
-            this.depth++;
             if(iContainer === null
             || iContainer === undefined) {
                 throw Error('iContainer object not found');
             }
+            this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
             nextContainerKey = iContainer.follow(key);
@@ -134,6 +139,7 @@ export class TreeBranch {
                     }
                 }
             }
+            depht--;
         }
     }
 
