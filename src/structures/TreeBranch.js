@@ -1,4 +1,8 @@
 
+import {ResourcesManager} from '../resources/ResourcesManager';
+import {TreeContainer} from './TreeContainer';
+import {Utils} from '../basic/Utils';
+import {logger} from '../basic/Log';
 
 export class TreeBranch {
 
