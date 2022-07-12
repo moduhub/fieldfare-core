@@ -29,17 +29,10 @@ export class TreeBranch {
 
     async getToKey(key) {
         this.key = key;
-        var iContainer = await TreeContainer.fromResource(this.origin, this.ownerID);
-        this.containerKeys[0] = this.origin;
-        this.containers[0] = iContainer;
-        var nextContainerKey = iContainer.follow(key);
-        this.depth = 1;
+        this.depth = 0;
+        var nextContainerKey = this.origin;
         while(nextContainerKey !== '') {
-            if(nextContainerKey === true) {
-                this.containsKey = true;
-                break;
-            }
-            iContainer = await TreeContainer.fromResource(nextContainerKey, this.ownerID);
+            const iContainer = await TreeContainer.fromResource(nextContainerKey, this.ownerID);
             if(iContainer === null
             || iContainer === undefined) {
                 throw Error('iContainer object not found');
@@ -48,6 +41,10 @@ export class TreeBranch {
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
             nextContainerKey = iContainer.follow(key);
+            if(nextContainerKey === true) {
+                this.containsKey = true;
+                break;
+            }
         }
         return this;
     }
@@ -56,7 +53,7 @@ export class TreeBranch {
         var nextContainerKey = this.origin;
         this.depth = 0;
         while(nextContainerKey !== '') {
-            const iContainer = await ResourcesManager.getResourceObject(nextKey, this.ownerID);
+            const iContainer = await ResourcesManager.getResourceObject(nextContainerKey, this.ownerID);
             this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
@@ -68,7 +65,7 @@ export class TreeBranch {
         var nextContainerKey = this.origin;
         this.depth = 0;
         while(nextContainerKey !== '') {
-            const iContainer = await ResourcesManager.getResourceObject(nextKey, this.ownerID);
+            const iContainer = await ResourcesManager.getResourceObject(nextContainerKey, this.ownerID);
             this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
@@ -83,10 +80,17 @@ export class TreeBranch {
             const rightContainer = new TreeContainer();
             const meanElement = iContainer.split(rightContainer);
             const leftContainer = iContainer;
-            const leftContainerKey = await ResourcesManager.storeResourceObject(leftContainer);
+            const prevLeftContainerKey = this.containerKeys[depth-1];
+            const newLeftContainerKey = await ResourcesManager.storeResourceObject(leftContainer);
             const rightContainerKey = await ResourcesManager.storeResourceObject(rightContainer);
-            if(depth === 1) { //ROOT SPLIT
-                const newRoot = new TreeContainer(leftContainerKey);
+            if(depth > 1) {
+                depth--;
+                iContainer = this.containers[depth-1];
+                iContainer.updateChild(prevLeftContainerKey, newLeftContainerKey);
+                iContainer.add(meanElement, rightContainerKey);
+            } else {
+                //ROOT SPLIT
+                const newRoot = new TreeContainer(newLeftContainerKey);
                 newRoot.add(meanElement, rightContainerKey);
                 this.containerKeys.unshift('');
                 this.containers.unshift(newRoot);
@@ -94,16 +98,9 @@ export class TreeBranch {
 //					logger.log('info', "New tree root: " + JSON.stringify(newRoot, null , 2)
 //						+ " -> " + this.containers[0]);
                 break;
-            } else {
-                iContainer = this.containers[depth-1];
-//					logger.log('info', "Updating this at depth=" + depth
-//						+ "\n>prevHash: " + prevBranchHashes[depth]
-//						+ "\n>currentHash: " + leftContainerKey);
-                iContainer.updateChild(this.containerKeys[depth], leftContainerKey);
-                iContainer.add(meanElement, rightContainerKey);
-                depth--;
             }
         }
+        return depth;
     }
 
     async rebalance(minElements) {
@@ -155,10 +152,12 @@ export class TreeBranch {
                 const prevContainerKey = this.containerKeys[depth-1];
                 const newContainerKey = await ResourcesManager.storeResourceObject(iContainer);
                 this.containerKeys[depth-1] = newContainerKey;
-                parentContainer.updateChild(prevContainerKey, newContainerKey);
+                if(prevContainerKey !== newContainerKey) {
+                    parentContainer.updateChild(prevContainerKey, newContainerKey);
+                }
                 depth--;
             }
-            this.containerKeys[0] = await storeResourceObject(this.containers[0]);
+            this.containerKeys[0] = await ResourcesManager.storeResourceObject(this.containers[0]);
         } else {
             this.depth = 0;
             this.containerKeys[0] = '';

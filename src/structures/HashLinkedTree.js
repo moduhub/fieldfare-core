@@ -93,14 +93,15 @@ export class HashLinkedTree {
             if(branch.containsKey) {
                 throw Error('element already in set');
             }
-			//Leaf add
             var iContainer = branch.getLastContainer();
 			iContainer.add(key);
             const maxElements = this.degree;
-            if(iContainer.numElements === iContainer) {
-                await branch.split(maxElements);
+            if(iContainer.numElements === maxElements) {
+                const splitDepth = await branch.split(maxElements);
+                this.rootHash = await branch.update(splitDepth);    //update only from split down to root
+            } else {
+                this.rootHash = await branch.update(); // update from leaf to root
             }
-			this.rootHash = await branch.update(depth);
 //			logger.log('info', ">>> Tree.add finished, new root is " + this.rootHash);
 		}
 		return this.rootHash;

@@ -6,24 +6,18 @@ import {logger} from '../basic/Log';
 export class TreeContainer {
 
 	constructor(leftChild) {
-
 		this.keys = new Array();
 		this.children = new Array();
-
 		if(leftChild == null
 		|| leftChild == undefined) {
-
 			this.children[0] = '';
-
 		} else {
 			if(leftChild !== ''
 			&& Utils.isBase64(leftChild) === false) {
 				throw Error('invalid right child - not base64');
 			}
-
 			this.children[0] = leftChild;
 		}
-
 		this.numElements = 0;
 	}
 
@@ -68,7 +62,7 @@ export class TreeContainer {
 			throw Error('invalid right child - not base64');
 		}
 
-		if(this.numElements == 0) {
+		if(this.numElements === 0) {
 			this.keys[0] = key;
 			this.children[1] = rightChild;
 		} else {
@@ -196,10 +190,15 @@ export class TreeContainer {
 				index = i;
 				this.children[i] = current;
 				break;
+			} else
+			if(this.children[i] === current) {
+				//key already current, accept
+				index = i;
+				break;
 			}
 		}
 		if(index === undefined) {
-			throw Error('child not found in container');
+			throw Error('child \''+prev+'\' not found in container');
 		}
 		return index;
 	}
