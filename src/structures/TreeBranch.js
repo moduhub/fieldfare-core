@@ -57,7 +57,7 @@ export class TreeBranch {
             this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
-            nextContainerKey = iContainer.getRightmostChild();
+            nextContainerKey = iContainer.getLeftmostChild();
         }
     }
 
@@ -69,7 +69,7 @@ export class TreeBranch {
             this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
-            nextContainerKey = iContainer.getLeftmostChild();
+            nextContainerKey = iContainer.getRightmostChild();
         }
     }
 

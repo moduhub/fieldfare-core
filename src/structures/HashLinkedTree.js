@@ -108,14 +108,15 @@ export class HashLinkedTree {
 	}
 
     async remove(element) {
-        if(this.readOny) {
+        if(this.readOnly) {
             throw Error('Attempt to edit a read only hash linked tree');
         }
 		var key = await this.validate(element);
+        console.log('tree.remove('+key+')');
 //		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + key);
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
-            throw Error('Tree is empty');
+            throw Error('tree is empty');
 		} else {
             const branch = new TreeBranch(this.ownerID, this.rootHash);
             await branch.getToKey(key);
@@ -132,6 +133,7 @@ export class HashLinkedTree {
                 && branch.depth > 0) {
                     await branch.rebalance();
                 }
+                debugger;
             } else {
                 const [leftContainerKey, rightContainerKey] = ownerContainer.getChildrenAroundKey(key);
                 const leftBranch = new TreeBranch(this.ownerID, leftContainerKey);
@@ -140,20 +142,24 @@ export class HashLinkedTree {
                 const rightBranch = new TreeBranch(this.ownerID, rightContainerKey);
                 await rightBranch.getToLeftmostLeaf();
                 const rightStealLeaf = rightBranch.getLastContainer();
+                console.log('left branch: ');
+                console.table(leftBranch.containerKeys);
+                console.log('right branch: ');
+                console.table(rightBranch.containerKeys);
+                console.log('left steal leaf: ' + JSON.stringify(leftStealLeaf, null, 2));
+                console.log('right steal leaf: ' + JSON.stringify(rightStealLeaf, null, 2));
                 debugger;
                 var stolenKey;
-                if(leftStealLeaf.numElements > rightStealLeaf.numElements) {
+                if(leftStealLeaf.numElements >= rightStealLeaf.numElements) {
                     const [poppedKey, poppedSiblingKey] = await leftStealLeaf.pop();
                     stolenKey = poppedKey;
                     console.log('Stealing '+stolenKey+' from left subtree');
                     branch.append(leftBranch);
-                    debugger;
                 } else {
                     const [shiftedKey, shiftedSiblingKey] = await rightStealLeaf.shift();
                     stolenKey = shiftedKey;
                     console.log('Stealing '+stolenKey+' from right subtree');
                     branch.append(rightBranch);
-                    debugger;
                 }
                 ownerContainer.substituteKey(key, stolenKey);
                 console.log('Owner after steal: ' + JSON.stringify(ownerContainer, null, 2));
@@ -168,27 +174,22 @@ export class HashLinkedTree {
     }
 
 	async has(element) {
-		const elementHash = await this.validate(element, false);
-//		logger.log('info', "tree.has(" + elementHash + ")");
-		if(this.rootHash == null
-		|| this.rootHash == undefined) {
+		const key = await this.validate(element, false);
+		if(this.rootHash === null
+		|| this.rootHash === undefined) {
+		    // console.log('tree.has(' + key + ') => FALSE (tree is empty)');
 			return false;
 		} else {
-			var iContainer;
 			var nextContainerHash = this.rootHash;
-			var depth = 0;
 			do {
-				iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
-//				logger.log('info', "search["+depth+"]: " + JSON.stringify(iContainer, null, 2));
-				nextContainerHash = iContainer.follow(elementHash);
-				depth++;
-//				logger.log('info', "follow->" + nextContainerHash);
+				const iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
+				nextContainerHash = iContainer.follow(key);
 				if(nextContainerHash === true) {
-//					logger.log('info', "Element found");
+                    // console.log('tree.has(' + key + ') => TRUE');
 					return true;
 				}
 			} while(nextContainerHash !== '');
-//			logger.log('info', "Element NOT found");
+            // console.log('tree.has(' + key + ') => FALSE');
 			return false;
 		}
 	}
