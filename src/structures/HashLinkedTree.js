@@ -112,7 +112,6 @@ export class HashLinkedTree {
             throw Error('Attempt to edit a read only hash linked tree');
         }
 		var key = await this.validate(element);
-        console.log('tree.remove('+key+')');
 //		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + key);
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
@@ -123,17 +122,19 @@ export class HashLinkedTree {
             if(branch.containsKey === false) {
                 throw Error('Element does not exist in tree');
             }
+            console.log('tree.remove('+key+')');
             const ownerContainer = branch.getLastContainer();
             console.log('original ownerContainer: ' + JSON.stringify(ownerContainer, null, 2));
             const minElements = Math.floor(this.degree/2);
+            var mergeDepth;
             if(ownerContainer.isLeaf()) {
                 ownerContainer.remove(key);
                 console.log('ownerContainer after key '+key+' was removed: ' + JSON.stringify(ownerContainer, null, 2));
                 if(ownerContainer.numElements < minElements
                 && branch.depth > 0) {
-                    await branch.rebalance();
+                    debugger;
+                    mergeDepth = await branch.rebalance(minElements);
                 }
-                debugger;
             } else {
                 const [leftContainerKey, rightContainerKey] = ownerContainer.getChildrenAroundKey(key);
                 const leftBranch = new TreeBranch(this.ownerID, leftContainerKey);
@@ -142,34 +143,33 @@ export class HashLinkedTree {
                 const rightBranch = new TreeBranch(this.ownerID, rightContainerKey);
                 await rightBranch.getToLeftmostLeaf();
                 const rightStealLeaf = rightBranch.getLastContainer();
-                console.log('left branch: ');
-                console.table(leftBranch.containerKeys);
-                console.log('right branch: ');
-                console.table(rightBranch.containerKeys);
-                console.log('left steal leaf: ' + JSON.stringify(leftStealLeaf, null, 2));
-                console.log('right steal leaf: ' + JSON.stringify(rightStealLeaf, null, 2));
-                debugger;
+                // console.log('left branch: ');
+                // console.table(leftBranch.containerKeys);
+                // console.log('right branch: ');
+                // console.table(rightBranch.containerKeys);
+                // console.log('left steal leaf: ' + JSON.stringify(leftStealLeaf, null, 2));
+                // console.log('right steal leaf: ' + JSON.stringify(rightStealLeaf, null, 2));
                 var stolenKey;
                 if(leftStealLeaf.numElements >= rightStealLeaf.numElements) {
                     const [poppedKey, poppedSiblingKey] = await leftStealLeaf.pop();
                     stolenKey = poppedKey;
-                    console.log('Stealing '+stolenKey+' from left subtree');
+                    // console.log('Stealing '+stolenKey+' from left subtree');
                     branch.append(leftBranch);
                 } else {
                     const [shiftedKey, shiftedSiblingKey] = await rightStealLeaf.shift();
                     stolenKey = shiftedKey;
-                    console.log('Stealing '+stolenKey+' from right subtree');
+                    // console.log('Stealing '+stolenKey+' from right subtree');
                     branch.append(rightBranch);
                 }
                 ownerContainer.substituteKey(key, stolenKey);
-                console.log('Owner after steal: ' + JSON.stringify(ownerContainer, null, 2));
+                // console.log('Owner after steal: ' + JSON.stringify(ownerContainer, null, 2));
                 const branchLeaf = branch.getLastContainer();
-                debugger;
                 if(branchLeaf.numElements < minElements) {
-                    await branch.rebalance();
+                    debugger;
+                    mergeDepth = await branch.rebalance(minElements);
                 }
             }
-            this.rootHash = await branch.update();
+            this.rootHash = await branch.update(mergeDepth);
         }
     }
 

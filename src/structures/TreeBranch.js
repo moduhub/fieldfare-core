@@ -106,23 +106,42 @@ export class TreeBranch {
     async rebalance(minElements) {
         var depth = this.depth;
         while(depth > 1) {
-            const iContainerKey = this.containerKeys[depth]
-            const iContainer = this.containers[depth];
-            const parentContainer = this.container[depth-1];
+            const iContainerKey = this.containerKeys[depth-1]
+            const iContainer = this.containers[depth-1];
+            const parentContainer = this.containers[depth-2];
+            debugger;
             if(iContainer.numElements < minElements) {
+                debugger;
                 const [leftSiblingKey, leftKey] = parentContainer.getLeftSibling(iContainerKey);
-                const leftSibling = await TreeContainer.fromResource(leftSiblingKey, this.ownerID);
-                if(leftSibling.numElements > minElements) { //rotate from left
-                    debugger;
-                    const [rotatedKey, rotatedChildKey] = leftSibling.pop();
-                    parentContainer.substituteKey(leftKey, rotatedKey);
-                    const newLeftSiblingKey = await ResourcesManager.storeResourceObject(leftSibling);
-                    parentContainer.updateChild(leftSiblingKey, newLeftSiblingKey);
-                    iContainer.unshift(leftKey, rotatedChildKey);
+                const [rightSiblingKey, rightKey] = parentContainer.getRightSibling(iContainerKey);
+                var leftSibling = {numElements:0};
+                var rightSibling = {numElements:0};
+                if(leftSiblingKey === '' && rightSiblingKey === '') {
+                    throw Error('container has no siblings');
+                }
+                if(leftSiblingKey !== '') {
+                    leftSibling = await TreeContainer.fromResource(leftSiblingKey, this.ownerID);
+                }
+                if(rightSiblingKey !== '') {
+                    rightSibling = await TreeContainer.fromResource(rightSiblingKey, this.ownerID);
+                }
+                if(leftSibling.numElements >= rightSibling.numElements) {
+                    if(leftSibling.numElements > minElements) {
+                        //rotate from left
+                        debugger;
+                        const [rotatedKey, rotatedChildKey] = leftSibling.pop();
+                        parentContainer.substituteKey(leftKey, rotatedKey);
+                        const newLeftSiblingKey = await ResourcesManager.storeResourceObject(leftSibling);
+                        parentContainer.updateChild(leftSiblingKey, newLeftSiblingKey);
+                        iContainer.unshift(leftKey, rotatedChildKey);
+                    } else {
+                        //merge around left key
+                        debugger;
+                        await parentContainer.mergeChildren(leftKey);
+                    }
                 } else {
-                    const [rightSiblingKey, rightKey] = parentContainer.getRightSibling(iContainerKey);
-                    const rightSibling = await TreeContainer.fromResource(rightSiblingKey, this.ownerID);
-                    if(rightSibling.numElements > minElements) { //rotate from right
+                    if(rightSibling.numElements > minElements) {
+                        //rotate from right
                         debugger;
                         const [rotatedKey, rotatedChildKey] = rightSibling.shift();
                         const newRightSiblingKey = await ResourcesManager.storeResourceObject(rightSibling);
@@ -130,14 +149,18 @@ export class TreeBranch {
                         parentNode.substituteKey(rightKey, rotatedKey);
                         iContainer.push(rightKey, rightSiblingKey);
                     } else {
+                        //merge around right key
                         debugger;
-                        //Choice between left or right merge is free
-                        branch.containers[depth] = parentContainer.mergeChildren(leftKey);
+                        await parentContainer.mergeChildren(rightKey);
                     }
                 }
+                depth--;
+                debugger;
+            } else {
+                break;
             }
-            depht--;
         }
+        return depth;
     }
 
     async update(pDepth) {
