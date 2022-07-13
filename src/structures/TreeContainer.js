@@ -185,7 +185,7 @@ export class TreeContainer {
 		var rightKey = '';
 		if(index < this.numElements) {
 			rightSibling = this.children[index+1];
-			rightKey = this.keys[index+1];
+			rightKey = this.keys[index];
 		}
 		return [rightSibling, rightKey];
 	}
@@ -229,9 +229,26 @@ export class TreeContainer {
 		return meanElement;
 	}
 
+	async mergeChildren(key) {
+		const index = this.keys.indexOf(key);
+		if(index === -1) {
+			throw Error('old key not found');
+		}
+		const leftChild = await TreeContainer.fromResource(this.children[index]);
+		const rightChild = await TreeContainer.fromResource(this.children[index+1]);
+		debugger;
+		this.keys.splice(index, 1);
+		this.children.splice(index, 1);
+		this.numElements--;
+		rightChild.mergeLeft(leftChild, key);
+		const newChildKey = await ResourcesManager.storeResourceObject(rightChild);
+		this.children[index] = newChildKey;
+		debugger;
+	}
+
 	mergeLeft(left, meanKey) {
-		this.keys = [left.keys, meanKey, ...this.keys];
-		this.children = [left.children, ...this.children];
+		this.keys = [...left.keys, meanKey, ...this.keys];
+		this.children = [...left.children, ...this.children];
 		this.numElements += left.numElements + 1;
 	}
 
