@@ -7,7 +7,7 @@ import {
 
 const numCreatedElements = 100;
 const numNonExistingElements = Math.floor(numCreatedElements/5);
-const numRemovedElements = 2;//Math.floor(numCreatedElements/5);
+const numRemovedElements = 4;//Math.floor(numCreatedElements/5);
 const numExistingElements = numCreatedElements-numRemovedElements;
 
 const gSalt = 'hlt';
@@ -56,7 +56,7 @@ beforeAll(async () => {
     return;
 });
 
-test('Store '+numCreatedElements+' elements', async () => {
+test('Stores '+numCreatedElements+' elements', async () => {
     for(const element of createdElements) {
         // console.log('Tree.add('+element+')');
         await tree.add(element);
@@ -64,14 +64,14 @@ test('Store '+numCreatedElements+' elements', async () => {
     return;
 });
 
-test('Remove '+numRemovedElements+' elements', async () => {
+test('Removes '+numRemovedElements+' elements', async () => {
     for(const element of removedElements) {
         await tree.remove(element);
     }
     return;
 });
 
-test('Attempt to remove elements that do not exist', async () => {
+test('Throws on attempt to remove elements that do not exist, root remains uchanged', async () => {
     const prevRoot = tree.rootHash;
     for(const element of nonExistingElements) {
         await expect(tree.remove(element))
@@ -82,37 +82,30 @@ test('Attempt to remove elements that do not exist', async () => {
     return;
 });
 
-test('Iterate tree elements', async () => {
+test('Iterates tree elements in order, without duplications or invalid elements', async () => {
     const iteratedKeys = [];
     var lastKey = '';
     for await(const key of tree) {
         expect(iteratedKeys.includes(key)).toBe(false); //check for duplicated elements
         expect(key > lastKey).toBe(true); //check if elements are in order
         iteratedKeys.push(key);
-        // console.log('[iteration '+iteratedKeys.length+'] key: ' + key
-        //      + ' exists at buffer index ' + existingElements.indexOf(key));
         expect(existingElements.includes(key)).toBe(true);
         expect(removedElements.includes(key)).toBe(false);
         lastKey = key;
     }
-    // console.log('tree iteration returned ' + iteratedKeys.length + ' elements');
     expect(iteratedKeys.length).toBe(numExistingElements);
     return;
 });
 
-test('Check existance of '+numExistingElements+' true elements', async () => {
-    // console.log('Check existance of '+numExistingElements+' true elements');
-    var iteration=0;
+test('Confirms existance of '+numExistingElements+' elements', async () => {
     for(const element of existingElements) {
-        // console.log('[iteration '+iteration++ +'] Tree.has('+element+')');
         const hasElement = await tree.has(element);
         expect(hasElement).toBe(true);
     }
     return;
 });
 
-test('Check non-existance of '+(numNonExistingElements)+' false elements', async () => {
-    console.log('Check non-existance of '+(numNonExistingElements)+' false elements');
+test('Confirms non-existance of '+(numNonExistingElements)+' not-added elements', async () => {
     for(const element of nonExistingElements) {
         const hasElement = await tree.has(element);
         expect(hasElement).toBe(false);
@@ -120,8 +113,7 @@ test('Check non-existance of '+(numNonExistingElements)+' false elements', async
     return;
 });
 
-test('Check non-existance of '+(numRemovedElements)+' removed elements', async () => {
-    console.log('Check non-existance of '+(numRemovedElements)+' removed elements');
+test('Confirms non-existance of '+(numRemovedElements)+' removed elements', async () => {
     for(const element of removedElements) {
         const hasElement = await tree.has(element);
         expect(hasElement).toBe(false);
