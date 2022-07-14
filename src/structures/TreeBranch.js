@@ -109,9 +109,7 @@ export class TreeBranch {
             const iContainerKey = this.containerKeys[depth-1]
             const iContainer = this.containers[depth-1];
             const parentContainer = this.containers[depth-2];
-            debugger;
             if(iContainer.numElements < minElements) {
-                debugger;
                 const [leftSiblingKey, leftKey] = parentContainer.getLeftSibling(iContainerKey);
                 const [rightSiblingKey, rightKey] = parentContainer.getRightSibling(iContainerKey);
                 var leftSibling = {numElements:0};
@@ -128,7 +126,6 @@ export class TreeBranch {
                 if(leftSibling.numElements >= rightSibling.numElements) {
                     if(leftSibling.numElements > minElements) {
                         //rotate from left
-                        debugger;
                         const [rotatedKey, rotatedChildKey] = leftSibling.pop();
                         parentContainer.substituteKey(leftKey, rotatedKey);
                         const newLeftSiblingKey = await ResourcesManager.storeResourceObject(leftSibling);
@@ -138,27 +135,39 @@ export class TreeBranch {
                         parentContainer.updateChild(iContainerKey, newContainerKey);
                     } else {
                         //merge around left key
-                        debugger;
                         iContainer.mergeLeft(leftSibling, leftKey);
                         const mergedChildKey = await ResourcesManager.storeResourceObject(iContainer);
-                        parentContainer.mergeChildren(leftKey, mergedChildKey);
-                        debugger;
+                        const parentNumElements = parentContainer.mergeChildren(leftKey, mergedChildKey);
+                        if(parentNumElements == 0) {
+                            debugger;
+                            this.containers.shift();
+                            this.containerKeys.shift();
+                            this.depth--;
+                            depth--;
+                        }
                     }
                 } else {
                     if(rightSibling.numElements > minElements) {
                         //rotate from right
-                        debugger;
                         const [rotatedKey, rotatedChildKey] = rightSibling.shift();
+                        parentContainer.substituteKey(rightKey, rotatedKey);
                         const newRightSiblingKey = await ResourcesManager.storeResourceObject(rightSibling);
                         parentContainer.updateChild(rightSiblingKey, newRightSiblingKey);
-                        parentNode.substituteKey(rightKey, rotatedKey);
-                        iContainer.push(rightKey, rightSiblingKey);
+                        iContainer.push(rightKey, rotatedChildKey);
+                        const newContainerKey = await ResourcesManager.storeResourceObject(iContainer);
+                        parentContainer.updateChild(iContainerKey, newContainerKey);
                     } else {
                         //merge around right key
-                        debugger;
                         iContainer.mergeRight(rightSibling, rightKey);
                         const mergedChildKey = await ResourcesManager.storeResourceObject(iContainer);
-                        parentContainer.mergeChildren(rightKey, mergedChildKey);
+                        const parentNumElements = parentContainer.mergeChildren(rightKey, mergedChildKey);
+                        if(parentNumElements == 0) {
+                            debugger;
+                            this.containers.shift();
+                            this.containerKeys.shift();
+                            this.depth--;
+                            depth--;
+                        }
                     }
                 }
                 depth--;

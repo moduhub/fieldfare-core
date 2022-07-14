@@ -112,7 +112,6 @@ export class HashLinkedTree {
             throw Error('Attempt to edit a read only hash linked tree');
         }
 		var key = await this.validate(element);
-//		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + key);
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
             throw Error('tree is empty');
@@ -122,9 +121,9 @@ export class HashLinkedTree {
             if(branch.containsKey === false) {
                 throw Error('Element does not exist in tree');
             }
-            // console.log('tree.remove('+key+')');
+            console.log('tree.remove('+key+')');
             const ownerContainer = branch.getLastContainer();
-            // console.log('original ownerContainer: ' + JSON.stringify(ownerContainer, null, 2));
+            console.log('original ownerContainer: ' + JSON.stringify(ownerContainer, null, 2));
             const minElements = Math.floor(this.degree/2);
             var mergeDepth;
             if(ownerContainer.isLeaf()) {

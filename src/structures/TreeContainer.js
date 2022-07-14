@@ -237,8 +237,9 @@ export class TreeContainer {
 		}
 		this.keys.splice(index, 1);
 		this.children.splice(index, 1);
-		this.numElements--;
 		this.children[index] = mergedChildKey;
+		this.numElements--;
+		return this.numElements;
 	}
 
 	mergeLeft(left, meanKey) {
