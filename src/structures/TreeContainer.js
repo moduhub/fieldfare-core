@@ -198,12 +198,13 @@ export class TreeContainer {
 				index = i;
 				this.children[i] = current;
 				break;
-			} else
-			if(this.children[i] === current) {
-				//key already current, accept
-				index = i;
-				break;
 			}
+			// else
+			// if(this.children[i] === current) {
+			// 	//key already current, accept
+			// 	index = i;
+			// 	break;
+			// }
 		}
 		if(index === undefined) {
 			throw Error('child \''+prev+'\' not found in container');
@@ -229,27 +230,27 @@ export class TreeContainer {
 		return meanElement;
 	}
 
-	async mergeChildren(key) {
+	mergeChildren(key, mergedChildKey) {
 		const index = this.keys.indexOf(key);
 		if(index === -1) {
 			throw Error('old key not found');
 		}
-		const leftChild = await TreeContainer.fromResource(this.children[index]);
-		const rightChild = await TreeContainer.fromResource(this.children[index+1]);
-		debugger;
 		this.keys.splice(index, 1);
 		this.children.splice(index, 1);
 		this.numElements--;
-		rightChild.mergeLeft(leftChild, key);
-		const newChildKey = await ResourcesManager.storeResourceObject(rightChild);
-		this.children[index] = newChildKey;
-		debugger;
+		this.children[index] = mergedChildKey;
 	}
 
 	mergeLeft(left, meanKey) {
 		this.keys = [...left.keys, meanKey, ...this.keys];
 		this.children = [...left.children, ...this.children];
 		this.numElements += left.numElements + 1;
+	}
+
+	mergeRight(right, meanKey) {
+		this.keys = [...this.keys, meanKey, ...right.keys];
+		this.children = [...this.children, ...right.children];
+		this.numElements += right.numElements + 1;
 	}
 
 	follow(key) {

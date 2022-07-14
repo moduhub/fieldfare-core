@@ -7,7 +7,7 @@ import {
 
 const numCreatedElements = 100;
 const numNonExistingElements = Math.floor(numCreatedElements/5);
-const numRemovedElements = 4;//Math.floor(numCreatedElements/5);
+const numRemovedElements = Math.floor(numCreatedElements/5);
 const numExistingElements = numCreatedElements-numRemovedElements;
 
 const gSalt = 'hlt';

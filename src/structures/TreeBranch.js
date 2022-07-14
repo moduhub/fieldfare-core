@@ -134,10 +134,15 @@ export class TreeBranch {
                         const newLeftSiblingKey = await ResourcesManager.storeResourceObject(leftSibling);
                         parentContainer.updateChild(leftSiblingKey, newLeftSiblingKey);
                         iContainer.unshift(leftKey, rotatedChildKey);
+                        const newContainerKey = await ResourcesManager.storeResourceObject(iContainer);
+                        parentContainer.updateChild(iContainerKey, newContainerKey);
                     } else {
                         //merge around left key
                         debugger;
-                        await parentContainer.mergeChildren(leftKey);
+                        iContainer.mergeLeft(leftSibling, leftKey);
+                        const mergedChildKey = await ResourcesManager.storeResourceObject(iContainer);
+                        parentContainer.mergeChildren(leftKey, mergedChildKey);
+                        debugger;
                     }
                 } else {
                     if(rightSibling.numElements > minElements) {
@@ -151,7 +156,9 @@ export class TreeBranch {
                     } else {
                         //merge around right key
                         debugger;
-                        await parentContainer.mergeChildren(rightKey);
+                        iContainer.mergeRight(rightSibling, rightKey);
+                        const mergedChildKey = await ResourcesManager.storeResourceObject(iContainer);
+                        parentContainer.mergeChildren(rightKey, mergedChildKey);
                     }
                 }
                 depth--;
@@ -174,10 +181,14 @@ export class TreeBranch {
                 const iContainer = this.containers[depth-1];
                 const prevContainerKey = this.containerKeys[depth-1];
                 const newContainerKey = await ResourcesManager.storeResourceObject(iContainer);
-                this.containerKeys[depth-1] = newContainerKey;
-                if(prevContainerKey !== newContainerKey) {
-                    parentContainer.updateChild(prevContainerKey, newContainerKey);
+                if(this.key
+                && this.key.search('xwOL') === 0) {
+                    debugger;
                 }
+                this.containerKeys[depth-1] = newContainerKey;
+                // if(prevContainerKey !== newContainerKey) {
+                    parentContainer.updateChild(prevContainerKey, newContainerKey);
+                // }
                 depth--;
             }
             this.containerKeys[0] = await ResourcesManager.storeResourceObject(this.containers[0]);

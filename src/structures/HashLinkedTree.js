@@ -122,14 +122,14 @@ export class HashLinkedTree {
             if(branch.containsKey === false) {
                 throw Error('Element does not exist in tree');
             }
-            console.log('tree.remove('+key+')');
+            // console.log('tree.remove('+key+')');
             const ownerContainer = branch.getLastContainer();
-            console.log('original ownerContainer: ' + JSON.stringify(ownerContainer, null, 2));
+            // console.log('original ownerContainer: ' + JSON.stringify(ownerContainer, null, 2));
             const minElements = Math.floor(this.degree/2);
             var mergeDepth;
             if(ownerContainer.isLeaf()) {
                 ownerContainer.remove(key);
-                console.log('ownerContainer after key '+key+' was removed: ' + JSON.stringify(ownerContainer, null, 2));
+                // console.log('ownerContainer after key '+key+' was removed: ' + JSON.stringify(ownerContainer, null, 2));
                 if(ownerContainer.numElements < minElements
                 && branch.depth > 0) {
                     debugger;
