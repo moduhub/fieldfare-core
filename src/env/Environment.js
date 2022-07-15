@@ -28,6 +28,7 @@ export class Environment extends VersionedData {
 		this.methods.set('addProvider', this.applyAddProvider.bind(this));
         this.methods.set('removeProvider', this.applyRemoveProvider.bind(this));
 		this.methods.set('addWebport', this.applyAddWebport.bind(this));
+        this.methods.set('removeWebport', this.applyRemoveWebport.bind(this));
 		//report periodically
 		// setInterval(() => {
 		//	logger.info(this.report());
@@ -385,15 +386,10 @@ export class Environment extends VersionedData {
 	}
 
 	async applyAddWebport(issuer, params, merge=false) {
-
 		Utils.validateParameters(params, ['hostid', 'protocol', 'address', 'port']);
-
 		await this.auth(issuer);
-
 		const webports = this.elements.get('webports');
-
 		const resourceKey = await ResourcesManager.storeResourceObject(params);
-
 		if(await webports.has(resourceKey)) {
 			//Exact same information already present
 			if(merge) {
@@ -403,20 +399,39 @@ export class Environment extends VersionedData {
 				throw Error('webport already defined');
 			}
 		}
-
 		await webports.add(resourceKey);
-
 	}
 
 	async addWebport(info) {
-
 		await this.applyAddWebport(LocalHost.getID(), info);
-
 		await this.commit({
 			addWebport: info
 		});
-
 		NVD.save(this.uuid, this.version);
 	}
+
+    async applyRemoveWebport(issuer, params, merge=false) {
+        const key = params;
+        ResourcesManager.validateKey(key);
+        await this.auth(issuer);
+        const webports = this.elements.get('webports');
+        if(await webports.has(key) === false) {
+            if(merge) {
+                logger.debug('removeWebport successfully MERGED');
+                return;
+            } else {
+                throw Error('webport does not exist');
+            }
+        }
+        await webports.remove(key);
+    }
+
+    async removeWebport(key) {
+        await this.applyRemoveWebport(LocalHost.getID(), key);
+        await this.commit({
+            removeWebport: key
+        });
+        NVD.save(this.uuid, this.version);
+    }
 
 };
