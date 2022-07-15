@@ -413,23 +413,16 @@ export class Environment extends VersionedData {
 	}
 
 	async getWebports(hostID) {
-
 		var hostWebports = [];
-
 		const envWebports = this.elements.get('webports');
-
 		for await(const resourceKey of envWebports) {
-
+            logger.debug('[ENV] getWebports>resourceKey: '+ resourceKey);
 			const webport = await ResourcesManager.getResourceObject(resourceKey);
-
 			// logger.log('info', 'webport info: ' + JSON.stringify(webport));
-
 			if(webport.hostid === hostID) {
 				hostWebports.push(webport);
 			}
-
-		}
-
+        }
 		return hostWebports;
 	}
 
