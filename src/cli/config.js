@@ -495,13 +495,9 @@ export async function main(args) {
         } break;
 
         case 'getChanges': {
-
             const localChain = new VersionChain(env.version, LocalHost.getID(), 50);
-
             await localChain.print();
-
             process.exit(0);
-
         } break;
 
         case 'getAdmins': {
