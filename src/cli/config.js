@@ -337,73 +337,105 @@ async function providersMenu(serviceUUID) {
     }
 }
 
-async function webportsMenu() {
+async function selectWebportMenu(webports) {
+    const menu = {
+      type: 'list',
+      name: 'choice',
+      message: 'Choose one webport from the list: ',
+      choices: [],
+      filter(value) {
+          if(value === 'Back') {
+              return '';
+          }
+          return value;
+      }
+    };
+    for await (const key of webports) {
+        const webport = await ResourcesManager.getResourceObject(key);
+        menu.choices.push({
+            name: webport.hostid.substring(0,8) +
+                '...@' +webport.protocol + '://' + webport.address +':'+webport.port,
+            value: key
+        });
+    }
+    menu.choices.push('Back');
+    const {choice} = await inquirer.prompt(menu);
+    return choice;
+}
 
+async function webportsMenu() {
     const menu = {
         type: 'list',
         name: 'action',
         message: 'Please select an action below: ',
-        choices: ['Add', 'Back']
+        choices: ['Add', 'Remove', 'Back']
     }
-
     console.log(title('__________ Enviroment Webports configuration __________'));
-
     var list = [];
-
     const webports = env.elements.get('webports');
-
     for await(const key of webports) {
         const webport = await ResourcesManager.getResourceObject(key);
         list.push(webport);
     }
-
     if(list.length > 0) {
         console.table(list);
     } else {
         console.log('<No webports defined>');
     }
-
     const {action} = await inquirer.prompt(menu);
-
     switch(action) {
         case 'Add':{
-
             var newWebport = await inquirer.prompt(inputWebport);
-
             newWebport.hostid = LocalHost.getID();
-
             console.log("Review webport data: " + JSON.stringify(newWebport));
-
             const {confirm} = await inquirer.prompt({
                 type: 'confirm',
                 name: 'confirm',
                 message: 'Confirm Webport data inclusion?'
             });
-
             if(confirm) {
-                await env.addWebport(newWebport);
+                try {
+                    await env.addWebport(newWebport);
+                } catch(error) {
+                    console.log(chalk.bgRed('Webport inclusion failed: ' + error));
+                }
             }
-
             webportsMenu();
         }break;
-
+        case 'Remove': {
+            const key = await selectWebportMenu(webports);
+            if(key !== '') {
+                const webport = await ResourcesManager.getResourceObject(key);
+                console.log("Review webport data: " + JSON.stringify(webport, null, 2));
+                const {confirm} = await inquirer.prompt({
+                    type: 'confirm',
+                    name: 'confirm',
+                    message: 'Confirm Webport exclusion?'
+                });
+                if(confirm) {
+                    try {
+                        console.log(chalk.bgGreen('Removing webport key: ' + key));
+                        await env.removeWebport(key);
+                    } catch(error) {
+                        console.log(chalk.bgRed('Webport exclusion failed: ' + error));
+                    }
+                }
+            }
+            webportsMenu();
+        } break;
         default:
             mainMenu();
     }
-
 }
 
 async function mainMenu() {
-
     const menu = {
       type: 'list',
       name: 'submenu',
       message: 'Choose one module to configure: ',
       choices: ['Admins', 'Services', 'Providers', 'Webports', 'Exit'],
     };
-
     console.log(title('__________ Fieldfare Environment configuration __________'));
-
     if(env) {
         console.table({
             uuid: env.uuid,
@@ -413,18 +445,14 @@ async function mainMenu() {
     } else {
         console.log('<No Enviroment configured>');
     }
-
     const {submenu} = await inquirer.prompt(menu);
-
     switch (submenu) {
         case 'Admins':
             adminsMenu();
             break;
-
         case 'Services':
             servicesMenu();
             break;
-
         case 'Providers':
             const serviceUUID = await selectServiceMenu();
             if(serviceUUID !== '') {
@@ -433,18 +461,14 @@ async function mainMenu() {
                 mainMenu();
             }
             break;
-
         case 'Webports':
             webportsMenu();
             break;
-
         default:
             console.log("All done! Exit...");
             process.exit(0);
     }
-
 }
-
 
 export async function main(args) {
     const options = parseArgumentsIntoOptions(args);
