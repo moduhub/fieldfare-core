@@ -114,46 +114,66 @@ function parseArgumentsIntoOptions(rawArgs) {
     };
 }
 
-async function adminsMenu() {
+async function selectHostMenu(hostIDs) {
+    const menu = {
+      type: 'list',
+      name: 'choice',
+      message: 'Choose one host ID from the list: ',
+      choices: [],
+      filter(value) {
+          if(value === 'Back') {
+              return '';
+          }
+          return value;
+      }
+    };
+    for await (const id of hostIDs) {
+        menu.choices.push(id);
+    }
+    menu.choices.push('Back');
+    const {choice} = await inquirer.prompt(menu);
+    return choice;
+}
 
+async function adminsMenu() {
     const menu = {
       type: 'list',
       name: 'action',
       message: 'Choose one action: ',
-      choices: ['Add new', 'Back'],
+      choices: ['Add new', 'Remove one', 'Back'],
     };
-
     console.log('__________ Environment Admins configuration __________');
-
     var adminList = []
-
     const envAdmins = await env.elements.get('admins');
-
     for await (const admin of envAdmins) {
         adminList.push(admin);
     }
-
     console.table(adminList);
-
     const {action} = await inquirer.prompt(menu);
-
     switch (action) {
-
-        case 'Add new':
-
-            var {hostid} = await inquirer.prompt(inputHostID);
-
+        case 'Add new': {
+            const {hostid} = await inquirer.prompt(inputHostID);
             if(hostid !== '') {
-
                 try {
                     await env.addAdmin(hostid);
                 } catch (error) {
-                    console.log("FAILED: " + error);
+                    console.log(chalk.red("FAILED: " + error));
                 }
             }
-
             adminsMenu();
-            break;
+        } break;
+
+        case 'Remove one': {
+            const hostid = await selectHostMenu(envAdmins);
+            if(hostid !== '') {
+                try {
+                    await env.removeAdmin(hostid);
+                } catch (error) {
+                    console.log(chalk.red("FAILED: " + error));
+                }
+            }
+            adminsMenu();
+        } break;
 
         default:
             mainMenu();
@@ -446,11 +466,8 @@ async function mainMenu() {
 
 
 export async function main(args) {
-
     const options = parseArgumentsIntoOptions(args);
-
     logger.disable();
-
     try {
         await ffinit.setupLocalHost();
         env = await ffinit.setupEnvironment();
