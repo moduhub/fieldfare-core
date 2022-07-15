@@ -30,7 +30,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/moduhub/fieldfare">
-    <img src="doc/images/logo.svg" alt="Logo" width="80" height="80">
+    <img src="doc/images/logo.svg" alt="Logo" width="120" height="120">
   </a>
 
 <h3 align="center">Fieldfare</h3>
@@ -218,7 +218,8 @@ try {
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] B-Tree Removal
+- [x] B-Tree Removal, done on v0.1.0
+- [ ] B-Tree Map Structure
 - [ ] Routing
 - [ ] Planning
 
