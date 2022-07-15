@@ -263,8 +263,8 @@ export class VersionedData {
 		await NVD.save(this.uuid, this.version);
 	}
 
-	applyRemoveAdmin(issuer, params, merge=false) {
-		logger.debug("applyReoveAdmin params: " + JSON.stringify(params));
+	async applyRemoveAdmin(issuer, params, merge=false) {
+		logger.debug("applyRemoveAdmin params: " + JSON.stringify(params));
 		Utils.validateParameters(params, ['id']);
 		const adminID = params.id;
 		ResourcesManager.validateKey(adminID);
@@ -283,7 +283,7 @@ export class VersionedData {
 		await admins.remove(adminID);
 	}
 
-	removeAdmin(adminID) {
+	async removeAdmin(adminID) {
 		const params = {id: adminID};
 		logger.log('info', "VersionedData.removeAdmin ID="+adminID);
 		await this.applyRemoveAdmin(LocalHost.getID(), params);
