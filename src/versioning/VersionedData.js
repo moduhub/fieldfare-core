@@ -26,6 +26,7 @@ export class VersionedData {
 
 		this.methods.set('addAdmin', this.applyAddAdmin.bind(this));
 
+		this.methods.set('removeAdmin', this.applyRemoveAdmin.bind(this));
 		this.version = '';
 
 		this.versionBlacklist = new Set();
@@ -359,7 +360,36 @@ export class VersionedData {
 		});
 
 		await NVD.save(this.uuid, this.version);
+	}
 
+	applyRemoveAdmin(issuer, params, merge=false) {
+		logger.debug("applyReoveAdmin params: " + JSON.stringify(params));
+		Utils.validateParameters(params, ['id']);
+		const adminID = params.id;
+		ResourcesManager.validateKey(adminID);
+		const admins = this.elements.get('admins');
+		if(await admins.has(adminID)===false) {
+			if(merge) {
+				logger.debug('applyRemoveAdmin successfully MERGED');
+				return;
+			} else {
+				throw Error('applyRemoveAdmin failed: id not in set');
+			}
+		}
+		//Check auth, non strict
+		await this.auth(issuer, false);
+		//Perform local changes
+		await admins.remove(adminID);
+	}
+
+	removeAdmin(adminID) {
+		const params = {id: adminID};
+		logger.log('info', "VersionedData.removeAdmin ID="+adminID);
+		await this.applyRemoveAdmin(LocalHost.getID(), params);
+		await this.commit({
+			removeAdmin: params
+		});
+		await NVD.save(this.uuid, this.version);
 	}
 
 };
