@@ -30,6 +30,5 @@ export async function getBootWebports() {
     } else {
         bootWebports = JSON.parse(webportsJSON);
     }
-    console.table(bootWebports);
     return bootWebports;
 }
