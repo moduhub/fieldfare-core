@@ -22,18 +22,17 @@ export class TreeContainer {
 	}
 
 	static async fromResource(key, ownerID) {
-
 		var newContainer = new TreeContainer();
-
 		const resourceObject = await ResourcesManager.getResourceObject(key, ownerID);
-
 		if(resourceObject === null
 		|| resourceObject === undefined) {
-			throw Error('failed to fetch container resorce');
+			throw Error('failed to fetch container resource');
 		}
-
+		if('elements' in resourceObject) { //add translation from HLT 0.0.x format
+			resourceObject.keys = resourceObject.elements;
+			delete resourceObject.elements;
+		}
 		Object.assign(newContainer, resourceObject);
-
 		return newContainer;
 	}
 
