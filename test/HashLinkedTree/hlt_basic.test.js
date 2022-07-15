@@ -124,7 +124,6 @@ test('Confirms non-existance of '+(numRemovedElements)+' removed elements', asyn
 test('Removes all elements, root goes back to \'\'', async () => {
     var iteration = 0;
     for(const element of existingElements) {
-        console.log('Final tree remove iteration ' + iteration++);
         await expect(tree.remove(element))
         .resolves
         .not.toThrow();
