@@ -125,7 +125,8 @@ async function bootWebportsMenu() {
             break;
 
         case 'Remove Webport': {
-            if(webports.length > 0) {
+            if(webports
+            && webports.length > 0) {
                 var index = 0;
                 if(webports.length > 1) {
                     const answer = await inquirer.prompt({
@@ -157,16 +158,13 @@ async function bootWebportsMenu() {
                     name: 'confirm',
                     message: 'Are you sure you with to drop this webport?'
                 });
-
                 if(confirm) {
                     await actions.removeBootWebport(index);
                 }
-
-                bootWebportsMenu();
-
             } else {
                 console.log("Boot webports registry is empty");
             }
+            bootWebportsMenu();
         } break;
 
         case 'Remove All': {
