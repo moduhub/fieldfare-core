@@ -181,102 +181,7 @@ async function adminsMenu() {
 
 }
 
-async function servicesMenu() {
-
-    const menu = {
-      type: 'list',
-      name: 'action',
-      message: 'Choose one action: ',
-      choices: ['Add new', 'Back'],
-    };
-
-    console.log(title('__________ Environment Services configuration __________'));
-
-    var servicesList = []
-
-    const services = await env.elements.get('services');
-
-    for await (const key of services) {
-        servicesList.push(await ResourcesManager.getResourceObject(key));
-    }
-
-    if(servicesList.length > 0) {
-        console.table(servicesList);
-    } else {
-        console.log('<no services defined>');
-    }
-
-    const {action} = await inquirer.prompt(menu);
-
-    switch (action) {
-
-        case 'Add new': {
-
-            try {
-
-                await env.auth(LocalHost.getID());
-
-                var {uuid} = await inquirer.prompt(inputUUID);
-
-                const {serviceName} = await inquirer.prompt(inputServiceName);
-
-                var definition = {
-                    uuid: uuid,
-                    name: serviceName,
-                    methods: [],
-                    data: []
-                };
-
-                while (true) {
-                    const {methodName} = await inquirer.prompt(inputServiceMethod);
-
-                    if(methodName === '') break;
-
-                    definition.methods.push(methodName);
-                }
-
-                while (true) {
-                    const {dataName} = await inquirer.prompt(inputServiceElementName);
-
-                    if(dataName === '') break;
-
-                    const {dataType} = await inquirer.prompt(inputServiceElementType);
-
-                    definition.data.push({
-                        name: dataName,
-                        type: dataType
-                    });
-                }
-
-                console.log("Please review the data entered: ");
-                console.log(JSON.stringify(definition, null, 4));
-
-                const {confirm} = await inquirer.prompt({
-                    type: 'confirm',
-                    name: 'confirm',
-                    message: 'Do you wish to confirm service inclusion?'
-                })
-
-                if(confirm) {
-                    await env.addService(definition);
-                }
-
-            } catch (error) {
-                console.log('Cannot add a new service: ' + error);
-            }
-
-            servicesMenu();
-
-        } break;
-
-        default:
-            mainMenu();
-    }
-
-}
-
 async function selectServiceMenu() {
-
     const menu = {
       type: 'list',
       name: 'choice',
@@ -290,53 +195,120 @@ async function selectServiceMenu() {
           return parts[1].slice(0,-1);
       }
     };
-
     var servicesList = []
-
     const services = await env.elements.get('services');
-
     for await (const key of services) {
         const definition = await ResourcesManager.getResourceObject(key);
         menu.choices.push(definition.name + ' (uuid: ' + definition.uuid + ')');
     }
-
     menu.choices.push('Back');
-
     console.log(title('__________ Service Providers configuration __________'));
-
     const {choice} = await inquirer.prompt(menu);
-
     return choice;
+}
+
+async function servicesMenu() {
+    const menu = {
+      type: 'list',
+      name: 'action',
+      message: 'Choose one action: ',
+      choices: ['Add new', 'Remove one', 'Back'],
+    };
+    console.log(title('__________ Environment Services configuration __________'));
+    var servicesList = []
+    const services = await env.elements.get('services');
+    for await (const key of services) {
+        servicesList.push(await ResourcesManager.getResourceObject(key));
+    }
+    if(servicesList.length > 0) {
+        console.table(servicesList);
+    } else {
+        console.log('<no services defined>');
+    }
+    const {action} = await inquirer.prompt(menu);
+    switch (action) {
+        case 'Add new': {
+            try {
+                await env.auth(LocalHost.getID());
+                var {uuid} = await inquirer.prompt(inputUUID);
+                const {serviceName} = await inquirer.prompt(inputServiceName);
+                var definition = {
+                    uuid: uuid,
+                    name: serviceName,
+                    methods: [],
+                    data: []
+                };
+                while (true) {
+                    const {methodName} = await inquirer.prompt(inputServiceMethod);
+                    if(methodName === '') break;
+                    definition.methods.push(methodName);
+                }
+                while (true) {
+                    const {dataName} = await inquirer.prompt(inputServiceElementName);
+                    if(dataName === '') break;
+                    const {dataType} = await inquirer.prompt(inputServiceElementType);
+                    definition.data.push({
+                        name: dataName,
+                        type: dataType
+                    });
+                }
+                console.log("Please review the data entered: ");
+                console.log(JSON.stringify(definition, null, 4));
+                const {confirm} = await inquirer.prompt({
+                    type: 'confirm',
+                    name: 'confirm',
+                    message: 'Do you wish to confirm service inclusion?'
+                });
+                if(confirm) {
+                    await env.addService(definition);
+                }
+            } catch (error) {
+                console.log('Cannot add a new service: ' + error);
+            }
+            servicesMenu();
+        } break;
+        case 'Remove one': {
+            const uuid = await selectServiceMenu(services);
+            const {confirm} = await inquirer.prompt({
+                type: 'confirm',
+                name: 'confirm',
+                message: 'Do you wish to confirm service exclusion?'
+            });
+            if(confirm) {
+                try {
+                    await env.removeService(uuid);
+                } catch(error) {
+                    console.log(chalk.bold.red('Service remove failed: ' + error));
+                }
+            }
+            mainMenu();
+        } break;
+        default:
+            mainMenu();
+    }
 
 }
 
-async function providersMenu(serviceUUID) {
 
+async function providersMenu(serviceUUID) {
     const menu = {
         type: 'list',
         name: 'action',
         message: 'Please select an action below: ',
-        choices: ['Add', 'Back']
+        choices: ['Add', 'Remove', 'Back']
     }
-
     console.log(title('__________ Service <'+serviceUUID+'> Providers configuration __________'));
-
     var providersList = [];
-
     const providers = await env.getProviders(serviceUUID);
-
     for await(const provider of providers) {
         providersList.push(provider);
     }
-
     if(providersList.length > 0) {
         console.table(providersList);
     } else {
         console.log('<No providers defined>');
     }
-
     const {action} = await inquirer.prompt(menu);
-
     switch(action) {
         case 'Add':{
             const { hostid } = await inquirer.prompt(inputHostID);
@@ -344,16 +316,25 @@ async function providersMenu(serviceUUID) {
                 try {
                     await env.addProvider(serviceUUID, hostid);
                 } catch(error) {
-                    console.log(chalk.bgRed("FAILED: " + error));
+                    console.log(chalk.bgRed("Provider inclusion failed: " + error));
                 }
             }
             providersMenu(serviceUUID);
         }break;
-
+        case 'Remove': {
+            const hostid = await selectHostMenu(providers);
+            if(hostid != '') {
+                try {
+                    await env.removeProvider(serviceUUID, hostid);
+                } catch(error) {
+                    console.log(chalk.bgRed("Provider exclusion failed: " + error));
+                }
+            }
+            providersMenu(serviceUUID);
+        } break;
         default:
             mainMenu();
     }
-
 }
 
 async function webportsMenu() {
@@ -501,59 +482,46 @@ export async function main(args) {
         } break;
 
         case 'getAdmins': {
-
             console.log(">>getAdmins from " + env.uuid);
-
             const envAdmins = env.elements.get('admins');
             for await (const admin of envAdmins) {
                 console.log(">> " + admin);
             }
-
             process.exit(0);
-
         } break;
 
         case 'getProviders': {
-
             console.log('>>getProviders of service ' + options.uuid + ' from env ' + envUUID);
-
             const providers = env.elements.get(options.uuid + '.providers');
             for await (const hostid of providers) {
                 console.log(">> " + hostid);
             }
-
             process.exit(0);
-
         } break;
 
         case 'getWebports': {
-
             const webports = await env.elements.get('webports');
             for await (const resource of webports) {
                 const webport = await ResourcesManager.getResourceObject(resource);
                 console.log(JSON.stringify(webport));
             }
             process.exit(0);
-
         } break;
 
         case 'addAdmin': {
-
                 console.log(">>addAdmin " + options.host
                     + 'to environment ' + envUUID);
-
                 await env.addAdmin(options.host);
-
                 process.exit(0);
-
         } break;
 
         case 'sync': {
-
-            await env.sync();
-
+            try {
+                await env.sync();
+            } catch(error) {
+                console.log(chalk.bold.red('Sync failed: ' + error));
+            }
             process.exit(0);
-
         } break;
 
         default: {
