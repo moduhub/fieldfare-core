@@ -195,8 +195,9 @@ export class HashLinkedTree {
 
 	async* [Symbol.asyncIterator]() {
 		var branch = [];
-		if(this.rootHash != null
-		&& this.rootHash != undefined) {
+		if(this.rootHash !== null
+		&& this.rootHash !== undefined
+        && this.rootHash !== '') {
 			var rootContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
 			for await(const element of rootContainer.iterator(this.ownerID)) {
 				yield element;
@@ -207,7 +208,8 @@ export class HashLinkedTree {
 	async isEmpty() {
 		if(this.rootHash
 		&& this.rootHash !== null
-		&& this.rootHash !== undefined) {
+		&& this.rootHash !== undefined
+        && this.rootHash !== '') {
 			const rootElement = await ResourcesManager.getResourceObject(this.rootHash, this.ownerID);
 			if(rootElement.numElements > 0) {
 				return false;

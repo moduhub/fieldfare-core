@@ -57,6 +57,7 @@ beforeAll(async () => {
 });
 
 test('Stores '+numCreatedElements+' elements', async () => {
+    expect(tree.rootHash).toBe(null);
     for(const element of createdElements) {
         // console.log('Tree.add('+element+')');
         await tree.add(element);
@@ -128,6 +129,6 @@ test('Removes all elements, root goes back to \'\'', async () => {
         .resolves
         .not.toThrow();
     }
-    expect(tree.rootHash).toBe('');
+    expect(tree.rootHash).toBe(null);
     return;
 });

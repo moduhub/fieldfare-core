@@ -190,10 +190,6 @@ export class TreeBranch {
                 const iContainer = this.containers[depth-1];
                 const prevContainerKey = this.containerKeys[depth-1];
                 const newContainerKey = await ResourcesManager.storeResourceObject(iContainer);
-                if(this.key
-                && this.key.search('xwOL') === 0) {
-                    debugger;
-                }
                 this.containerKeys[depth-1] = newContainerKey;
                 // if(prevContainerKey !== newContainerKey) {
                     parentContainer.updateChild(prevContainerKey, newContainerKey);
@@ -203,7 +199,7 @@ export class TreeBranch {
             this.containerKeys[0] = await ResourcesManager.storeResourceObject(this.containers[0]);
         } else {
             this.depth = 0;
-            this.containerKeys[0] = '';
+            this.containerKeys[0] = null;
         }
         return this.containerKeys[0];
     }
