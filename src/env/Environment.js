@@ -20,27 +20,22 @@ export class Environment extends VersionedData {
 
 	constructor() {
 		super();
-
 		this.activeHosts = new Map();
-
 		this.addSet('services');
 		this.addSet('webports');
-
 		this.methods.set('addService', this.applyAddService.bind(this));
-		this.methods.set('addWebport', this.applyAddWebport.bind(this));
+        this.methods.set('removeService', this.applyRemoveService.bind(this));
 		this.methods.set('addProvider', this.applyAddProvider.bind(this));
-
+        this.methods.set('removeProvider', this.applyRemoveProvider.bind(this));
+		this.methods.set('addWebport', this.applyAddWebport.bind(this));
 		//report periodically
 		// setInterval(() => {
 		//	logger.info(this.report());
 		// }, 10000);
-
 	}
 
 	report() {
-
 		var content = 'Active hosts: ' + this.activeHosts.size + '\n';
-
 		for(const [id, info] of this.activeHosts) {
 			const timeDiff = Date.now() - info.lastEnvUpdate;
 			content += "HOST: " + id
@@ -51,37 +46,25 @@ export class Environment extends VersionedData {
 	}
 
 	async init(uuid) {
-
 		this.uuid = uuid;
-
 		if(NVD.available() === false) {
 			throw Error('NVD was not initialized');
 		}
-
 		const latestVersion = await NVD.load(uuid);
 		// logger.log('info', "Latest Version: " + latestVersion);
-
 		const rootStatement = await VersionStatement.createRoot(uuid);
-
 		const rootVersion = await ResourcesManager.storeResourceObject(rootStatement);
-
 		// logger.log('info', "Root version: " + JSON.stringify(rootStatement, null, 2)
 		// + '=>' + rootVersion);
-
 		if(latestVersion
 		&& latestVersion !== null
 		&& latestVersion !== undefined
 		&& latestVersion !== rootVersion) {
-
 			await this.revertToVersion(latestVersion);
-
 		} else {
-
 			//No data, start from scratch
 			this.version = rootVersion;
-
 		}
-
 	}
 
 	removeActiveHost(hostid) {
@@ -93,11 +76,8 @@ export class Environment extends VersionedData {
 	}
 
 	updateActiveHost(remoteHost, version) {
-
 		if(remoteHost.id) {
-
 			this.removeActiveHost(remoteHost.id);
-
 			const newInfo = {
 				remoteHostObj: remoteHost,
 				timeout: setTimeout(() => {
@@ -107,15 +87,11 @@ export class Environment extends VersionedData {
 				lastEnvUpdate: Date.now(),
 				latestVersion: version
 			}
-
 			// logger.log('info', "hostInfo: " + newInfo.remoteHostObj.id
 			// 	+ ' date: ' + newInfo.lastEnvUpdate
 			// 	+ 'at version: ' + newInfo.latestVersion);
-
 			this.activeHosts.set(remoteHost.id, newInfo);
-
 		}
-
 	}
 
 	getSyncedHosts() {
@@ -131,14 +107,11 @@ export class Environment extends VersionedData {
 	}
 
 	sync() {
-
 		const preSyncedHosts = this.getSyncedHosts();
 		if(preSyncedHosts > 0) {
 			return preSyncedHosts;
 		}
-
 		return new Promise((resolve, reject) => {
-
 			var attempts = 0;
 			const interval = setInterval(() => {
 				const syncedHosts = this.getSyncedHosts();
@@ -163,12 +136,10 @@ export class Environment extends VersionedData {
 					}
 				}
 			}, 1000);
-
 		});
 	}
 
 	numActiveProviders(serviceUUID) {
-
 		var count = 0;
 		for (const [id, info] of this.activeHosts) {
 			const remoteHost = info.remoteHostObj;
@@ -180,9 +151,7 @@ export class Environment extends VersionedData {
 	}
 
 	getActiveProviders(serviceUUID, howMany=-1) {
-
 		var activeProviders = [];
-
 		for (const [id, info] of this.activeHosts) {
 			const remoteHost = info.remoteHostObj;
 			if(remoteHost.definedServices.has(serviceUUID)) {
@@ -194,7 +163,6 @@ export class Environment extends VersionedData {
 				}
 			}
 		}
-
 		return activeProviders;
 	}
 
@@ -224,11 +192,8 @@ export class Environment extends VersionedData {
 	}
 
 	async getServicesForHost(hostid) {
-
 		var list = [];
-
 		const services = this.elements.get('services');
-
 		for await(const key of services) {
 			const definition = await ResourcesManager.getResourceObject(key);
 			// logger.info('iteration - definition: ' + JSON.stringify(definition));
@@ -238,23 +203,16 @@ export class Environment extends VersionedData {
 				list.push(definition);
 			}
 		}
-
 		// logger.info('getServicesForHost return with list: ' + JSON.stringify(list));
 		return list;
 	}
 
 	async applyAddService(issuer, params, merge=false) {
-
 		Utils.validateParameters(params, ['definition']);
-
 		logger.log('info', 'applyAddService params: ' + JSON.stringify(params));
-
 		const definition = params.definition;
-
 		ServiceDefinition.validate(definition);
-
 		const services = this.elements.get('services');
-
 		if(await this.hasService(definition.uuid)) {
 			if(merge) {
 				const resouceKey = await ResourcesManager.generateKeyForObject(definition);
@@ -268,113 +226,101 @@ export class Environment extends VersionedData {
 				throw Error('service already defined');
 			}
 		}
-
 		await this.auth(issuer);
-
 		const resource = await ResourcesManager.storeResourceObject(definition);
-
 		await services.add(resource);
-
 		this.addSet(definition.uuid + '.providers');
-
 	}
 
 	async addService(definition) {
-
 		const params = {definition: definition};
-
 		await this.applyAddService(LocalHost.getID(), params);
-
 		await this.commit({
 			addService: params
 		});
-
 		NVD.save(this.uuid, this.version);
-
 	}
 
-	async getServiceDefinition(uuid) {
-
-		var definition;
-
+    async applyRemoveService(issuer, params, merge=false) {
+        Utils.validateParameters(params, ['uuid']);
+		logger.debug('applyRemoveService params: ' + JSON.stringify(params));
+		const uuid = params.uuid;
 		const services = this.elements.get('services');
+		if(await this.hasService(uuid) === false) {
+			if(merge) {
+				logger.log('info', 'applyRemoveService succesfuly MERGED');
+			} else {
+				throw Error('service does not exist');
+			}
+		}
+		await this.auth(issuer);
+		const resourceKey = await this.getServiceDefinition(uuid);
+		await services.remove(resourceKey);
+		this.elements.delete(uuid + '.providers');
+    }
 
+    async removeService(uuid) {
+        const params = {uuid: uuid};
+		await this.applyRemoveService(LocalHost.getID(), params);
+		await this.commit({
+			removeService: params
+		});
+		NVD.save(this.uuid, this.version);
+    }
+
+	async getServiceDefinition(uuid) {
+		var definition;
+		const services = this.elements.get('services');
 		for await(const resource of services) {
-
 			const service = await ResourcesManager.getResourceObject(resource);
-
 			//logger.log('info', JSON.stringify(service));
-
 			if(service.uuid === uuid) {
 				return service;
 			}
 		}
-
 		throw Error('service definition not found in env');
-
 	}
 
 	async hasService(uuid) {
-
 		const services = this.elements.get('services');
-
 		for await(const resourceKey of services) {
-
 			const service = await ResourcesManager.getResourceObject(resourceKey);
-
 			// logger.log('info', 'hasService ' + uuid + ' compare with ' + service.uuid);
-
 			if(service.uuid === uuid) {
 				return true;
 			}
 		}
-
 		return false;
 	}
 
 	async getProviders(serviceUUID) {
-
 		if(await this.hasService(serviceUUID) === false) {
 			throw Error('Service ' + serviceUUID + ' is not defined in env ' + this.uuid);
 		}
-
 		const listName = serviceUUID + '.providers';
-
 		if(this.elements.has(listName) === false) {
-			throw Error('Service '+serviceUUID+' providers list does not exist');
+		    throw Error('Service '+serviceUUID+' providers list does not exist');
 		}
-
 		const providers = this.elements.get(listName);
-
 		// logger.log('info', "provider: " + JSON.stringify(provider));
-
 		return providers;
 	}
 
 	async isProvider(serviceUUID, hostID) {
-
 		const providers = await this.getProviders(serviceUUID);
-
 		if(providers
 		&& providers !== undefined
 		&& providers !== null) {
-
 			return await providers.has(hostID);
-
 		}
-
 		return false;
 	}
 
 	async applyAddProvider(issuer, params, merge=false) {
-
 		Utils.validateParameters(params,
 			['uuid', 'host']);
-
 		await this.auth(issuer);
-
 		const providers = await this.getProviders(params.uuid);
-
 		if(await providers.has(params.host)) {
 			if(merge) {
 				logger.log('info', 'addProvider successfully MERGED');
@@ -382,34 +328,46 @@ export class Environment extends VersionedData {
 				throw Error('provider already in list');
 			}
 		}
-
 		await providers.add(params.host);
-
 	}
 
 	async addProvider(serviceUUID, providerID) {
-
 		const params = {
 			uuid: serviceUUID,
 			host: providerID
 		}
-
 		await this.applyAddProvider(LocalHost.getID(), params);
-
 		await this.commit({
 			addProvider: params
 		});
-
 		await NVD.save(this.uuid, this.version);
-
 	}
 
+    async applyRemoveProvider(issuer, params, merge=false) {
+        Utils.validateParameters(params,
+            ['uuid', 'host']);
+        await this.auth(issuer);
+        const providers = await this.getProviders(params.uuid);
+        if(await providers.has(params.host) === false) {
+            if(merge) {
+                logger.log('info', 'addProvider successfully MERGED');
+            } else {
+                throw Error('provider not in list');
+            }
+        }
+        await providers.remove(params.host);
+    }
+
 	async removeProvider(serviceUUID, providerID) {
-
-		await this.auth(LocalHost.getID());
-
-		//
-
+        const params = {
+            uuid: serviceUUID,
+            host: providerID
+        }
+        await this.applyRemoveProvider(LocalHost.getID(), params);
+        await this.commit({
+            removeProvider: params
+        });
+        await NVD.save(this.uuid, this.version);
 	}
 
 	async getWebports(hostID) {
