@@ -8,20 +8,14 @@ export async function setEnvironmentUUID(uuid) {
 }
 
 export async function setupEnvironment() {
-
 	const env = new Environment();
-
 	const envUUID = await NVD.load('envUUID');
-
 	await env.init(envUUID);
-
 	LocalHost.addEnvironment(env);
-
     //Serve webports
     const servedWebports = await env.getWebports(LocalHost.getID());
     for(const webport of servedWebports) {
         LocalHost.serveWebport(webport);
     }
-
     return env;
 }
