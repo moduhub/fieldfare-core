@@ -387,7 +387,7 @@ async function webportsMenu() {
         case 'Add':{
             var newWebport = await inquirer.prompt(inputWebport);
             newWebport.hostid = LocalHost.getID();
-            console.log("Review webport data: " + JSON.stringify(newWebport));
+            console.log("Review webport data: " + JSON.stringify(newWebport, null, 2));
             const {confirm} = await inquirer.prompt({
                 type: 'confirm',
                 name: 'confirm',
@@ -414,7 +414,6 @@ async function webportsMenu() {
                 });
                 if(confirm) {
                     try {
-                        console.log(chalk.bgGreen('Removing webport key: ' + key));
                         await env.removeWebport(key);
                     } catch(error) {
                         console.log(chalk.bgRed('Webport exclusion failed: ' + error));
