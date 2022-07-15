@@ -184,7 +184,7 @@ export class VersionChain {
                 mergeChain.limit(params.base);
                 mergeChain.print(mergeDepth+1);
             } else {
-                string = chalk.bold.bgWhite.black(' ' + method + ' ')
+                string = chalk.bold.bgWhite.blue(' ' + method + ' ')
                     + ' from \'' + issuer
                     + '\'\n'+ JSON.stringify(params, null, 2);
                 string.replace('\n', prepend + '\n');
