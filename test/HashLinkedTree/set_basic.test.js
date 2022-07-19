@@ -12,13 +12,13 @@ const numExistingElements = numCreatedElements-numRemovedElements;
 
 const gSalt = 'hlt';
 
-const tree = new HashLinkedTree(5);
+const set = new HashLinkedTree(5, null, false);
 
 //Build an array of elements to add
-const createdElements = [];
-const removedElements = [];
-const existingElements = [];
-const nonExistingElements = [];
+const createdKeys = [];
+const removedKeys = [];
+const existingKeys = [];
+const nonExistingKeys = [];
 
 beforeAll(async () => {
 
@@ -36,62 +36,62 @@ beforeAll(async () => {
             salt: gSalt
         };
         const key = await ResourcesManager.storeResourceObject(iElement);
-        createdElements.push(key);
+        createdKeys.push(key);
         if(i<numRemovedElements) {
-            removedElements.push(key);
+            removedKeys.push(key);
         } else {
-            existingElements.push(key);
+            existingKeys.push(key);
         }
     }
 
     for(var i=0; i<numNonExistingElements; i++) {
         const iElement = {
-            index: createdElements+i,
+            index: createdKeys+i,
             salt: gSalt
         };
         const key = await ResourcesManager.storeResourceObject(iElement);
-        nonExistingElements.push(key);
+        nonExistingKeys.push(key);
     }
 
     return;
 });
 
 test('Stores '+numCreatedElements+' elements', async () => {
-    expect(tree.rootHash).toBe(null);
-    for(const element of createdElements) {
-        // console.log('Tree.add('+element+')');
-        await tree.add(element);
+    expect(set.rootHash).toBe(null);
+    for(const key of createdKeys) {
+        // console.log('set.add('+key+')');
+        await set.add(key);
     }
     return;
 });
 
 test('Removes '+numRemovedElements+' elements', async () => {
-    for(const element of removedElements) {
-        await tree.remove(element);
+    for(const key of removedKeys) {
+        await set.delete(key);
     }
     return;
 });
 
 test('Throws on attempt to remove elements that do not exist, root remains uchanged', async () => {
-    const prevRoot = tree.rootHash;
-    for(const element of nonExistingElements) {
-        await expect(tree.remove(element))
+    const prevRoot = set.rootHash;
+    for(const key of nonExistingKeys) {
+        await expect(set.delete(key))
         .rejects
         .toThrow();
     }
-    expect(tree.rootHash).toBe(prevRoot);
+    expect(set.rootHash).toBe(prevRoot);
     return;
 });
 
-test('Iterates tree elements in order, without duplications or invalid elements', async () => {
+test('Iterates set elements in order, without duplications or invalid elements', async () => {
     const iteratedKeys = [];
     var lastKey = '';
-    for await(const key of tree) {
+    for await(const key of set) {
         expect(iteratedKeys.includes(key)).toBe(false); //check for duplicated elements
         expect(key > lastKey).toBe(true); //check if elements are in order
         iteratedKeys.push(key);
-        expect(existingElements.includes(key)).toBe(true);
-        expect(removedElements.includes(key)).toBe(false);
+        expect(existingKeys.includes(key)).toBe(true);
+        expect(removedKeys.includes(key)).toBe(false);
         lastKey = key;
     }
     expect(iteratedKeys.length).toBe(numExistingElements);
@@ -99,24 +99,24 @@ test('Iterates tree elements in order, without duplications or invalid elements'
 });
 
 test('Confirms existance of '+numExistingElements+' elements', async () => {
-    for(const element of existingElements) {
-        const hasElement = await tree.has(element);
+    for(const key of existingKeys) {
+        const hasElement = await set.has(key);
         expect(hasElement).toBe(true);
     }
     return;
 });
 
 test('Confirms non-existance of '+(numNonExistingElements)+' not-added elements', async () => {
-    for(const element of nonExistingElements) {
-        const hasElement = await tree.has(element);
+    for(const key of nonExistingKeys) {
+        const hasElement = await set.has(key);
         expect(hasElement).toBe(false);
     }
     return;
 });
 
 test('Confirms non-existance of '+(numRemovedElements)+' removed elements', async () => {
-    for(const element of removedElements) {
-        const hasElement = await tree.has(element);
+    for(const key of removedKeys) {
+        const hasElement = await set.has(key);
         expect(hasElement).toBe(false);
     }
     return;
@@ -124,11 +124,11 @@ test('Confirms non-existance of '+(numRemovedElements)+' removed elements', asyn
 
 test('Removes all elements, root goes back to \'\'', async () => {
     var iteration = 0;
-    for(const element of existingElements) {
-        await expect(tree.remove(element))
+    for(const key of existingKeys) {
+        await expect(set.delete(key))
         .resolves
         .not.toThrow();
     }
-    expect(tree.rootHash).toBe(null);
+    expect(set.rootHash).toBe(null);
     return;
 });
