@@ -12,12 +12,27 @@
 
 export class HashLinkedTree {
 
-	constructor(degree=5, rootHash) {
+    static async validateMapElement(element) {
+        if(Array.isArray(element) === false) {
+            throw Error('Invalid map element, not an array');
+        }
+        if(element.length !== 2) {
+            throw Error('invalid map element array length, must be 2');
+        }
+        const key = element[0];
+        const value = element[1];
+        ResourcesManager.validateKey(key);
+        ResourcesManager.validateKey(value);
+        return [key, value];
+    }
+
+	constructor(degree=5, rootHash, isMap=false) {
 		if(Number.isInteger(degree) === false
         || degree < 2
 		|| degree > 10) {
 			throw Error('invalid tree degree: ' + degree);
 		}
+        this.isMap = isMap;
 		this.degree = degree;
 		this.setState(rootHash);
 	}
@@ -47,54 +62,32 @@ export class HashLinkedTree {
 		return stateId;
 	}
 
-	//Start a new tree with a given initial element
-	async init(firstElementHash) {
-		var newRoot = new TreeContainer();
-		if(firstElementHash !== null
-		&& firstElementHash !== undefined) {
-			newRoot.add(firstElementHash);
-		}
-		this.rootHash = await ResourcesManager.storeResourceObject(newRoot);
-//		logger.log('info', "New tree root: \'" + this.rootHash + "\'");
-	}
-
-	async validate(element, storeFlag) {
-		var elementHash;
-		//Treat objects or hashes deppending on param format
-		if(typeof element === 'object') {
-			if(storeFlag == null
-			|| storeFlag == undefined
-			|| storeFlag == false) {
-				elementHash = await ResourcesManager.generateKeyForObject(element);
-			} else {
-				elementHash = await ResourcesManager.storeResourceObject(element);
-			}
-		} else
-		if(Utils.isBase64(element)) {
-			elementHash = element;
-		} else {
-			throw Error('invalid element type');
-		}
-		return elementHash;
-	}
-
 	async add(element) {
         if(this.readOny) {
             throw Error('Attempt to edit a read only hash linked tree');
         }
-		var key = await this.validate(element);
+        var key;
+        if(this.isMap) {
+            await HashLinkedTree.validateMapElement(element);
+            key = element[0];
+        } else {
+            key = element;
+            await ResourcesManager.validateKey(key);
+        }
 //		logger.log('info', "tree.add(" + JSON.stringify(element, null, 2) + ") -> " + key);
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
-			await this.init(key);
+            var newRoot = new TreeContainer(null, this.isMap);
+    		newRoot.add(element);
+    		this.rootHash = await ResourcesManager.storeResourceObject(newRoot);
 		} else {
             const branch = new TreeBranch(this.ownerID, this.rootHash);
             await branch.getToKey(key);
             if(branch.containsKey) {
-                throw Error('element already in set');
+                throw Error('key or object already in set');
             }
             var iContainer = branch.getLastContainer();
-			iContainer.add(key);
+			iContainer.add(element);
             const maxElements = this.degree;
             if(iContainer.numElements === maxElements) {
                 const splitDepth = await branch.split(maxElements);
@@ -107,11 +100,11 @@ export class HashLinkedTree {
 		return this.rootHash;
 	}
 
-    async remove(element) {
+    async delete(key) {
         if(this.readOnly) {
             throw Error('Attempt to edit a read only hash linked tree');
         }
-		var key = await this.validate(element);
+		ResourcesManager.validateKey(key);
 		if(this.rootHash == null
 		|| this.rootHash == undefined) {
             throw Error('tree is empty');
@@ -119,7 +112,7 @@ export class HashLinkedTree {
             const branch = new TreeBranch(this.ownerID, this.rootHash);
             await branch.getToKey(key);
             if(branch.containsKey === false) {
-                throw Error('Element does not exist in tree');
+                throw Error('key does not exist in tree');
             }
             // console.log('tree.remove('+key+')');
             const ownerContainer = branch.getLastContainer();
@@ -142,26 +135,17 @@ export class HashLinkedTree {
                 const rightBranch = new TreeBranch(this.ownerID, rightContainerKey);
                 await rightBranch.getToLeftmostLeaf();
                 const rightStealLeaf = rightBranch.getLastContainer();
-                // console.log('left branch: ');
-                // console.table(leftBranch.containerKeys);
-                // console.log('right branch: ');
-                // console.table(rightBranch.containerKeys);
-                // console.log('left steal leaf: ' + JSON.stringify(leftStealLeaf, null, 2));
-                // console.log('right steal leaf: ' + JSON.stringify(rightStealLeaf, null, 2));
-                var stolenKey;
+                var stolenElement;
                 if(leftStealLeaf.numElements >= rightStealLeaf.numElements) {
                     const [poppedKey, poppedSiblingKey] = await leftStealLeaf.pop();
-                    stolenKey = poppedKey;
-                    // console.log('Stealing '+stolenKey+' from left subtree');
+                    stolenElement = poppedKey;
                     branch.append(leftBranch);
                 } else {
                     const [shiftedKey, shiftedSiblingKey] = await rightStealLeaf.shift();
-                    stolenKey = shiftedKey;
-                    // console.log('Stealing '+stolenKey+' from right subtree');
+                    stolenElement = shiftedKey;
                     branch.append(rightBranch);
                 }
-                ownerContainer.substituteKey(key, stolenKey);
-                // console.log('Owner after steal: ' + JSON.stringify(ownerContainer, null, 2));
+                ownerContainer.substituteElement(key, stolenElement);
                 const branchLeaf = branch.getLastContainer();
                 if(branchLeaf.numElements < minElements) {
                     debugger;
@@ -172,11 +156,10 @@ export class HashLinkedTree {
         }
     }
 
-	async has(element) {
-		const key = await this.validate(element, false);
+	async has(key) {
+		ResourcesManager.validateKey(key);
 		if(this.rootHash === null
 		|| this.rootHash === undefined) {
-		    // console.log('tree.has(' + key + ') => FALSE (tree is empty)');
 			return false;
 		} else {
 			var nextContainerHash = this.rootHash;
@@ -184,11 +167,9 @@ export class HashLinkedTree {
 				const iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
 				nextContainerHash = iContainer.follow(key);
 				if(nextContainerHash === true) {
-                    // console.log('tree.has(' + key + ') => TRUE');
 					return true;
 				}
 			} while(nextContainerHash !== '');
-            // console.log('tree.has(' + key + ') => FALSE');
 			return false;
 		}
 	}
@@ -199,9 +180,15 @@ export class HashLinkedTree {
 		&& this.rootHash !== undefined
         && this.rootHash !== '') {
 			var rootContainer = await TreeContainer.fromResource(this.rootHash, this.ownerID);
-			for await(const element of rootContainer.iterator(this.ownerID)) {
-				yield element;
-			}
+            if(this.isMap) {
+    			for await(const [key, value] of rootContainer.iterator(this.ownerID)) {
+    				yield [key, value];
+    			}
+            } else {
+                for await(const key of rootContainer.iterator(this.ownerID)) {
+                    yield key;
+                }
+            }
 		}
 	}
 

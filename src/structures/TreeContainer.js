@@ -5,17 +5,18 @@ import {logger} from '../basic/Log';
 
 export class TreeContainer {
 
-	constructor(leftChild) {
-		this.keys = new Array();
-		this.children = new Array();
-		if(leftChild == null
-		|| leftChild == undefined) {
+	constructor(leftChild=null, isMap=false) {
+		this.keys = [];
+		this.children = [];
+		if(isMap) {
+			this.values = [];
+		}
+		if(leftChild === null
+		|| leftChild === undefined
+		|| leftChild === '') {
 			this.children[0] = '';
 		} else {
-			if(leftChild !== ''
-			&& Utils.isBase64(leftChild) === false) {
-				throw Error('invalid right child - not base64');
-			}
+			ResourcesManager.validateKey(leftChild);
 			this.children[0] = leftChild;
 		}
 		this.numElements = 0;
@@ -32,6 +33,7 @@ export class TreeContainer {
 			resourceObject.keys = resourceObject.elements;
 			delete resourceObject.elements;
 		}
+		Utils.validateParameters(resourceObject, ['keys', 'children', 'numElements'], ['values']);
 		Object.assign(newContainer, resourceObject);
 		return newContainer;
 	}
@@ -45,13 +47,19 @@ export class TreeContainer {
 		return true;
 	}
 
-	add(key, rightChild) {
-
-		//Parameters validation
-		if(Utils.isBase64(key) === false) {
-			throw Error('invalid element key');
+	add(element, rightChild) {
+		var key, value;
+		if(this.values) {
+			if(Array.isArray(element) === undefined) {
+				throw Error('Attempt to insert value in non-map container');
+			}
+			key = element[0];
+			value = element[1];
+			ResourcesManager.validateKey(value);
+		} else {
+			key = element;
 		}
-
+		ResourcesManager.validateKey(key);
 		if(rightChild === null
 		|| rightChild === undefined) {
 			rightChild = '';
@@ -60,20 +68,21 @@ export class TreeContainer {
 		&& Utils.isBase64(rightChild) === false) {
 			throw Error('invalid right child - not base64');
 		}
-
 		if(this.numElements === 0) {
 			this.keys[0] = key;
+			if(this.values) {
+				this.values[0] = value;
+			}
 			this.children[1] = rightChild;
 		} else {
 			if(key < this.keys[0]) {
-
 				this.keys.unshift(key);
+				if(this.values) {
+					this.values.unshift(value);
+				}
 				this.children.splice(1, 0, rightChild);
-
 			} else {
-
 				var insertIndex = 1;
-
 				for(var i=0; i<this.numElements; i++) {
 					if(key > this.keys[i]) {
 						insertIndex = i+1;
@@ -81,40 +90,80 @@ export class TreeContainer {
 						break;
 					}
 				}
-
 				this.keys.splice(insertIndex, 0, key);
+				if(this.values) {
+					this.values.splice(insertIndex, 0, value);
+				}
 				this.children.splice(insertIndex+1, 0, rightChild);
 			}
 		}
-
 		this.numElements++;
-
 	}
 
-	unshift(key, leftChild='') {
+	unshift(element, leftChild='') {
+		var key, value;
+		if(Array.isArray(element)) {
+			if(this.values === undefined) {
+				throw Error('Attempt to insert value in non-map container');
+			}
+			key = element[0];
+			value = element[1];
+		} else {
+			key = element;
+		}
 		this.keys.unshift(key);
+		if(this.values) {
+			this.values.unshift(value);
+		}
         this.children.unshift(leftChild);
         return (++this.numElements);
 	}
 
 	shift() {
-        const leftmostKey = this.keys.shift();
-        const leftmostChild = this.children.shift();
+		var leftmostElement;
+		const leftmostKey = this.keys.shift();
+		const leftmostChild = this.children.shift();
+		if(this.values) {
+			const leftmostValue = this.values.shift();
+			leftmostElement = [leftmostKey, leftmostValue];
+		} else {
+			leftmostElement=leftmostKey;
+		}
         this.numElements--;
-		return [leftmostKey, leftmostChild];
+		return [leftmostElement, leftmostChild];
     }
 
-	push(key, rightChild='') {
+	push(element, rightChild='') {
+		var key, value;
+		if(Array.isArray(element)) {
+			if(this.values === undefined) {
+				throw Error('Attempt to insert value in non-map container');
+			}
+			key = element[0];
+			value = element[1];
+		} else {
+			key = element;
+		}
 		this.keys.push(key);
-		this.children.push(rightChild);
-		return (++this.numElements);
+		if(this.values) {
+			this.values.push(value);
+		}
+        this.children.push(rightChild);
+        return (++this.numElements);
 	}
 
     pop() {
-        const rightmostKey = this.keys.pop();
-        const rightmostChild = this.children.pop();
-        this.numElements--;
-		return [rightmostKey, rightmostChild];
+		var rightmostElement;
+		const rightmostKey = this.keys.pop();
+		const rightmostChild = this.children.pop();
+		if(this.values) {
+			const rightmostValue = this.values.pop();
+			rightmostElement = [rightmostKey, rightmostValue];
+		} else {
+			rightmostElement=rightmostKey;
+		}
+		this.numElements--;
+		return [rightmostElement, rightmostChild];
     }
 
     //1) key is deleted
@@ -132,17 +181,28 @@ export class TreeContainer {
         const leftChild = this.children[index];
         const rightChild = this.children[index+1];
         this.keys.splice(index, 1);
+		if(this.values) {
+			this.values.splice(index, 1);
+		}
         this.children.splice(index, 1);
         this.numElements--;
         return [leftKey, leftChild, rightChild];
     }
 
-	substituteKey(oldKey, newKey) {
+	substituteElement(oldKey, newElement) {
 		const index = this.keys.indexOf(oldKey);
 		if(index === -1) {
 			throw Error('old key not found');
 		}
-		this.keys[index] = newKey;
+		if(this.values) {
+			if(Array.isArray(newElement) === false) {
+				throw Error('Attempt to substitute key in map, but no value provided');
+			}
+			this.keys[index] = newElement[0];
+			this.values[index] = newElement[1];
+		} else {
+			this.keys[index] = newElement;
+		}
 	}
 
 	getChildrenAroundKey(key) {
@@ -167,12 +227,17 @@ export class TreeContainer {
 			throw Error('old key not found');
 		}
 		var leftSibling = '';
-		var leftKey = '';
+		var leftElement = null;
 		if(index > 0) {
 			leftSibling = this.children[index-1];
-			leftKey = this.keys[index-1];
+			if(this.values) {
+				leftElement = [this.keys[index-1], this.values[index-1]];
+			} else {
+				leftElement = this.keys[index-1];
+			}
+
 		}
-		return [leftSibling, leftKey];
+		return [leftSibling, leftElement];
 	}
 
 	getRightSibling(childKey) {
@@ -181,12 +246,17 @@ export class TreeContainer {
 			throw Error('old key not found');
 		}
 		var rightSibling = '';
-		var rightKey = '';
+		var rightElement = null;
 		if(index < this.numElements) {
 			rightSibling = this.children[index+1];
-			rightKey = this.keys[index];
+			if(this.values) {
+				rightElement = [this.keys[index], this.values[index]];
+			} else {
+				rightElement = this.keys[index];
+			}
+
 		}
-		return [rightSibling, rightKey];
+		return [rightSibling, rightElement];
 	}
 
 	updateChild(prev, current) {
@@ -218,12 +288,20 @@ export class TreeContainer {
 	split(rightContainer) {
 		//find mean element
 		const meanIndex = Math.floor((this.numElements-1)/2);
-		var meanElement = this.keys[meanIndex];
+		var meanElement;
+		if(this.values) {
+			meanElement = [this.keys[meanIndex], this.keys[meanIndex]];
+		} else {
+			meanElement = this.keys[meanIndex];
+		}
 		const numRightElements = this.numElements - meanIndex - 1;
 		rightContainer.keys = this.keys.splice(meanIndex, numRightElements+2);
-		rightContainer.children = this.children.splice(meanIndex+1, numRightElements+1);
-		//fill first element
 		rightContainer.keys.splice(0,1);
+		if(this.values) {
+			rightContainer.values = this.values.splice(meanIndex, numRightElements+2);
+			rightContainer.values.splice(0,1)
+		}
+		rightContainer.children = this.children.splice(meanIndex+1, numRightElements+1);
 		this.numElements -= numRightElements+1;
 		rightContainer.numElements = numRightElements;
 		return meanElement;
@@ -235,19 +313,38 @@ export class TreeContainer {
 			throw Error('old key not found');
 		}
 		this.keys.splice(index, 1);
+		if(this.values) {
+			this.values.splice(index, 1);
+		}
 		this.children.splice(index, 1);
 		this.children[index] = mergedChildKey;
 		this.numElements--;
 		return this.numElements;
 	}
 
-	mergeLeft(left, meanKey) {
+	mergeLeft(left, meanElement) {
+		var meanKey;
+		if(this.values) {
+			meanKey = meanElement[0];
+			const meanValue = meanElement[1];
+			this.values = [...left.values, meanValue, ...this.values];
+		} else {
+			meanKey = meanElement;
+		}
 		this.keys = [...left.keys, meanKey, ...this.keys];
 		this.children = [...left.children, ...this.children];
 		this.numElements += left.numElements + 1;
 	}
 
-	mergeRight(right, meanKey) {
+	mergeRight(right, meanElement) {
+		var meanKey;
+		if(this.values) {
+			meanKey = meanElement[0];
+			const meanValue = meanElement[1];
+			this.values = [...this.values, meanValue, ...right.values];
+		} else {
+			meanKey = meanElement;
+		}
 		this.keys = [...this.keys, meanKey, ...right.keys];
 		this.children = [...this.children, ...right.children];
 		this.numElements += right.numElements + 1;
@@ -285,7 +382,11 @@ export class TreeContainer {
 		}
 		for(var i=0; i<this.numElements; i++) {
 			//Interleave children with branches
-			yield this.keys[i];
+			if(this.values) {
+				yield [this.keys[i], this.values[i]];
+			} else {
+				yield this.keys[i];
+			}
 			if(this.children[i+1] !== '') {
 				var iChild = await TreeContainer.fromResource(this.children[i+1], ownerID);
 				for await (const element of iChild.iterator(ownerID)) {
