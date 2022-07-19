@@ -97,17 +97,18 @@ export const Utils = {
 		}
 	},
 
-	validateParameters(params, expectedNames) {
+	validateParameters(params, mandatory, optional=[]) {
 
 		for(const prop in params) {
-			if(expectedNames.includes(prop) === false) {
-				throw Error('validation failed, unxpected parameter: ' + prop);
+			if(mandatory.includes(prop) === false
+			&& optional.includes(prop) === false) {
+				throw Error('validation failed, unexpected parameter: ' + prop);
 			}
 		}
 
-		for(const name of expectedNames) {
+		for(const name of mandatory) {
 			if(name in params === false) {
-				throw Error('validation failed, missing parameter: ' + name);
+				throw Error('validation failed, missing mandatory parameter: ' + name);
 			}
 		}
 	},
