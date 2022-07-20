@@ -192,7 +192,7 @@ export class TreeContainer {
 	substituteElement(oldKey, newElement) {
 		const index = this.keys.indexOf(oldKey);
 		if(index === -1) {
-			throw Error('old key not found');
+			throw Error('old key \''+oldKey+'\' not found');
 		}
 		if(this.values) {
 			if(Array.isArray(newElement) === false) {
@@ -227,7 +227,7 @@ export class TreeContainer {
 			throw Error('old key not found');
 		}
 		var leftSibling = '';
-		var leftElement = null;
+		var leftElement = '';
 		if(index > 0) {
 			leftSibling = this.children[index-1];
 			if(this.values) {
@@ -235,7 +235,6 @@ export class TreeContainer {
 			} else {
 				leftElement = this.keys[index-1];
 			}
-
 		}
 		return [leftSibling, leftElement];
 	}
@@ -246,7 +245,7 @@ export class TreeContainer {
 			throw Error('old key not found');
 		}
 		var rightSibling = '';
-		var rightElement = null;
+		var rightElement = '';
 		if(index < this.numElements) {
 			rightSibling = this.children[index+1];
 			if(this.values) {
@@ -290,7 +289,7 @@ export class TreeContainer {
 		const meanIndex = Math.floor((this.numElements-1)/2);
 		var meanElement;
 		if(this.values) {
-			meanElement = [this.keys[meanIndex], this.keys[meanIndex]];
+			meanElement = [this.keys[meanIndex], this.values[meanIndex]];
 		} else {
 			meanElement = this.keys[meanIndex];
 		}
@@ -310,7 +309,7 @@ export class TreeContainer {
 	mergeChildren(key, mergedChildKey) {
 		const index = this.keys.indexOf(key);
 		if(index === -1) {
-			throw Error('old key not found');
+			throw Error('old key \''+key+'\' not found');
 		}
 		this.keys.splice(index, 1);
 		if(this.values) {

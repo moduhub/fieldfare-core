@@ -109,6 +109,11 @@ export class TreeBranch {
 
     async rebalance(minElements) {
         var depth = this.depth;
+        var isMap = false;
+        const lastContainer = this.getLastContainer();
+        if(lastContainer.values) {
+            isMap = true;
+        }
         while(depth > 1) {
             const iContainerKey = this.containerKeys[depth-1]
             const iContainer = this.containers[depth-1];
@@ -128,10 +133,16 @@ export class TreeBranch {
                     rightSibling = await TreeContainer.fromResource(rightSiblingKey, this.ownerID);
                 }
                 if(leftSibling.numElements >= rightSibling.numElements) {
+                    var leftKey;
+                    if(isMap) {
+                        leftKey = leftElement[0];
+                    } else {
+                        leftKey = leftElement;
+                    }
                     if(leftSibling.numElements > minElements) {
                         //rotate from left
                         const [rotatedElement, rotatedChildKey] = leftSibling.pop();
-                        parentContainer.substituteElement(leftElement, rotatedElement);
+                        parentContainer.substituteElement(leftKey, rotatedElement);
                         const newLeftSiblingKey = await ResourcesManager.storeResourceObject(leftSibling);
                         parentContainer.updateChild(leftSiblingKey, newLeftSiblingKey);
                         iContainer.unshift(leftElement, rotatedChildKey);
@@ -141,7 +152,7 @@ export class TreeBranch {
                         //merge around left key
                         iContainer.mergeLeft(leftSibling, leftElement);
                         const mergedChildKey = await ResourcesManager.storeResourceObject(iContainer);
-                        const parentNumElements = parentContainer.mergeChildren(leftElement, mergedChildKey);
+                        const parentNumElements = parentContainer.mergeChildren(leftKey, mergedChildKey);
                         if(parentNumElements == 0) {
                             debugger;
                             this.containers.shift();
@@ -151,10 +162,16 @@ export class TreeBranch {
                         }
                     }
                 } else {
+                    var rightKey;
+                    if(isMap) {
+                        rightKey = rightElement[0];
+                    } else {
+                        rightKey = rightElement;
+                    }
                     if(rightSibling.numElements > minElements) {
                         //rotate from right
                         const [rotatedElement, rotatedChildKey] = rightSibling.shift();
-                        parentContainer.substituteElement(rightElement, rotatedElement);
+                        parentContainer.substituteElement(rightKey, rotatedElement);
                         const newRightSiblingKey = await ResourcesManager.storeResourceObject(rightSibling);
                         parentContainer.updateChild(rightSiblingKey, newRightSiblingKey);
                         iContainer.push(rightElement, rotatedChildKey);
@@ -164,7 +181,7 @@ export class TreeBranch {
                         //merge around right key
                         iContainer.mergeRight(rightSibling, rightElement);
                         const mergedChildKey = await ResourcesManager.storeResourceObject(iContainer);
-                        const parentNumElements = parentContainer.mergeChildren(rightElement, mergedChildKey);
+                        const parentNumElements = parentContainer.mergeChildren(rightKey, mergedChildKey);
                         if(parentNumElements == 0) {
                             debugger;
                             this.containers.shift();
