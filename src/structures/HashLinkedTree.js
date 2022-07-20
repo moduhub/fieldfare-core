@@ -62,7 +62,34 @@ export class HashLinkedTree {
 		return stateId;
 	}
 
-	async add(element) {
+    async set(key, value) {
+        if(this.isMap === false) {
+            throw Error('Attempt to set key value in non-map tree');
+        }
+        const element = [key, value];
+        return this.add(element, true);
+    }
+
+    async get(key) {
+        if(this.isMap === false) {
+            throw Error('Attempt to get key value in non-map tree');
+        }
+        if(this.rootHash !== null
+        && this.rootHash !== undefined
+        && this.rootHash !== '') {
+            var nextContainerHash = this.rootHash;
+			do {
+				const iContainer = await TreeContainer.fromResource(nextContainerHash, this.ownerID);
+				nextContainerHash = iContainer.follow(key);
+				if(nextContainerHash === true) {
+					return iContainer.getKeyValue(key);
+				}
+			} while(nextContainerHash !== '');
+        }
+        return undefined;
+    }
+
+	async add(element, update=false) {
         if(this.readOny) {
             throw Error('Attempt to edit a read only hash linked tree');
         }
@@ -83,17 +110,26 @@ export class HashLinkedTree {
 		} else {
             const branch = new TreeBranch(this.ownerID, this.rootHash);
             await branch.getToKey(key);
-            if(branch.containsKey) {
-                throw Error('key or object already in set');
-            }
             var iContainer = branch.getLastContainer();
-			iContainer.add(element);
-            const maxElements = this.degree;
-            if(iContainer.numElements === maxElements) {
-                const splitDepth = await branch.split(maxElements);
-                this.rootHash = await branch.update(splitDepth);    //update only from split down to root
+            if(branch.containsKey) {
+                if(update===false) {
+                    throw Error('attempt to add a duplicate key');
+                }
+                if(this.isMap === false) {
+                    throw Error('attempt to update key in a non-map tree');
+                }
+                const value = element[1];
+                iContainer.updateKeyValue(key, value);
+                this.rootHash = await branch.update();
             } else {
-                this.rootHash = await branch.update(); // update from leaf to root
+    			iContainer.add(element);
+                const maxElements = this.degree;
+                if(iContainer.numElements === maxElements) {
+                    const splitDepth = await branch.split(maxElements);
+                    this.rootHash = await branch.update(splitDepth);    //update only from split down to root
+                } else {
+                    this.rootHash = await branch.update();
+                }
             }
 //			logger.log('info', ">>> Tree.add finished, new root is " + this.rootHash);
 		}

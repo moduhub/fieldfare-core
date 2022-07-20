@@ -372,6 +372,28 @@ export class TreeContainer {
 		return this.children[childIndex];
 	}
 
+	updateKeyValue(key, value) {
+		if(this.values === undefined) {
+			throw Error('Attemp to update key value in non-map container');
+		}
+		const index = this.keys.indexOf(key);
+		if(index === -1) {
+			throw Error('key \''+key+'\' not found');
+		}
+		this.values[index] = value;
+	}
+
+	getKeyValue(key) {
+		if(this.values === undefined) {
+			throw Error('Attemp to get key value in non-map container');
+		}
+		const index = this.keys.indexOf(key);
+		if(index === -1) {
+			throw Error('key \''+key+'\' not found');
+		}
+		return this.values[index];
+	}
+
 	async* iterator(ownerID) {
 		if(this.children[0] !== '') {
 			const leftmostChild = await TreeContainer.fromResource(this.children[0], ownerID);
