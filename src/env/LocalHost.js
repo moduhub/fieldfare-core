@@ -36,63 +36,19 @@ export const LocalHost = {
 		return localHost.id;
 	},
 
-	async init(privateKeyData) {
-
+	async init(keypair) {
 		if(ResourcesManager.available() === false) {
 			throw Error('Cannot setup ID without a resources manager');
 		}
-
-		let pubKeyData;
-
-		if(privateKeyData) {
-
-			localHost.privateKey = await crypto.subtle.importKey(
-				'jwk',
-				privateKeyData,
-				{
-					name:'ECDSA',
-					namedCurve: 'P-256'
-				},
-				false,
-				['sign']
-			);
-
-			pubKeyData = {
-				kty: "EC",
-				use: "sig",
-				crv: "P-256",
-				kid: privateKeyData.kid,
-				x: privateKeyData.x,
-				y: privateKeyData.y,
-				alg: "ES256"
-			};
-
-		} else {
-
-			const keypair = await crypto.subtle.generateKey(
-				{
-					name: "ECDSA",
-					namedCurve: "P-256"
-				},
-				true,
-				["sign"]
-			);
-
-			localHost.privateKey = keypair.privateKey;
-
-			pubKeyData = await crypto.subtle.exportKey('jwk', keypair.publicKey);
-
+		if(keypair === undefined
+		|| keypair === null) {
+			throw Error('No host private key defined');
 		}
-
-		// logger.log('info', 'host pubkey data: ' + JSON.stringify(pubKeyData));
-
-		//Calculate host ID from pubkey
-		//var hash = new Uint8Array(await crypto.subtle.digest('SHA-256', pubKeyData));
-
+		this.keypair = keypair;
+		pubKeyData = crypto.subtle.exportKey("jwk", keypair.pubkey);
+		logger.log('pubKeyData in jwk format: ' + JSON.stringify(pubKeyData))
 		localHost.id = await ResourcesManager.storeResourceObject(pubKeyData);
-
-		// logger.log('info', 'HOST ID: ' + localHost.id);
-
+		logger.log('info', 'HOST ID: ' + localHost.id);
 		setInterval(async () => {
 			// logger.log('info', "Host is announcing to "
 			// 	+ localHost.remoteHosts.size + " remote hosts and "
