@@ -98,16 +98,20 @@ export const Utils = {
         return pattern.test(uuid);
     },
 
+	/**
+	 * Regular expression to check if string is a IPv4 address
+	 * @param string String to be verified
+	 * @return true if the string is an IPv4 address, false otherwise
+	 */
 	isIPV4(string) {
-		// Regular expression to check if string is a IP address
-		const regexExp = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/gi;
 
+		const regexExp = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/gi;
 		return regexExp.test(string); // true
 	},
 
 	isIterable(obj) {
-  		// checks for null and undefined
-  		if (obj == null) {
+  		if(obj === undefined
+		|| obj === null) {
     		return false;
   		}
   		return typeof obj[Symbol.iterator] === 'function';
