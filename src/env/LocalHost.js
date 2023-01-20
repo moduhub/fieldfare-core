@@ -6,6 +6,7 @@
  */
 
 import {ResourcesManager} from '../resources/ResourcesManager';
+import {cryptoManager} from '../basic/CryptoManager';
 import {Environment} from '../env/Environment';
 import {LocalService} from './LocalService';
 import {RemoteHost} from './RemoteHost';
@@ -27,8 +28,6 @@ export const localHost = {
 	stateHash: ''
 };
 
-//For debug purposes only
-global.localHost = localHost;
 
 export const LocalHost = {
 
@@ -45,9 +44,9 @@ export const LocalHost = {
 			throw Error('No host private key defined');
 		}
 		this.keypair = keypair;
-		pubKeyData = crypto.subtle.exportKey("jwk", keypair.pubkey);
-		logger.log('pubKeyData in jwk format: ' + JSON.stringify(pubKeyData))
-		localHost.id = await ResourcesManager.storeResourceObject(pubKeyData);
+		const jwkPubKey = await cryptoManager.exportPublicKey(keypair.publicKey);
+		logger.log('jwkPubKey: ' + JSON.stringify(jwkPubKey))
+		localHost.id = await ResourcesManager.storeResourceObject(jwkPubKey);
 		logger.log('info', 'HOST ID: ' + localHost.id);
 		setInterval(async () => {
 			// logger.log('info', "Host is announcing to "
@@ -200,34 +199,7 @@ export const LocalHost = {
 		}
 	},
 
-	async signMessage(message) {
-
-		if(localHost.privateKey === undefined) {
-			throw Error('failed to sign message, private key undefined');
-		}
-
-		var utf8ArrayBuffer = Utils.strToUtf8Array(JSON.stringify(message.data));
-
-		var signatureBuffer = await crypto.subtle.sign(
-			{
-				name: "ECDSA",
-				hash: {name: "SHA-256"}
-			},
-			localHost.privateKey,
-			utf8ArrayBuffer);
-
-//		logger.log('info', "Correct Message signature: " + Utils.arrayBufferToBase64(signatureBuffer));
-//
-//		var bufview = new Uint8Array(signatureBuffer);
-//		bufview[1] = 0;
-
-		message.signature = Utils.arrayBufferToBase64(signatureBuffer);
-
-//		logger.log('info', "Message signature added: " + message.signature);
-	},
-
 	async announce(destination) {
-
 		if(!destination) {
 			throw Error('destination not defined');
 		}
@@ -243,9 +215,7 @@ export const LocalHost = {
 			env: envVersionGroup,
 			state: LocalHost.updateState()
 		});
-
-		await LocalHost.signMessage(message);
-
+		await cryptoManager.signMessage(message, localHost.privateKey);
 		message.setSourceAddress(localHost.id);
 		if(typeof (destination.send) !== 'function') {
 			throw Error('destination ' + JSON.stringify(destination) + ' not send-able');

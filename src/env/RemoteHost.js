@@ -10,6 +10,7 @@ import {RemoteService} from './RemoteService';
 import {Message} from '../trx/Message';
 import {Utils} from '../basic/Utils';
 import {logger} from '../basic/Log';
+import {cryptoManager} from '../basic/CryptoManager';
 
 
 export class RemoteHost {
@@ -138,7 +139,7 @@ export class RemoteHost {
 					throw Error('unexpected service id: ' + message.service);
 				}
 
-				if(await this.verifyMessage(message) !== true) {
+				if(await cryptoManager.verifyMessage(message) !== true) {
 					throw Error('invalid message signature');
 				}
 
@@ -161,21 +162,9 @@ export class RemoteHost {
 			//Get host pubkey
 			var remotePubKeyData = await ResourcesManager.getResourceObject(message.data.id, message.data.id);
 			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyData));
-
-			this.pubKey = await crypto.subtle.importKey(
-				'jwk',
-				remotePubKeyData,
-				{
-					name:'ECDSA',
-					namedCurve: 'P-256'
-				},
-				false,
-				['verify']
-			);
-
+			this.pubKey = await CryptoManager.importPublicKey(remotePubKeyData);
 		}
-
-		if(await this.verifyMessage(message) !== true) {
+		if(await cryptoManager.verifyMessage(message, this.pubKey) !== true) {
 			throw Error('invalid message signature');
 		}
 		//Env update
@@ -328,38 +317,6 @@ export class RemoteHost {
 			this.send(response);
 
 		}
-	}
-
-	async verifyMessage(message) {
-
-		var result = false;
-
-		if(this.pubKey === undefined) {
-			throw Error('signature verify failed: pubkey undefined');
-		}
-
-		if('signature' in message) {
-
-			var signatureBuffer = Utils.base64ToArrayBuffer(message.signature);
-
-			var dataBuffer = Utils.strToUtf8Array(JSON.stringify(message.data));
-
-			result = await crypto.subtle.verify(
-				{
-					name: "ECDSA",
-					hash: {name: "SHA-256"}
-				},
-				this.pubKey,
-				signatureBuffer,
-				dataBuffer);
-
-			logger.log('info', "Signature verify result: " + result);
-
-		} else {
-			logger.log('info', 'missing signature inside message: ' + JSON.stringify(message));
-		}
-
-		return result;
 	}
 
 	async accessService(uuid) {
