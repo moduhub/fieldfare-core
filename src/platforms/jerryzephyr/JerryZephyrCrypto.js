@@ -1,5 +1,6 @@
+import {CryptoManager} from '../../basic/CryptoManager';
 
-class JerryZephyrCrypto {
+class JerryZephyrCrypto extends CryptoManager {
     constructor() {
         //
     }
