@@ -64,6 +64,10 @@ export class WebCryptoManager extends CryptoManager {
         return crypto.subtle.exportKey("jwk", publicKey.platformData);
     }
 
+    async digest(buffer) {
+        return new Uint8Array(await crypto.subtle.digest({ name: 'SHA-256' }, buffer));
+    }
+
     signBuffer(buffer, privateKey) {
 		return crypto.subtle.sign(
 			{
