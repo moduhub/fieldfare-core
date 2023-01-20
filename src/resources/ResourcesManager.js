@@ -3,6 +3,7 @@ import {LocalHost} from '../env/LocalHost';
 import {Request} from '../trx/Request';
 import {Utils} from '../basic/Utils';
 import {logger} from '../basic/Log';
+import { cryptoManager } from '../basic/CryptoManager';
 
 var instances = new Set();
 
@@ -37,13 +38,9 @@ export class ResourcesManager {
     }
 
     static async generateKeyForData(base64data) {
-
-        var dataBuffer = Utils.base64ToArrayBuffer(base64data);
-
-        var hash = new Uint8Array(await crypto.subtle.digest({ name: 'SHA-256' }, dataBuffer));
-
-        var base64hash = btoa(String.fromCharCode.apply(null, hash));
-
+        const dataBuffer = Utils.base64ToArrayBuffer(base64data);
+        const hashBuffer = await cryptoManager.digest(dataBuffer);
+        const base64hash = Utils.arrayBufferToBase64(hashBuffer);
         return base64hash;
     }
 
