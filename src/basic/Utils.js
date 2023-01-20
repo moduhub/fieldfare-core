@@ -8,32 +8,23 @@
 export const Utils = {
 
 	ab2str: function (buf) {
-
 		return String.fromCharCode.apply(null, new Uint16Array(buf));
-
 	},
 
 	str2ab: function (str) {
-
 		var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
 		var bufView = new Uint16Array(buf);
-
 		for (var i=0, strLen=str.length; i < strLen; i++) {
 			bufView[i] = str.charCodeAt(i);
 		}
-
 		return buf;
-
 	},
 
 	hex2ab: function (str) {
-
 		//var buf = new ArrayBuffer(str.length/2);
-
 		var typedArray = new Uint8Array(str.match(/[\da-f]{2}/gi).map(function (h) {
 			return parseInt(h, 16)
 		}))
-
 		return typedArray.buffer;
 	},
 
@@ -64,32 +55,23 @@ export const Utils = {
   },
 
 	arrayBufferToBase64: function (buffer) {
-
 		var binary = '';
 		var bytes = new Uint8Array( buffer );
 		var len = bytes.byteLength;
-
 		for (var i = 0; i < len; i++) {
-			binary += String.fromCharCode( bytes[ i ] );
+			binary += String.fromCharCode(bytes[i]);
 		}
-
-		//console.log ("xxxbinary: " + binary);
-
 		return btoa( binary );
-
 	},
 
 	isBase64(str) {
-
 		if (typeof str !== 'string'
 		&& str instanceof String === false) {
 			return false;
 		}
-
 		if (str ==='' || str.trim() ==='') {
 			return false;
 		}
-
 		try {
 			return btoa(atob(str)) == str;
 		} catch (err) {
@@ -98,14 +80,12 @@ export const Utils = {
 	},
 
 	validateParameters(params, mandatory, optional=[]) {
-
 		for(const prop in params) {
 			if(mandatory.includes(prop) === false
 			&& optional.includes(prop) === false) {
 				throw Error('validation failed, unexpected parameter: ' + prop);
 			}
 		}
-
 		for(const name of mandatory) {
 			if(name in params === false) {
 				throw Error('validation failed, missing mandatory parameter: ' + name);
@@ -114,11 +94,8 @@ export const Utils = {
 	},
 
 	isUUID(uuid) {
-
         var pattern = new RegExp('^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$', 'i');
-
         return pattern.test(uuid);
-
     },
 
 	isIPV4(string) {
@@ -137,13 +114,10 @@ export const Utils = {
 	},
 
 	strToUtf8Array(str){
-
 		var utf8ArrayBuffer = new Uint8Array(str.length);
-
 		for (var i = 0; i < str.length; i++) {
 			utf8ArrayBuffer[i] = str.charCodeAt(i);
 		}
-
 		return utf8ArrayBuffer;
 	}
 

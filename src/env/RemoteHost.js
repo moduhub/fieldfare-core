@@ -49,19 +49,13 @@ export class RemoteHost {
 	}
 
 	assignChannel(channel) {
-
 		this.channels.add(channel);
-
 		channel.onMessageReceived = (message) => {
-
 			this.treatMessage(message, channel);
-
 		};
-
 		logger.log('info', "Assigning channel to " + this.id
 			+ ". Now there are " + this.channels.size
 			+ " channels assigned to this remote host.");
-
 	}
 
 	isActive() {
@@ -103,9 +97,7 @@ export class RemoteHost {
 	}
 
 	async treatMessage(message, channel) {
-
 		this.lastMessageTime = Date.now();
-
 		try {
 //		logger.log('info', "Message redirected to "
 //			+ this.id + ": "
@@ -161,18 +153,13 @@ export class RemoteHost {
 	}
 
 	async treatAnnounce(message, channel) {
-
 		logger.debug("Received announce message: " + JSON.stringify(message, null, 2));
-
 		if('id' in message.data === false) {
 			throw Error('malformed announce, missing host id');
 		}
-
 		if(this.pubKey === undefined) {
-
 			//Get host pubkey
 			var remotePubKeyData = await ResourcesManager.getResourceObject(message.data.id, message.data.id);
-
 			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyData));
 
 			this.pubKey = await crypto.subtle.importKey(
@@ -191,42 +178,31 @@ export class RemoteHost {
 		if(await this.verifyMessage(message) !== true) {
 			throw Error('invalid message signature');
 		}
-
 		//Env update
 		if('env' in message.data) {
-
 			for(const uuid in message.data.env) {
-
 				if(Utils.isUUID(uuid) === false) {
 					throw Error('Invalid env uuid inside announce');
 				}
-
 				const version = message.data.env[uuid];
-
 				if(Utils.isBase64(version) === false) {
 					throw Error('Invalid env version inside announce');
 				}
-
 				try {
 					await this.updateEnvironment(uuid, version);
 				} catch(error) {
 					logger.error('Environment update failed: ' + error);
 				}
-
 			}
 		}
-
 		//Get host state
 		if('state' in message.data === false) {
 			throw Error('malformed announce packet, missing state data');
 		}
-
 		if(message.data.state instanceof Object === false) {
 			throw Error('Message state object is not an object');
 		}
-
 		this.lastState = message.data.state;
-
 		for(const prop in message.data.state) {
 			const service = this.implementedServices.get(prop);
 			if(service) {
@@ -235,7 +211,6 @@ export class RemoteHost {
 				logger.info('Service not implemented: ' + prop);
 			}
 		}
-
 	}
 
 	updateServices(serviceList) {

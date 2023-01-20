@@ -62,7 +62,6 @@ export const LocalHost = {
 					}
 				}
 			}
-
 			for (const channel of localHost.bootChannels) {
 				if(channel.active()) {
 					LocalHost.announce(channel);
@@ -74,39 +73,31 @@ export const LocalHost = {
 	},
 
 	addEnvironment(env) {
-
 		if(env === null
 		|| env === undefined
 		|| env instanceof Environment === false) {
 			throw Error('Invalid environment object');
 		}
-
 		if(localHost.environments.has(env) === false) {
 			localHost.environments.add(env);
 			logger.debug('New env registered: ' + env.uuid);
 		} else {
 			logger.warn('Env already registered ' + env.uuid);
 		}
-
 	},
 
 	async setupService(definition) {
-
 		var newService = LocalService.fromDefinition(definition);
-
 		//Register service under host mapping
 		localHost.services.set(definition.uuid, newService);
-
 		//recover last service state
         const stateKey = definition.uuid;
         const serviceState = await NVD.load(stateKey);
-
 		if(serviceState) {
 			newService.setState(serviceState);
 		} else {
             logger.log('info', "Service state is null, localHost can be a first setup");
         }
-
 		return newService;
 	},
 
@@ -240,16 +231,13 @@ export const LocalHost = {
 		if(!destination) {
 			throw Error('destination not defined');
 		}
-
 		var envVersionGroup;
-
 		if(localHost.environments.size > 0) {
 			envVersionGroup = {};
 			for(const env of localHost.environments) {
 				envVersionGroup[env.uuid] = env.version;
 			}
 		}
-
 		var message = new Message('announce', {
 			id: localHost.id,
 			env: envVersionGroup,
@@ -259,11 +247,9 @@ export const LocalHost = {
 		await LocalHost.signMessage(message);
 
 		message.setSourceAddress(localHost.id);
-
 		if(typeof (destination.send) !== 'function') {
 			throw Error('destination ' + JSON.stringify(destination) + ' not send-able');
 		}
-
 		return destination.send(message);
 	},
 
