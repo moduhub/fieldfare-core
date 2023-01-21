@@ -3,16 +3,27 @@ import {ResourcesManager} from '../resources/ResourcesManager';
 import {LevelNVD} from '../platforms/node/LevelNVD';
 import {NVD} from '../basic/NVD';
 import {Utils} from '../basic/Utils';
-
+import { cryptoManager } from '../basic/CryptoManager';
+import { NodeCryptoManager } from '../platforms/node/NodeCryptoManager';
+import { logger } from '../basic/Log';
 
 export async function init() {
-
     if(global.crypto === undefined) {
         global.crypto = require('crypto').webcrypto;
     }
-
     LevelNVD.init();
+    NodeCryptoManager.init();
+}
 
+export async function getLocalHostID() {
+    const localKeypair = await cryptoManager.getLocalKeypair();
+    if(localKeypair) {
+        logger.debug('getLocalHostID, publicKey: ' + JSON.stringify(localKeypair.publicKey));
+        const publicKeyJWK = await cryptoManager.exportPublicKey(localKeypair.publicKey);
+        const hostID = await ResourcesManager.generateKeyForObject(publicKeyJWK);
+        return hostID;
+    }
+    return '<undefined>'
 }
 
 export async function getEnvironmentUUID() {

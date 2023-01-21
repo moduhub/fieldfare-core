@@ -3,18 +3,13 @@ import inquirer from 'inquirer';
 
 import * as actions from './setupFunctions'
 
-import {
-    getHostID,
-    importPrivateKey,
-    generatePrivateKey
-} from '../basic/keyManagement';
-
 import {Utils} from '../basic/Utils';
 
 import {
     inputWebport,
     inputUUID
 } from './menuCommon';
+import { cryptoManager } from '../basic/CryptoManager';
 
 
 async function environmentMenu() {
@@ -23,16 +18,16 @@ async function environmentMenu() {
       type: 'list',
       name: 'action',
       message: 'Choose one action: ',
-      choices: ['Set Enviroment UUID', 'Back'],
+      choices: ['Set Environment UUID', 'Back'],
     };
 
     console.log("__________ Environment Configuration __________");
-    console.log("| Current Enviroment UUID: " + await actions.getEnvironmentUUID());
+    console.log("| Current Environment UUID: " + await actions.getEnvironmentUUID());
 
     const answer = await inquirer.prompt(prompt);
 
     switch(answer.action) {
-        case 'Set Enviroment UUID': {
+        case 'Set Environment UUID': {
 
             const {confirm} = await inquirer.prompt({
                 type: 'confirm',
@@ -68,7 +63,7 @@ async function localHostMenu() {
     };
 
     console.log("__________ Local Host Configuration __________");
-    console.log("| Current Host ID: " + await getHostID());
+    console.log("| Current Host ID: " + await actions.getLocalHostID());
 
     const answer = await inquirer.prompt(prompt);
 
@@ -78,11 +73,11 @@ async function localHostMenu() {
             const {confirm} = await inquirer.prompt({
                 type: 'confirm',
                 name: 'confirm',
-                message: "Are you sure you want to drop previous Private Key?"
+                message: "Are you sure you want to drop previous key pair?"
             });
 
             if(confirm) {
-                await generatePrivateKey();
+                await cryptoManager.generateLocalKeypair();
             }
 
             localHostMenu();
@@ -221,9 +216,6 @@ function mainMenu() {
 }
 
 export async function main(args) {
-
     await actions.init();
-
     mainMenu();
-
 }
