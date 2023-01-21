@@ -1,6 +1,6 @@
 
 import {LocalHost} from '../../env/LocalHost';
-import {WebCryptoManager} from '../shared/WebCryptoManager';
+import {BrowserCryptoManager} from './BrowserCryptoManager';
 import {VolatileResourcesManager} from '../../resources/VolatileResourcesManager';
 import {IndexedDBResourcesManager} from './IndexedDBResourcesManager';
 import {IndexedDBNVD} from './IndexedDBNVD';
@@ -15,7 +15,7 @@ export async function setupLocalHost() {
 	IndexedDBNVD.init();
 	VolatileResourcesManager.init();
 	IndexedDBResourcesManager.init();
-	WebCryptoManager.init();
+	BrowserCryptoManager.init();
 	const localKeypair = await cryptoManager.getLocalKeypair();
 	await LocalHost.init(localKeypair);
 	LocalHost.assignWebportTransceiver('ws', new WebClientTransceiver);

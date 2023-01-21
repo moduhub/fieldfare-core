@@ -6,6 +6,8 @@ import {WebServerTransceiver} from './WebServerTransceiver';
 import {UDPTransceiver} from './UDPTransceiver';
 import {NVD} from '../../basic/NVD';
 import {logger} from '../../basic/Log';
+import { cryptoManager } from '../../basic/CryptoManager';
+import { NodeCryptoManager } from './NodeCryptoManager';
 
 export * from '../shared/CommonSetup';
 
@@ -15,8 +17,9 @@ export async function setupLocalHost() {
     }
     LevelNVD.init();
     LevelResourcesManager.init();
-    const privateKeyData = await NVD.load('privateKey');
-    LocalHost.init(privateKeyData);
+    NodeCryptoManager.init();
+    const localKeypair = await cryptoManager.getLocalKeypair();
+    LocalHost.init(localKeypair);
     LocalHost.assignWebportTransceiver('ws', new WebServerTransceiver);
     LocalHost.assignWebportTransceiver('udp', new UDPTransceiver);
 }

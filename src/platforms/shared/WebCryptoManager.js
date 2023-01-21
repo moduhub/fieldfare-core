@@ -7,42 +7,6 @@ export class WebCryptoManager extends CryptoManager {
         super();
     }
 
-    static init() {
-        CryptoManager.singleton(new WebCryptoManager);
-    }
-
-    async getLocalKeypair() {
-        var publicKey = await NVD.load('publicKey');
-        var privateKey = await NVD.load('privateKey');
-        if(publicKey === undefined
-        || publicKey === null
-        || privateKey === undefined
-        || privateKey === null) {
-            const newKeypair = await crypto.subtle.generateKey(
-                {
-                    name: "ECDSA",
-                    namedCurve: "P-256"
-                },
-                false,
-                ["sign"]
-            );
-            publicKey = newKeypair.publicKey;
-            privateKey = newKeypair.privateKey;
-            await NVD.save('publicKey', publicKey);
-            await NVD.save('privateKey', privateKey);
-        }
-        return {
-            publicKey: {
-                index: 0,
-                platformData: publicKey
-            },
-            privateKey: {
-                index: 0,
-                platformData: privateKey
-            }
-        };
-    }
-
     importPublicKey(keyData) {
         const plaformPulicKey = crypto.subtle.importKey(
             'jwk',
