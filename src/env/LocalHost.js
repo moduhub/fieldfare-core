@@ -43,7 +43,7 @@ export const LocalHost = {
 		|| keypair === null) {
 			throw Error('No host private key defined');
 		}
-		this.keypair = keypair;
+		localHost.keypair = keypair;
 		const jwkPubKey = await cryptoManager.exportPublicKey(keypair.publicKey);
 		logger.log('jwkPubKey: ' + JSON.stringify(jwkPubKey))
 		localHost.id = await ResourcesManager.storeResourceObject(jwkPubKey);
