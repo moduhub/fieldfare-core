@@ -295,6 +295,11 @@ export const LocalHost = {
 		}
 		logger.log('info', "Remote host " + remoteHostID + " is active");
 		return remoteHost;
+	},
+
+	signMessage(message) {
+		logger.debug('LocalHost.signMessage -> key='+JSON.stringify(localHost.keypair));
+		return cryptoManager.signMessage(message, localHost.keypair.privateKey);
 	}
 
 }
