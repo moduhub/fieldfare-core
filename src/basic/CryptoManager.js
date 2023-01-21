@@ -1,4 +1,6 @@
 
+import { Utils } from './Utils';
+
 export var cryptoManager;
 
 export class CryptoManager {
@@ -15,7 +17,7 @@ export class CryptoManager {
             throw Error('CryptoManager not initialized');
         }
         const utf8ArrayBuffer = Utils.strToUtf8Array(JSON.stringify(message.data));
-        const signatureBuffer = await cryptoManager.signBuffer(utf8ArrayBuffer);
+        const signatureBuffer = await cryptoManager.signBuffer(utf8ArrayBuffer, privateKey);
         message.signature = Utils.arrayBufferToBase64(signatureBuffer);
     }
 
