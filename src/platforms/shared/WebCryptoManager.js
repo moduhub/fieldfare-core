@@ -1,6 +1,10 @@
 import { CryptoManager } from "../../basic/CryptoManager";
-import {NVD} from '../../basic/NVD'
 
+/**
+ * The WebCryptoManager implements basic cryptographic functions
+ * for use with platforms that support WebCrypto, like the browser
+ * and Node.js
+ */
 export class WebCryptoManager extends CryptoManager {
     
     constructor() {
@@ -8,7 +12,7 @@ export class WebCryptoManager extends CryptoManager {
     }
 
     importPublicKey(keyData) {
-        const plaformPulicKey = crypto.subtle.importKey(
+        const plaformPublicKey = crypto.subtle.importKey(
             'jwk',
             keyData,
             {
@@ -20,7 +24,7 @@ export class WebCryptoManager extends CryptoManager {
         );
         return {
             index: 0,
-            platformData: plaformPulicKey
+            platformData: plaformPublicKey
         };
     }
 
