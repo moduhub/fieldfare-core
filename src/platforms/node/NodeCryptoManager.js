@@ -5,11 +5,13 @@ import {logger} from '../../basic/Log'
 
 /**
  * The Node Crypto manager inherits from the WebCryptoManager
- * and implements only the key management methods.
+ * and implements only the key management methods. Keys are
+ * stored unencrypted in the disk in JWK format.
  */
 export class NodeCryptoManager extends WebCryptoManager {
 
     static init() {
+        global.crypto = require('node:crypto').webcrypto;
         CryptoManager.singleton(new NodeCryptoManager);
     }
 
