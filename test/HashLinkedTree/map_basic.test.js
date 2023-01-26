@@ -1,9 +1,10 @@
 import {
-    ResourcesManager,
+    Resource,
     VolatileResourcesManager,
-    HashLinkedTree,
+    NodeCryptoManager,
+    HashLinkedMap,
     logger
-} from 'fieldfare';
+} from 'fieldfare/node';
 
 const numCreatedElements = 100;
 const numNonExistingKeys = Math.floor(numCreatedElements/5);
@@ -14,23 +15,25 @@ const numExistingKeys = numCreatedElements-numRemovedKeys;
 const gKeyDescriptor = 'key';
 const gValueDescriptor = 'value';
 
-const map = new HashLinkedTree(5, null, true);
+const map = new HashLinkedMap(5);
 
 //Build an array of elements to add
 const preUpdateMap = new Map;
 const updatedMap = new Map;
+const updatedKeyResources = new Set;
 const updatedKeys = new Set;
+const removedKeyResources = new Set;
 const removedKeys = new Set;
+const existingKeyResources = new Set;
 const existingKeys = new Set;
+const nonExistingKeyResources = new Set;
 const nonExistingKeys = new Set;
 
 jest.setTimeout(30000);
 
 beforeAll(async () => {
     logger.disable();
-    if(global.crypto === undefined) {
-        global.crypto = require('crypto').webcrypto;
-    }
+    NodeCryptoManager.init();
     VolatileResourcesManager.init();
     for(var i=0; i<numCreatedElements; i++) {
         const iKeyObject = {
@@ -41,21 +44,22 @@ beforeAll(async () => {
             index: i,
             descriptor: 'value'
         };
-        const key = await ResourcesManager.storeResourceObject(iKeyObject);
-        const value = await ResourcesManager.storeResourceObject(iValueObject);
-        preUpdateMap.set(key, value);
-        updatedMap.set(key, value);
+        const keyResource = await Resource.fromObject(iKeyObject);
+        const valueResource = await Resource.fromObject(iValueObject);
+        preUpdateMap.set(keyResource.key, valueResource);
+        updatedMap.set(keyResource.key, valueResource);
         if(i<numRemovedKeys) {
-            removedKeys.add(key);
+            removedKeyResources.add(keyResource);
+            removedKeys.add(keyResource.key);
         } else {
-            existingKeys.add(key);
+            existingKeyResources.add(keyResource);
+            existingKeys.add(keyResource.key)
             if(i<numRemovedKeys+numUpdatedKeys){
-                updatedKeys.add(key);
+                updatedKeyResources.add(keyResource);
+                updatedKeys.add(keyResource.key);
                 iValueObject.descriptor += '_updated';
-                const updatedValue = await ResourcesManager.storeResourceObject(iValueObject);
-                updatedMap.set(key, updatedValue);
-                // console.log('key: ' + key +', pre-update value: ' + value + ', post-update value:' + updatedValue);
-                existingKeys.add(key);
+                const updatedValueResource = await Resource.fromObject(iValueObject);
+                updatedMap.set(keyResource.key, updatedValueResource);
             }
         }
     }
@@ -64,8 +68,9 @@ beforeAll(async () => {
             index: i,
             descriptor: 'key'
         };
-        const key = await ResourcesManager.storeResourceObject(iKeyObject);
-        nonExistingKeys.add(key);
+        const keyResource = await Resource.fromObject(iKeyObject);
+        nonExistingKeyResources.add(keyResource);
+        nonExistingKeys.add(keyResource.key);
     }
     return;
 });
@@ -74,97 +79,95 @@ beforeAll(async () => {
 //
 // });
 
-test('Stores '+numCreatedElements+' elements', async () => {
-    expect(map.rootHash).toBe(null);
+test('Map stores '+numCreatedElements+' elements', async () => {
+    expect(map.root).toBe(null);
     await expect(map.isEmpty()).resolves.toBe(true);
     for(const [key, value] of preUpdateMap) {
         // console.log('map.set('+JSON.stringify([key, value])+')');
-        await map.set(key, value);
+        await map.set(await Resource.fromKey(key), value);
     }
     await expect(map.isEmpty()).resolves.toBe(false);
     return;
 });
 
-test('Removes '+numRemovedKeys+' keys', async () => {
-    for(const key of removedKeys) {
-        await map.delete(key);
+test('Map removes '+numRemovedKeys+' keys', async () => {
+    for(const keyResource of removedKeyResources) {
+        await map.delete(keyResource);
     }
     return;
 });
 
-test('Updates '+numUpdatedKeys+' keys', async () => {
-    for (const key of updatedKeys) {
-        // console.log('map.get( '+key+') pre update: ' + await );
-        await expect(map.get(key)).resolves.toBe(preUpdateMap.get(key));
-        await map.set(key, updatedMap.get(key));
-        // console.log('map.get( '+key+') post update: ' + await map.get(key));
-        await expect(map.get(key)).resolves.toBe(updatedMap.get(key));
+test('Map updates '+numUpdatedKeys+' keys', async () => {
+    for (const keyResource of updatedKeyResources) {
+        expect((await map.get(keyResource)).key).toBe(preUpdateMap.get(keyResource.key).key);
+        await map.set(keyResource, updatedMap.get(keyResource.key));
+        expect((await map.get(keyResource)).key).toBe(updatedMap.get(keyResource.key).key);
     }
     return;
 });
 
-test('Throws on attempt to remove keys that do not exist, root remains unchanged', async () => {
-    const prevRoot = map.rootHash;
-    for(const key of nonExistingKeys) {
+test('Map throws on attempt to remove keys that do not exist, root remains unchanged', async () => {
+    const prevRoot = map.root;
+    for(const key of nonExistingKeyResources) {
         await expect(map.delete(key))
         .rejects
         .toThrow();
     }
-    expect(map.rootHash).toBe(prevRoot);
+    expect(map.root.key).toBe(prevRoot.key);
     return;
 });
 
-test('Iterates map elements in order, without duplications or invalid elements', async () => {
+test('Map iterates map elements in order, without duplications or invalid elements', async () => {
     const iteratedKeys = [];
     var lastKey = '';
-    for await(const [key, value] of map) {
-        expect(iteratedKeys.includes(key)).toBe(false); //check for duplicated keys
-        expect(key > lastKey).toBe(true); //check if keys are in order
-        iteratedKeys.push(key);
+    for await(const [keyResource, valueResource] of map) {
+        expect(iteratedKeys.includes(keyResource.key)).toBe(false); //check for duplicated keys
+        expect(keyResource.key > lastKey).toBe(true); //check if keys are in order
+        iteratedKeys.push(keyResource.key);
         // console.log('map iteration '+iteratedKeys.length+': ('+JSON.stringify([key, value])+')');
-        expect(value).toBe(updatedMap.get(key)); //every key maps to correct value
-        expect(existingKeys.has(key)).toBe(true);
-        expect(removedKeys.has(key)).toBe(false);
-        lastKey = key;
+        expect(valueResource.key).toBe(updatedMap.get(keyResource.key).key); //every key maps to correct value
+        expect(existingKeys.has(keyResource.key)).toBe(true);
+        expect(removedKeys.has(keyResource.key)).toBe(false);
+        lastKey = keyResource.key;
     }
     expect(iteratedKeys.length).toBe(numExistingKeys);
     return;
 });
 
-test('Matches mapping of '+numExistingKeys+' keys', async () => {
-    for(const key of existingKeys) {
-        const hasKey = await map.has(key);
+test('Map matches value assigned to '+numExistingKeys+' keys', async () => {
+    for(const keyResource of existingKeyResources) {
+        const hasKey = await map.has(keyResource);
         expect(hasKey).toBe(true);
-        const value = await map.get(key);
-        expect(value).toBe(updatedMap.get(key));
+        const valueResource = await map.get(keyResource);
+        expect(valueResource.key).toBe(updatedMap.get(keyResource.key).key);
     }
     return;
 });
 
-test('Confirms non-existance of '+(numNonExistingKeys)+' not-added keys', async () => {
-    for(const key of nonExistingKeys) {
-        const hasElement = await map.has(key);
+test('Map confirms non-existance of '+(numNonExistingKeys)+' not-added keys', async () => {
+    for(const keyResource of nonExistingKeyResources) {
+        const hasElement = await map.has(keyResource);
         expect(hasElement).toBe(false);
     }
     return;
 });
 
-test('Confirms non-existance of '+(numRemovedKeys)+' removed elements', async () => {
-    for(const key of removedKeys) {
-        const hasElement = await map.has(key);
+test('Map confirms non-existance of '+(numRemovedKeys)+' removed elements', async () => {
+    for(const keyResource of removedKeyResources) {
+        const hasElement = await map.has(keyResource);
         expect(hasElement).toBe(false);
     }
     return;
 });
 
-test('Removes all elements, root goes back to \'\'', async () => {
+test('Map removes all elements, root goes back to \'\'', async () => {
     var iteration = 0;
-    for(const key of existingKeys) {
-        await expect(map.delete(key))
+    for(const keyResource of existingKeyResources) {
+        await expect(map.delete(keyResource))
         .resolves
         .not.toThrow();
     }
-    expect(map.rootHash).toBe(null);
+    expect(map.root).toBe(null);
     await expect(map.isEmpty()).resolves.toBe(true);
     return;
 });

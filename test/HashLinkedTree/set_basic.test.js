@@ -1,9 +1,10 @@
 import {
-    ResourcesManager,
+    Resource,
     VolatileResourcesManager,
-    HashLinkedTree,
+    NodeCryptoManager,
+    HashLinkedSet,
     logger
-} from 'fieldfare';
+} from 'fieldfare/node';
 
 const numCreatedElements = 100;
 const numNonExistingElements = Math.floor(numCreatedElements/5);
@@ -12,70 +13,70 @@ const numExistingElements = numCreatedElements-numRemovedElements;
 
 const gSalt = 'hlt';
 
-const set = new HashLinkedTree(5, null, false);
+const set = new HashLinkedSet(5);
 
 //Build an array of elements to add
-const createdKeys = [];
+const createdElements = [];
+const removedElements = [];
 const removedKeys = [];
+const existingElements = [];
 const existingKeys = [];
+const nonExistingElements = [];
 const nonExistingKeys = [];
 
 beforeAll(async () => {
 
     logger.disable();
-
-    if(global.crypto === undefined) {
-        global.crypto = require('crypto').webcrypto;
-    }
-
+    NodeCryptoManager.init();
     VolatileResourcesManager.init();
 
-    for(var i=0; i<numCreatedElements; i++) {
-        const iElement = {
+    for (var i=0; i<numCreatedElements; i++) {
+        const element = await Resource.fromObject({
             index: i,
             salt: gSalt
-        };
-        const key = await ResourcesManager.storeResourceObject(iElement);
-        createdKeys.push(key);
+        });
+        createdElements.push(element);
         if(i<numRemovedElements) {
-            removedKeys.push(key);
+            removedElements.push(element);
+            removedKeys.push(element.key);
         } else {
-            existingKeys.push(key);
+            existingElements.push(element);
+            existingKeys.push(element.key);
         }
     }
 
     for(var i=0; i<numNonExistingElements; i++) {
-        const iElement = {
-            index: createdKeys+i,
+        const element = await Resource.fromObject({
+            index: numCreatedElements+i,
             salt: gSalt
-        };
-        const key = await ResourcesManager.storeResourceObject(iElement);
-        nonExistingKeys.push(key);
+        });
+        nonExistingElements.push(element);
+        nonExistingKeys.push(element.key);
     }
 
     return;
 });
 
-test('Stores '+numCreatedElements+' elements', async () => {
-    expect(set.rootHash).toBe(null);
-    for(const key of createdKeys) {
-        // console.log('set.add('+key+')');
-        await set.add(key);
+test('Set stores '+numCreatedElements+' elements', async () => {
+    expect(set.root).toBe(null);
+    for(const element of createdElements) {
+        //console.log('set.add('+JSON.stringify(element)+')');
+        await set.add(element);
     }
     return;
 });
 
-test('Removes '+numRemovedElements+' elements', async () => {
-    for(const key of removedKeys) {
-        await set.delete(key);
+test('Set removes '+numRemovedElements+' elements', async () => {
+    for(const element of removedElements) {
+        await set.delete(element);
     }
     return;
 });
 
-test('Throws on attempt to remove elements that do not exist, root remains uchanged', async () => {
+test('Set throws on attempt to remove elements that do not exist, root remains uchanged', async () => {
     const prevRoot = set.rootHash;
-    for(const key of nonExistingKeys) {
-        await expect(set.delete(key))
+    for(const element of nonExistingElements) {
+        await expect(set.delete(element))
         .rejects
         .toThrow();
     }
@@ -83,52 +84,52 @@ test('Throws on attempt to remove elements that do not exist, root remains uchan
     return;
 });
 
-test('Iterates set elements in order, without duplications or invalid elements', async () => {
+test('Set iterates set elements in order, without duplications or invalid elements', async () => {
     const iteratedKeys = [];
-    var lastKey = '';
-    for await(const key of set) {
-        expect(iteratedKeys.includes(key)).toBe(false); //check for duplicated elements
-        expect(key > lastKey).toBe(true); //check if elements are in order
-        iteratedKeys.push(key);
-        expect(existingKeys.includes(key)).toBe(true);
-        expect(removedKeys.includes(key)).toBe(false);
-        lastKey = key;
+    var lastElementKey = '';
+    for await(const element of set) {
+        expect(iteratedKeys.includes(element.key)).toBe(false); //check for duplicated elements
+        expect(element.key > lastElementKey).toBe(true); //check if elements are in order
+        iteratedKeys.push(element.key);
+        expect(existingKeys.includes(element.key)).toBe(true);
+        expect(removedKeys.includes(element.key)).toBe(false);
+        lastElementKey = element.key;
     }
     expect(iteratedKeys.length).toBe(numExistingElements);
     return;
 });
 
-test('Confirms existance of '+numExistingElements+' elements', async () => {
-    for(const key of existingKeys) {
-        const hasElement = await set.has(key);
+test('Set confirms existance of '+numExistingElements+' elements', async () => {
+    for(const element of existingElements) {
+        const hasElement = await set.has(element);
         expect(hasElement).toBe(true);
     }
     return;
 });
 
-test('Confirms non-existance of '+(numNonExistingElements)+' not-added elements', async () => {
-    for(const key of nonExistingKeys) {
-        const hasElement = await set.has(key);
+test('Set confirms non-existance of '+(numNonExistingElements)+' not-added elements', async () => {
+    for(const element of nonExistingElements) {
+        const hasElement = await set.has(element);
         expect(hasElement).toBe(false);
     }
     return;
 });
 
-test('Confirms non-existance of '+(numRemovedElements)+' removed elements', async () => {
-    for(const key of removedKeys) {
-        const hasElement = await set.has(key);
+test('Set confirms non-existance of '+(numRemovedElements)+' removed elements', async () => {
+    for(const element of removedElements) {
+        const hasElement = await set.has(element);
         expect(hasElement).toBe(false);
     }
     return;
 });
 
-test('Removes all elements, root goes back to \'\'', async () => {
+test('Set removes all elements, root goes back to \'\'', async () => {
     var iteration = 0;
-    for(const key of existingKeys) {
-        await expect(set.delete(key))
+    for(const element of existingElements) {
+        await expect(set.delete(element))
         .resolves
         .not.toThrow();
     }
-    expect(set.rootHash).toBe(null);
+    expect(set.root).toBe(null);
     return;
 });
