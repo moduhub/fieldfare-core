@@ -6,7 +6,12 @@ import {logger} from '../basic/Log';
 
 export class TreeBranch {
 
-    constructor(ownerID, origin) {
+    /**
+     * 
+     * @param {string} origin Branch origin resource key in base64 format
+     * @param {string} ownerID Branch owner ID in base64 format
+     */
+    constructor(origin, ownerID) {
         this.ownerID = ownerID;
         this.origin = origin;
         this.depth = 0;
@@ -32,7 +37,7 @@ export class TreeBranch {
         this.depth = 0;
         var nextContainerKey = this.origin;
         while(nextContainerKey !== '') {
-            const iContainer = await TreeContainer.fromResource(nextContainerKey, this.ownerID);
+            const iContainer = await TreeContainer.fromResourceKey(nextContainerKey, this.ownerID);
             if(iContainer === null
             || iContainer === undefined) {
                 throw Error('iContainer object not found');
@@ -53,7 +58,7 @@ export class TreeBranch {
         var nextContainerKey = this.origin;
         this.depth = 0;
         while(nextContainerKey !== '') {
-            const iContainer = await TreeContainer.fromResource(nextContainerKey, this.ownerID);
+            const iContainer = await TreeContainer.fromResourceKey(nextContainerKey, this.ownerID);
             this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
@@ -65,7 +70,7 @@ export class TreeBranch {
         var nextContainerKey = this.origin;
         this.depth = 0;
         while(nextContainerKey !== '') {
-            const iContainer = await TreeContainer.fromResource(nextContainerKey, this.ownerID);
+            const iContainer = await TreeContainer.fromResourceKey(nextContainerKey, this.ownerID);
             this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
@@ -127,10 +132,10 @@ export class TreeBranch {
                     throw Error('container has no siblings');
                 }
                 if(leftSiblingKey !== '') {
-                    leftSibling = await TreeContainer.fromResource(leftSiblingKey, this.ownerID);
+                    leftSibling = await TreeContainer.fromResourceKey(leftSiblingKey, this.ownerID);
                 }
                 if(rightSiblingKey !== '') {
-                    rightSibling = await TreeContainer.fromResource(rightSiblingKey, this.ownerID);
+                    rightSibling = await TreeContainer.fromResourceKey(rightSiblingKey, this.ownerID);
                 }
                 if(leftSibling.numElements >= rightSibling.numElements) {
                     var leftKey;

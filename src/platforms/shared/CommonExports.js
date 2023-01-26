@@ -1,4 +1,3 @@
-export * from '../../basic/keyManagement';
 export * from '../../basic/Log';
 export * from '../../basic/NVD';
 export * from '../../basic/Utils';
@@ -14,11 +13,13 @@ export * from '../../trx/Message';
 export * from '../../trx/Request';
 export * from '../../trx/Transceiver';
 
-export * from '../../resources/ResourcesManager';
+export * from '../../resources/Resource';
+export * from '../../resources/ResourceUtils';
 export * from '../../resources/VolatileResourcesManager';
 
 export * from '../../structures/HashLinkedList';
-export * from '../../structures/HashLinkedTree';
+export * from '../../structures/HashLinkedSet';
+export * from '../../structures/HashLinkedMap';
 
 export * from '../../versioning/VersionChain';
 export * from '../../versioning/VersionedData';

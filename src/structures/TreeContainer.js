@@ -1,7 +1,7 @@
 
-import {ResourcesManager} from '../resources/ResourcesManager';
-import {Utils} from '../basic/Utils';
-import {logger} from '../basic/Log';
+import { ResourceUtils } from '../resources/ResourceUtils';
+import { ResourcesManager } from '../resources/ResourcesManager';
+import { Utils } from '../basic/Utils';
 
 export class TreeContainer {
 
@@ -16,13 +16,13 @@ export class TreeContainer {
 		|| leftChild === '') {
 			this.children[0] = '';
 		} else {
-			ResourcesManager.validateKey(leftChild);
+			ResourceUtils.validateKey(leftChild);
 			this.children[0] = leftChild;
 		}
 		this.numElements = 0;
 	}
 
-	static async fromResource(key, ownerID) {
+	static async fromResourceKey(key, ownerID) {
 		var newContainer = new TreeContainer();
 		const resourceObject = await ResourcesManager.getResourceObject(key, ownerID);
 		if(resourceObject === null
@@ -47,40 +47,48 @@ export class TreeContainer {
 		return true;
 	}
 
-	add(element, rightChild) {
+	/**
+	 * Add an element to the Tree Container in the correct position
+	 * considering key order. 
+	 * If the container is of 'set' type, contents must be a key in base64 format
+	 * If container is of 'map' type, contents must be an array containing a [key, value] pair.
+	 * @param {*} contents A resource key in base64 format, or an array
+	 * containing [key, value] pair of resource keys
+	 * @param {string} rightChildKey key to the rightChild resource in base64 format
+	 */
+	add(contents, rightChildKey) {
 		var key, value;
 		if(this.values) {
-			if(Array.isArray(element) === undefined) {
+			if(Array.isArray(contents) === undefined) {
 				throw Error('Attempt to insert value in non-map container');
 			}
-			key = element[0];
-			value = element[1];
-			ResourcesManager.validateKey(value);
+			key = contents[0];
+			value = contents[1];
+			ResourceUtils.validateKey(value);
 		} else {
-			key = element;
+			key = contents;
 		}
-		ResourcesManager.validateKey(key);
-		if(rightChild === null
-		|| rightChild === undefined) {
-			rightChild = '';
-		} else
-		if(rightChild !== ''
-		&& Utils.isBase64(rightChild) === false) {
-			throw Error('invalid right child - not base64');
+		ResourceUtils.validateKey(key);
+		if(rightChildKey === undefined
+		|| rightChildKey === null
+		|| rightChildKey === '') {
+			rightChildKey = '';
+		} else {
+			ResourceUtils.validateKey(rightChildKey);
 		}
 		if(this.numElements === 0) {
 			this.keys[0] = key;
 			if(this.values) {
 				this.values[0] = value;
 			}
-			this.children[1] = rightChild;
+			this.children[1] = rightChildKey;
 		} else {
 			if(key < this.keys[0]) {
 				this.keys.unshift(key);
 				if(this.values) {
 					this.values.unshift(value);
 				}
-				this.children.splice(1, 0, rightChild);
+				this.children.splice(1, 0, rightChildKey);
 			} else {
 				var insertIndex = 1;
 				for(var i=0; i<this.numElements; i++) {
@@ -94,7 +102,7 @@ export class TreeContainer {
 				if(this.values) {
 					this.values.splice(insertIndex, 0, value);
 				}
-				this.children.splice(insertIndex+1, 0, rightChild);
+				this.children.splice(insertIndex+1, 0, rightChildKey);
 			}
 		}
 		this.numElements++;
@@ -371,6 +379,11 @@ export class TreeContainer {
 		return this.children[childIndex];
 	}
 
+	/**
+	 * Update the value assigned to the key given.
+	 * @param {string} key key in base64 format
+	 * @param {*} value value in base64 format
+	 */
 	updateKeyValue(key, value) {
 		if(this.values === undefined) {
 			throw Error('Attemp to update key value in non-map container');
@@ -395,7 +408,7 @@ export class TreeContainer {
 
 	async* iterator(ownerID) {
 		if(this.children[0] !== '') {
-			const leftmostChild = await TreeContainer.fromResource(this.children[0], ownerID);
+			const leftmostChild = await TreeContainer.fromResourceKey(this.children[0], ownerID);
 			//Descent on leftmost child
 			for await (const element of leftmostChild.iterator(ownerID)) {
 				yield element;
@@ -409,7 +422,7 @@ export class TreeContainer {
 				yield this.keys[i];
 			}
 			if(this.children[i+1] !== '') {
-				var iChild = await TreeContainer.fromResource(this.children[i+1], ownerID);
+				var iChild = await TreeContainer.fromResourceKey(this.children[i+1], ownerID);
 				for await (const element of iChild.iterator(ownerID)) {
 					yield element;
 				}
