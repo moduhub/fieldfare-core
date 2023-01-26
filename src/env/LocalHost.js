@@ -154,6 +154,9 @@ export const LocalHost = {
 		localHost.requests.set(hash, request);
 		var destinationHost = localHost.remoteHosts.get(request.destination);
 		if(destinationHost != undefined) {
+			if(destinationHost == localHost.id) {
+				throw Error('Attempt to send a request to localHost');
+			}
 			request.source = localHost.id;
 			destinationHost.send(request);
 		} else {
