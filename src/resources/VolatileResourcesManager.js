@@ -1,6 +1,7 @@
 
-import {ResourcesManager} from './ResourcesManager';
-import {logger} from '../basic/Log';
+import { ResourcesManager } from './ResourcesManager';
+import { ResourceUtils } from './ResourceUtils';
+import { logger } from '../basic/Log';
 
 
 export class VolatileResourcesManager extends ResourcesManager {
@@ -23,9 +24,9 @@ export class VolatileResourcesManager extends ResourcesManager {
         ResourcesManager.addInstance(newInstance);
     }
 
-    async storeResource(base64data) {
+    async storeResourceData(base64data) {
 
-        const base64hash = await ResourcesManager.generateKeyForData(base64data);
+        const base64hash = await ResourceUtils.generateKeyForData(base64data);
 
 		this.hashmap.set(base64hash, base64data);
 
@@ -38,9 +39,9 @@ export class VolatileResourcesManager extends ResourcesManager {
 		return base64hash;
 	}
 
-	getResource(base64hash) {
+	getResourceData(base64key) {
 
-		var base64data = this.hashmap.get(base64hash);
+		var base64data = this.hashmap.get(base64key);
 
         if(base64data === undefined) {
             const error = Error('Resource not found');
