@@ -1,5 +1,5 @@
 
-import {ResourcesManager} from '../resources/ResourcesManager';
+import {ResourcesManager} from '../chunking/ChunkManager';
 import {ServiceDefinition} from './ServiceDefinition';
 import {Message} from '../trx/Message';
 import {NVD} from '../basic/NVD';

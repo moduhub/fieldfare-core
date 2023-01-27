@@ -13,9 +13,9 @@ export * from '../../trx/Message';
 export * from '../../trx/Request';
 export * from '../../trx/Transceiver';
 
-export * from '../../resources/Resource';
-export * from '../../resources/ResourceUtils';
-export * from '../../resources/VolatileResourcesManager';
+export * from '../../chunking/Resource
+export * from '../../chunking/ChunkingUtils';
+export * from '../../chunking/VolatileChunkManager';
 
 export * from '../../structures/HashLinkedList';
 export * from '../../structures/HashLinkedSet';

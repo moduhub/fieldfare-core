@@ -1,5 +1,5 @@
 import { HashLinkedTree } from "./HashLinkedTree";
-import { Resource } from  "../resources/Resource";
+import { Resource } from  "../chunking/Resource
 import { TreeContainer } from "./TreeContainer";
 import { TreeBranch } from "./TreeBranch";
 
@@ -63,7 +63,7 @@ export class HashLinkedSet extends HashLinkedTree {
 		if(this.root !== null
 		&& this.root !== undefined
         && this.root !== '') {
-			var rootContainer = await TreeContainer.fromResourceKey(this.root.key);
+			var rootContainer = await TreeContainer.fromChunkID(this.root.key);
             for await(const key of rootContainer.iterator(this.root.ownerID)) {
                 const keyResource = Resource.fromKey(key);
                 yield keyResource;

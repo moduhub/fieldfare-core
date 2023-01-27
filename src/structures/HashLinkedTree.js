@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-import {Resource} from '../resources/Resource';
+import {Resource} from '../chunking/Resource
 import {TreeBranch} from './TreeBranch';
 import {TreeContainer} from './TreeContainer';
 import { Utils } from '../basic/Utils';
@@ -88,7 +88,7 @@ export class HashLinkedTree {
 		} else {
 			var nextContainerHash = this.root.key;
 			do {
-				const iContainer = await TreeContainer.fromResourceKey(nextContainerHash, this.ownerID);
+				const iContainer = await TreeContainer.fromChunkID(nextContainerHash, this.ownerID);
 				nextContainerHash = iContainer.follow(key);
 				if(nextContainerHash === true) {
 					return true;

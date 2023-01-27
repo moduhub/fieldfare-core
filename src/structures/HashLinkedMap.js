@@ -1,7 +1,7 @@
 import { HashLinkedTree } from "./HashLinkedTree";
 import { TreeContainer } from "./TreeContainer";
 import { TreeBranch } from "./TreeBranch";
-import { Resource } from "../resources/Resource";
+import { Resource } from "../chunking/Resource
 
 
 export class HashLinkedMap extends HashLinkedTree {
@@ -81,7 +81,7 @@ export class HashLinkedMap extends HashLinkedTree {
         && this.root !== undefined) {
             var nextContainerKey = this.root.key;
 			do {
-				const iContainer = await TreeContainer.fromResourceKey(nextContainerKey, this.root.ownerID);
+				const iContainer = await TreeContainer.fromChunkID(nextContainerKey, this.root.ownerID);
 				nextContainerKey = iContainer.follow(key);
 				if(nextContainerKey === true) {
 					const valueResourceKey = iContainer.getKeyValue(key);
@@ -96,7 +96,7 @@ export class HashLinkedMap extends HashLinkedTree {
 		if(this.root !== null
 		&& this.root !== undefined
         && this.root !== '') {
-			var rootContainer = await TreeContainer.fromResourceKey(this.root.key);
+			var rootContainer = await TreeContainer.fromChunkID(this.root.key);
    			for await(const [key, value] of rootContainer.iterator(this.root.ownerID)) {
                 const keyResource = Resource.fromKey(key);
                 const valueResource = Resource.fromKey(value);

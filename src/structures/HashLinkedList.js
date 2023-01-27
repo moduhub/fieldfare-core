@@ -6,7 +6,7 @@
  */
 
 import {LocalHost} from '../env/LocalHost';
-import {ResourcesManager} from '../resources/ResourcesManager'
+import {ResourcesManager} from '../chunking/ChunkManager'
 import {Utils} from '../basic/Utils';
 import {logger} from '../basic/Log';
 

@@ -1,6 +1,6 @@
 
-import { ResourcesManager } from './ResourcesManager';
-import { ResourceUtils } from './ResourceUtils';
+import { ResourcesManager } from './ChunkManager';
+import { ResourceUtils } from './ChunkingUtils';
 import { logger } from '../basic/Log';
 
 

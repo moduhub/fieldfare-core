@@ -1,7 +1,7 @@
 
 import { LocalHost } from '../env/LocalHost';
 import { Request } from '../trx/Request';
-import { ResourceUtils } from './ResourceUtils';
+import { ResourceUtils } from './ChunkingUtils';
 import { logger } from '../basic/Log';
 
 var instances = new Set();

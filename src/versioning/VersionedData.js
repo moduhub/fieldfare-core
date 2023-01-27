@@ -5,7 +5,7 @@
  */
 
 import {LocalHost} from '../env/LocalHost';
-import {ResourcesManager} from '../resources/ResourcesManager';
+import {ResourcesManager} from '../chunking/ChunkManager';
 import {HashLinkedList} from '../structures/HashLinkedList';
 import {HashLinkedTree} from '../structures/HashLinkedTree';
 import {VersionStatement} from './VersionStatement';

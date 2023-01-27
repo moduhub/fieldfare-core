@@ -1,5 +1,5 @@
 
-import {ResourcesManager} from '../resources/ResourcesManager';
+import {ResourcesManager} from '../chunking/ChunkManager';
 import {TreeContainer} from './TreeContainer';
 import {Utils} from '../basic/Utils';
 import {logger} from '../basic/Log';
@@ -37,7 +37,7 @@ export class TreeBranch {
         this.depth = 0;
         var nextContainerKey = this.origin;
         while(nextContainerKey !== '') {
-            const iContainer = await TreeContainer.fromResourceKey(nextContainerKey, this.ownerID);
+            const iContainer = await TreeContainer.fromChunkID(nextContainerKey, this.ownerID);
             if(iContainer === null
             || iContainer === undefined) {
                 throw Error('iContainer object not found');
@@ -58,7 +58,7 @@ export class TreeBranch {
         var nextContainerKey = this.origin;
         this.depth = 0;
         while(nextContainerKey !== '') {
-            const iContainer = await TreeContainer.fromResourceKey(nextContainerKey, this.ownerID);
+            const iContainer = await TreeContainer.fromChunkID(nextContainerKey, this.ownerID);
             this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
@@ -70,7 +70,7 @@ export class TreeBranch {
         var nextContainerKey = this.origin;
         this.depth = 0;
         while(nextContainerKey !== '') {
-            const iContainer = await TreeContainer.fromResourceKey(nextContainerKey, this.ownerID);
+            const iContainer = await TreeContainer.fromChunkID(nextContainerKey, this.ownerID);
             this.depth++;
             this.containerKeys.push(nextContainerKey);
             this.containers.push(iContainer);
@@ -132,10 +132,10 @@ export class TreeBranch {
                     throw Error('container has no siblings');
                 }
                 if(leftSiblingKey !== '') {
-                    leftSibling = await TreeContainer.fromResourceKey(leftSiblingKey, this.ownerID);
+                    leftSibling = await TreeContainer.fromChunkID(leftSiblingKey, this.ownerID);
                 }
                 if(rightSiblingKey !== '') {
-                    rightSibling = await TreeContainer.fromResourceKey(rightSiblingKey, this.ownerID);
+                    rightSibling = await TreeContainer.fromChunkID(rightSiblingKey, this.ownerID);
                 }
                 if(leftSibling.numElements >= rightSibling.numElements) {
                     var leftKey;

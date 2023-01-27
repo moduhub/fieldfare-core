@@ -5,7 +5,7 @@
  */
 
 import {LocalHost} from '../env/LocalHost';
-import {ResourcesManager} from '../resources/ResourcesManager';
+import {ResourcesManager} from '../chunking/ChunkManager';
 import {RemoteService} from './RemoteService';
 import {Message} from '../trx/Message';
 import {Utils} from '../basic/Utils';

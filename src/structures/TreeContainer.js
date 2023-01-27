@@ -1,6 +1,6 @@
 
-import { ResourceUtils } from '../resources/ResourceUtils';
-import { ResourcesManager } from '../resources/ResourcesManager';
+import { ChunkingUtils } from '../chunking/ChunkingUtils';
+import { ChunkManager } from '../chunking/ChunkManager';
 import { Utils } from '../basic/Utils';
 
 export class TreeContainer {
@@ -16,15 +16,15 @@ export class TreeContainer {
 		|| leftChild === '') {
 			this.children[0] = '';
 		} else {
-			ResourceUtils.validateKey(leftChild);
+			ChunkingUtils.validateKey(leftChild);
 			this.children[0] = leftChild;
 		}
 		this.numElements = 0;
 	}
 
-	static async fromResourceKey(key, ownerID) {
+	static async fromChunkID(key, ownerID) {
 		var newContainer = new TreeContainer();
-		const resourceObject = await ResourcesManager.getResourceObject(key, ownerID);
+		const resourceObject = await ChunkManager.getResourceObject(key, ownerID);
 		if(resourceObject === null
 		|| resourceObject === undefined) {
 			throw Error('failed to fetch container resource');
@@ -64,17 +64,17 @@ export class TreeContainer {
 			}
 			key = contents[0];
 			value = contents[1];
-			ResourceUtils.validateKey(value);
+			ChunkingUtils.validateKey(value);
 		} else {
 			key = contents;
 		}
-		ResourceUtils.validateKey(key);
+		ChunkingUtils.validateKey(key);
 		if(rightChildKey === undefined
 		|| rightChildKey === null
 		|| rightChildKey === '') {
 			rightChildKey = '';
 		} else {
-			ResourceUtils.validateKey(rightChildKey);
+			ChunkingUtils.validateKey(rightChildKey);
 		}
 		if(this.numElements === 0) {
 			this.keys[0] = key;
@@ -408,7 +408,7 @@ export class TreeContainer {
 
 	async* iterator(ownerID) {
 		if(this.children[0] !== '') {
-			const leftmostChild = await TreeContainer.fromResourceKey(this.children[0], ownerID);
+			const leftmostChild = await TreeContainer.fromChunkID(this.children[0], ownerID);
 			//Descent on leftmost child
 			for await (const element of leftmostChild.iterator(ownerID)) {
 				yield element;
@@ -422,7 +422,7 @@ export class TreeContainer {
 				yield this.keys[i];
 			}
 			if(this.children[i+1] !== '') {
-				var iChild = await TreeContainer.fromResourceKey(this.children[i+1], ownerID);
+				var iChild = await TreeContainer.fromChunkID(this.children[i+1], ownerID);
 				for await (const element of iChild.iterator(ownerID)) {
 					yield element;
 				}

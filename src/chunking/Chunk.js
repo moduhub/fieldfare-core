@@ -1,5 +1,5 @@
-import { ResourcesManager } from "./ResourcesManager";
-import { ResourceUtils } from "./ResourceUtils";
+import { ResourcesManager } from "./ChunkManager";
+import { ResourceUtils } from "./ChunkingUtils";
 import { LocalHost } from "../env/LocalHost";
 import { Utils } from '../basic/Utils';
 import { cryptoManager } from "../basic/CryptoManager";

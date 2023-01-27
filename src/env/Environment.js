@@ -6,7 +6,7 @@
  */
 
 import {LocalHost} from './LocalHost';
-import {ResourcesManager} from '../resources/ResourcesManager';
+import {ResourcesManager} from '../chunking/ChunkManager';
 import {HashLinkedTree} from '../structures/HashLinkedTree';
 import {VersionedData} from '../versioning/VersionedData';
 import {VersionStatement} from '../versioning/VersionStatement';

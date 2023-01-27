@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-import {ResourcesManager} from '../resources/ResourcesManager';
+import {ResourcesManager} from '../chunking/ChunkManager';
 import {logger} from '../basic/Log';
 
 export class VersionStatement {

@@ -1,7 +1,7 @@
 
 import {LocalHost} from './LocalHost';
 import {ServiceDefinition} from './ServiceDefinition';
-import {ResourcesManager} from '../resources/ResourcesManager';
+import {ResourcesManager} from '../chunking/ChunkManager';
 import {Request} from '../trx/Request';
 import {logger} from '../basic/Log';
 

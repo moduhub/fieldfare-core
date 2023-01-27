@@ -1,5 +1,5 @@
 
-import {ResourcesManager} from '../resources/ResourcesManager';
+import {ResourcesManager} from '../chunking/ChunkManager';
 import {VersionStatement} from '../versioning/VersionStatement';
 import {logger} from '../basic/Log';
 import chalk from 'chalk';

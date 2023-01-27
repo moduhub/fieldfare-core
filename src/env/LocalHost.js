@@ -5,7 +5,7 @@
  * ISC LICENSE
  */
 
-import {ResourcesManager} from '../resources/ResourcesManager';
+import {ResourcesManager} from '../chunking/ChunkManager';
 import {cryptoManager} from '../basic/CryptoManager';
 import {Environment} from '../env/Environment';
 import {LocalService} from './LocalService';
