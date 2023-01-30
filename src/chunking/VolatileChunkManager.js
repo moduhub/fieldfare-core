@@ -1,10 +1,10 @@
 
-import { ResourcesManager } from './ChunkManager';
-import { ResourceUtils } from './ChunkingUtils';
+import { ChunkManager } from './ChunkManager';
+import { ChunkingUtils } from './ChunkingUtils';
 import { logger } from '../basic/Log';
 
 
-export class VolatileResourcesManager extends ResourcesManager {
+export class VolatileChunkManager extends ChunkManager {
 
     constructor(enableReport=false) {
         super();
@@ -13,38 +13,38 @@ export class VolatileResourcesManager extends ResourcesManager {
 
         if(enableReport) {
             setInterval(() => {
-                logger.log('info', "Volatile Resources Manager: " + this.hashmap.size + " resources stored.");
+                logger.log('info', "Volatile Chunk Manager: " + this.hashmap.size + " chunks stored.");
             }, 30000);
         }
 
     }
 
     static init() {
-        const newInstance = new VolatileResourcesManager;
-        ResourcesManager.addInstance(newInstance);
+        const newInstance = new VolatileChunkManager;
+        ChunkManager.addInstance(newInstance);
     }
 
-    async storeResourceData(base64data) {
+    async storeChunkContents(base64data) {
 
-        const base64hash = await ResourceUtils.generateKeyForData(base64data);
+        const id = await ChunkingUtils.generateIdentifierForData(base64data);
 
-		this.hashmap.set(base64hash, base64data);
+		this.hashmap.set(id, base64data);
 
 		// logger.log('info', "res.store("
-		// 	+ base64hash
+		// 	+ id
 		// 	+ ", "
 		// 	+ base64data
 		// 	+ ") >hashmap size: " + this.hashmap.size);
 
-		return base64hash;
+		return id;
 	}
 
-	getResourceData(base64key) {
+	getChunkContents(id) {
 
-		var base64data = this.hashmap.get(base64key);
+		var base64data = this.hashmap.get(id);
 
         if(base64data === undefined) {
-            const error = Error('Resource not found');
+            const error = Error('Chunk not found');
             error.name = 'NOT_FOUND_ERROR';
             throw error;
         }
