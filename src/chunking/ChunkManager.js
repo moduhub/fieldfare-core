@@ -1,12 +1,12 @@
 
 import { LocalHost } from '../env/LocalHost';
 import { Request } from '../trx/Request';
-import { ResourceUtils } from './ChunkingUtils';
+import { ChunkingUtils } from './ChunkingUtils';
 import { logger } from '../basic/Log';
 
 var instances = new Set();
 
-export class ResourcesManager {
+export class ChunkManager {
 
     constructor() {
             //
@@ -23,9 +23,9 @@ export class ResourcesManager {
         instances.add(instance);
     }
 
-    static async storeResourceObject(object) {
-		const base64data = ResourceUtils.convertObjectToData(object);
-		const base64hash = await ResourcesManager.storeResourceData(base64data);
+    static async storeObjectAsChunk(object) {
+		const base64data = ChunkingUtils.convertObjectToData(object);
+		const base64hash = await ChunkManager.storeChunkContents(base64data);
 //		logger.log('info', "------------------------------\n"
 //			+ "Storing: " + base64hash
 //			+ "->" + JSON.stringify(object, null, 2)
@@ -33,48 +33,53 @@ export class ResourcesManager {
 		return base64hash;
 	}
 
-	static async getResourceObject(hash, owner) {
-		const base64data = await ResourcesManager.getResourceData(hash, owner);
-		const object = ResourceUtils.convertDataToObject(base64data);
+	static async getObjectFromIdentifier(id, owner) {
+		const base64data = await ChunkManager.getDataFromIdentifier(id, owner);
+		const object = ChunkingUtils.convertDataToObject(base64data);
 		return object;
 	}
 
-	static async storeResourceData(data) {
+	/**
+	 * Store the contents of a chunk, generating its identifier in the process
+	 * @param {string} contents Chunk contents inbase64 format 
+	 * @returns string containing a chunk identifier assigned to the given data
+	 */
+	static async storeChunkContents(contents) {
 		var base64key;
-		if(ResourcesManager.available() === false) {
-	          throw Error('No resources managers defined');
+		if(ChunkManager.available() === false) {
+	          throw Error('No chunk managers defined');
         }
 		//Store in all defined managers
 		for (const instance of instances) {
-			base64key = await instance.storeResourceData(data);
+			base64key = await instance.storeChunkContents(contents);
 		}
 		return base64key;
 	}
 
 	/**
-	 * Fetch resource data locally if available, or request from remote host
-	 * otherwise. Throws an error if the resource is not found anywhere.
-	 * - DEPRECATED: use Resource.fromKey() instead of managing resource keys manually
-	 * @param {string} key resource key in base64 format
-	 * @param {string} ownerID resource owner ID in base64 format
-	 * @returns string containing resource data in base64 format
+	 * Fetch chunk data locally if available, or request from remote host
+	 * otherwise. Throws an error if the chunk is not found anywhere.
+	 * - DEPRECATED: use Chunk.fromIdentifier() instead of managing chunk identifiers manually
+	 * @param {string} id chunk id in base64 format plus prefix
+	 * @param {string} ownerID chunk owner ID in base64 format
+	 * @returns string containing chunk data in base64 format
 	 */
-	static async getResourceData(key, ownerID) {
-		ResourceUtils.validateKey(key);
+	static async getChunkContents(id, ownerID) {
+		ChunkingUtils.validateIdentifier(id);
 		var data;
 		try {
-			data = await ResourcesManager.getLocalResourceData(key);
+			data = await ChunkManager.getLocalChunkContents(id);
 		} catch(error) {
 			if(error.name === 'NOT_FOUND_ERROR') {
 				//logger.log('info', "res.fetch: Not found locally. Owner: " + owner);
 				if(ownerID === null
 				|| ownerID === undefined) {
 					//Owner not know, fail
-					var error = Error('resource not found locally, owner unknown: ' + key);
+					var error = Error('chunk not found locally, owner unknown: ' + id);
 					error.name = 'NOT_FOUND_ERROR';
 					throw error;
 				}
-				data = await ResourcesManager.getRemoteResourceData(key, ownerID);
+				data = await ChunkManager.getRemoteChunkContents(id, ownerID);
 			}                
 			throw error;
 		}
@@ -82,73 +87,73 @@ export class ResourcesManager {
 	}
 	
 	/**
-	 * Search all local Resources Managers for the resource indicated by the
-	 * 'key' argument, throws a NOT_FOUND_ERROR if the resource is not found.
-	 * @param {string} key Resource key in base64 format
-	 * @returns string containing resource data in base64 format
+	 * Search all local Chunk Managers for the chunk indicated by the
+	 * 'id' argument, throws a NOT_FOUND_ERROR if the chunk is not found.
+	 * @param {string} id Chunk identifier in base64 format plus prefix
+	 * @returns string containing chunk data in base64 format
 	 */
-	static async getLocalResourceData(key) {
+	static async getLocalChunkContents(id) {
 		var base64data;
 		for(const instance of instances) {
 			try {
-				base64data = await instance.getResourceData(key);
+				base64data = await instance.getDataFromIdentifier(id);
 				if(base64data !== undefined) {
 					return base64data;
 				}
 			} catch (error) {
 				if(error.name === 'NOT_FOUND_ERROR') {
-					// logger.log('info', 'Manager ' + manager + ' does not have ' + key);
+					// logger.log('info', 'Manager ' + manager + ' does not have ' + id);
 				} else {
-					throw Error('getResource failed: ', {cause: error});
+					throw Error('getLocalChunkContents failed: ', {cause: error});
 				}
 			}
 		}
-		const error = new Error('Resource not found locally');
+		const error = new Error('Chunk not found locally');
 		error.name = 'NOT_FOUND_ERROR';
 		throw error;
 	}
 
 	/**
-	 * Request resource identified by the given key, from remote host
+	 * Request chunk identified by the given identifier from remote host
 	 * identified by the given ownerID.
-	 * @param {string} hash resource hash (key) in base64 format
-	 * @param {string} owner resource ownerID in base64 format
-	 * @returns string containg resource data in base64 format
+	 * @param {string} id chunk identifier in base64 format plus prefix
+	 * @param {string} owner chunk ownerID in base64 format
+	 * @returns string containg chunk contents in base64 format
 	 */
-	static async getRemoteResourceData(hash, owner) {
+	static async getRemoteChunkContents(id, owner) {
 		const retryCount = 3;
 		for(var attempts = 0; attempts<retryCount; attempts++) {
 			//Check if there is already a request for this same hash
-			var request = LocalHost.getPendingRequest(hash);
+			var request = LocalHost.getPendingRequest(id);
 			if(request === undefined) {
 				if(attempts > 0) {
-					logger.debug('get resource request retry ' + attempts + ' of ' + retryCount-1);
+					logger.debug('get chunk request retry ' + attempts + ' of ' + retryCount-1);
 				}
-				request = new Request('resource', 3000, {
-					hash: hash
+				request = new Request('chunk', 3000, {
+					hash: id
 				});
 				request.setDestinationAddress(owner);
 				//Notify that a new request was created
-				LocalHost.dispatchRequest(hash, request);
+				LocalHost.dispatchRequest(id, request);
 			}
 			try {
 				const response = await request.complete();
 				var remoteBase64hash = response.data.hash;
 				var remoteBase64data = response.data.data;
-				//logger.log 'info', ("Received remote resource response:" + JSON.stringify(response.data.data));
-				const verifyHash = await ResourcesManager.storeResourceData(remoteBase64data);
+				//logger.log 'info', ("Received remote chunk response:" + JSON.stringify(response.data.data));
+				const verifyHash = await ChunkManager.storeChunkContents(remoteBase64data);
 				if(verifyHash !== remoteBase64hash) {
 					//logger.log('info', "[+RES] (" + hash + "):(" + response.data.data + ")");
-					throw Error('corrupted resource received from remote host');
+					throw Error('corrupted chunk received from remote host');
 				}
 				return remoteBase64data;
 			} catch (error) {
-				logger.error('Get resource request failed: ' + error.stack);
+				logger.error('Get chunk request failed: ' + error.stack);
 			} finally {
-                LocalHost.clearRequest(hash);
+                LocalHost.clearRequest(id);
 			}
 		}
-		throw Error('Resource not found remotely: ' + hash).name = 'NOT_FOUND_ERROR';
+		throw Error('Chunk not found remotely: ' + id).name = 'NOT_FOUND_ERROR';
 	}
 
 };
