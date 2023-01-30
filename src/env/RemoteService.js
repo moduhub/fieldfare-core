@@ -12,55 +12,38 @@ export class RemoteService {
     }
 
     static fromDefinition(definition) {
-
         var newService = new RemoteService();
-
         newService.definition = definition;
-
         for(const methodName of definition.methods) {
             newService[methodName] = async (params) => {
-
                 if(newService.owner === undefined) {
                     throw Error('RemoteService owner is undefined');
                 }
-
                 logger.debug('[Remote Service]' +  methodName + ' called with params: ' + JSON.stringify(params));
-
                 const request = new Request(newService.definition.uuid, 10000, {
                     [methodName]: {
                         params: params
                     }
                 });
-
                 await LocalHost.signMessage(request);
-
                 const requestIdentifier = await ChunkingUtils.generateidentifierForObject(request.data);
-
                 newService.owner.pendingRequests.set(requestIdentifier, request);
-
                 newService.owner.send(request);
-
                 const response = await request.complete();
-
                 if('data' in response === false) {
                     throw Error('Missing response data');
                 }
-
                 if(response.data.status === 'error') {
                     throw Error('Request failed, error:' + response.data.error);
                 }
-
                 if(response.data.status !== 'done') {
                     throw Error('Unexpected response status');
                 }
-
                 return response.data.result;
             };
         }
-
         //Assign service data elements
         ServiceDefinition.buildData(definition, newService);
-
         return newService;
     }
 
