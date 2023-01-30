@@ -4,13 +4,13 @@
  * and open the template in the editor.
  */
 
-import {LocalHost} from '../env/LocalHost';
-import {ResourcesManager} from '../chunking/ChunkManager';
-import {RemoteService} from './RemoteService';
-import {Message} from '../trx/Message';
-import {Utils} from '../basic/Utils';
-import {logger} from '../basic/Log';
-import {cryptoManager} from '../basic/CryptoManager';
+import { LocalHost } from '../env/LocalHost';
+import { ChunkManager } from '../chunking/ChunkManager';
+import { RemoteService } from './RemoteService';
+import { Message } from '../trx/Message';
+import { Utils } from '../basic/Utils';
+import { logger } from '../basic/Log';
+import { cryptoManager } from '../basic/CryptoManager';
 
 
 export class RemoteHost {
@@ -109,10 +109,10 @@ export class RemoteHost {
 				await this.treatAnnounce(message, channel);
 
 			} else
-			if(message.service == 'resource') {
+			if(message.service == 'chunk') {
 
-				//logger.log('info', "treating resource message (request/response)");
-				await this.treatResourceMessage(message, channel);
+				//logger.log('info', "treating chunk request (request/response)");
+				await this.treatChunkMessage(message, channel);
 			} else
 			if(message.service == 'response') {
 
@@ -160,9 +160,10 @@ export class RemoteHost {
 		}
 		if(this.pubKey === undefined) {
 			//Get host pubkey
-			var remotePubKeyData = await ResourcesManager.getResourceObject(message.data.id, message.data.id);
-			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyData));
-			this.pubKey = await CryptoManager.importPublicKey(remotePubKeyData);
+			var remotePubKeyChunk = await Chunk.fromIdentifier(message.data.id, message.data.id);
+			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyChunk));
+			const remotePubKeyJWK = remotePubKeyChunk.expand();
+			this.pubKey = await cryptoManager.importPublicKey(remotePubKeyJWK);
 		}
 		if(await cryptoManager.verifyMessage(message, this.pubKey) !== true) {
 			throw Error('invalid message signature');
@@ -250,103 +251,76 @@ export class RemoteHost {
 
 	//Assign callbacks
 	onResponseReceived(response) {
-
 		var assignedRequest = LocalHost.getPendingRequest(response.data.hash);
-
 		//logger.log('info', "remoteHost.onResponseReceived(" + JSON.stringify(response));
-
 		if(assignedRequest) {
-
 			//logger.log('info', "assignedRequest " + JSON.stringify(assignedRequest));
-
 			if(response.data.error) {
 				assignedRequest.reject(response.data.error);
 			} else {
 				assignedRequest.resolve(response);
 			}
-
 		}
 	}
 
-	async treatResourceMessage(message, channel) {
-
-		if('hash' in message.data == false) {
+	async treatChunkMessage(message, channel) {
+		if('id' in message.data == false) {
 			throw Error('malformed resouce message');
 		}
-
 		if('data' in message.data
 		|| 'error' in message.data) {
-
 			//this is a response to a previous request
 			if(this.onResponseReceived) {
 
 				this.onResponseReceived(message, channel);
 
 			} else {
-				throw Error('treatResourceMessage: undefined response callback');
+				throw Error('treatChunkRequest: undefined response callback');
 			}
-
 		} else {
-
 			var response;
-
 			try {
-
-				var base64data = await ResourcesManager.getResource(message.data.hash);
-
-				response = new Message('resource', {
-					hash: message.data.hash,
+				var base64data = await ChunkManager.getLocalChunkContents(message.data.id);
+				response = new Message('chunk', {
+					id: message.data.id,
 					data: base64data
 				});
-
 			} catch (error) {
-
 				if(error.name === 'NOT_FOUND_ERROR') {
-
 					//not found, generate error response
-					response = new Message('resource', {
-						hash: message.data.hash,
+					response = new Message('chunk', {
+						id: message.data.id,
 						error: 'not found'
 					});
-
 				} else {
-					throw Error('treat resource message failed', {cause: error});
+					throw Error('treat chunk message failed', {cause: error});
 				}
 			}
-
 			this.send(response);
-
 		}
 	}
 
 	async accessService(uuid) {
-
 		if(this.definedServices.has(uuid) === false) {
 			throw Error('Service '+ uuid +' is not defined for this host');
 		}
-
 		if(this.implementedServices.has(uuid) === false) {
 			try {
 				const definition = this.definedServices.get(uuid);
 				const newService = RemoteService.fromDefinition(definition);
 				newService.setOwner(this);
 				this.implementedServices.set(definition.uuid, newService);
-
 				if(this.lastState) {
 					const serviceState = this.lastState[uuid];
 					newService.setState(serviceState);
 				}
-
 				logger.debug('Implemented new RemoteService ' + uuid + ' for RemoteHost ' + this.id);
 			} catch(error) {
 				throw Error('Failed to setup RemoteService ' + uuid, {cause: error});
 			}
 		}
-
 		const service = this.implementedServices.get(uuid);
-
 		logger.debug('accessService('+uuid+') result: ' + JSON.stringify(service));
-
 		return service;
 	}
 

@@ -24,13 +24,13 @@ export class ChunkManager {
     }
 
     static async storeObjectAsChunk(object) {
-		const base64data = ChunkingUtils.convertObjectToData(object);
-		const base64hash = await ChunkManager.storeChunkContents(base64data);
+		const chunkContents = ChunkingUtils.convertObjectToData(object);
+		const id = await ChunkManager.storeChunkContents(chunkContents);
 //		logger.log('info', "------------------------------\n"
 //			+ "Storing: " + base64hash
 //			+ "->" + JSON.stringify(object, null, 2)
 //			+ "\n------------------------------\n");
-		return base64hash;
+		return id;
 	}
 
 	static async getObjectFromIdentifier(id, owner) {
@@ -123,14 +123,14 @@ export class ChunkManager {
 	static async getRemoteChunkContents(id, owner) {
 		const retryCount = 3;
 		for(var attempts = 0; attempts<retryCount; attempts++) {
-			//Check if there is already a request for this same hash
+			//Check if there is already a request for this same identifier
 			var request = LocalHost.getPendingRequest(id);
 			if(request === undefined) {
 				if(attempts > 0) {
 					logger.debug('get chunk request retry ' + attempts + ' of ' + retryCount-1);
 				}
 				request = new Request('chunk', 3000, {
-					hash: id
+					id: id
 				});
 				request.setDestinationAddress(owner);
 				//Notify that a new request was created
@@ -138,15 +138,15 @@ export class ChunkManager {
 			}
 			try {
 				const response = await request.complete();
-				var remoteBase64hash = response.data.hash;
-				var remoteBase64data = response.data.data;
+				var remoteChunkIdentifier = response.data.id;
+				var remoteChunkData = response.data.data;
 				//logger.log 'info', ("Received remote chunk response:" + JSON.stringify(response.data.data));
-				const verifyHash = await ChunkManager.storeChunkContents(remoteBase64data);
-				if(verifyHash !== remoteBase64hash) {
+				const verifyIdentifier = await ChunkManager.storeChunkContents(remoteChunkData);
+				if(verifyIdentifier !== remoteChunkIdentifier) {
 					//logger.log('info', "[+RES] (" + hash + "):(" + response.data.data + ")");
 					throw Error('corrupted chunk received from remote host');
 				}
-				return remoteBase64data;
+				return remoteChunkData;
 			} catch (error) {
 				logger.error('Get chunk request failed: ' + error.stack);
 			} finally {
