@@ -51,7 +51,5 @@ Thumbs.db
 /mhlib-js/nbproject/private/
 /nbproject/private/
 /nvd
-/resources
+/chunk
 /package-lock.json
-/test/cli/host1/nvd
-/test/cli/host1/resources

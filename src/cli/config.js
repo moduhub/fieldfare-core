@@ -3,11 +3,11 @@ import inquirer from 'inquirer';
 import arg from 'arg';
 import fs from 'fs';
 
-import {LocalHost} from '../env/LocalHost';
-import {ResourcesManager} from '../resources/ResourcesManager';
-import {VersionChain} from '../versioning/VersionChain';
-import {Utils} from '../basic/Utils';
-import {ffinit} from '../platforms/node/NodeExports';
+import { LocalHost } from '../env/LocalHost';
+import { ChunkManager } from '../chunk/ChunkManager';
+import { VersionChain } from '../versioning/VersionChain';
+import { Utils } from '../basic/Utils';
+import { ffinit } from '../platforms/node/NodeExports';
 
 import {
     inputWebport,
@@ -197,8 +197,8 @@ async function selectServiceMenu() {
     };
     var servicesList = []
     const services = await env.elements.get('services');
-    for await (const key of services) {
-        const definition = await ResourcesManager.getResourceObject(key);
+    for await (const chunk of services) {
+        const definition = await chunk.expand();
         menu.choices.push(definition.name + ' (uuid: ' + definition.uuid + ')');
     }
     menu.choices.push('Back');
@@ -217,8 +217,8 @@ async function servicesMenu() {
     console.log(title('__________ Environment Services configuration __________'));
     var servicesList = []
     const services = await env.elements.get('services');
-    for await (const key of services) {
-        servicesList.push(await ResourcesManager.getResourceObject(key));
+    for await (const chunk of services) {
+        servicesList.push(await chunk.expand());
     }
     if(servicesList.length > 0) {
         console.table(servicesList);
@@ -350,12 +350,12 @@ async function selectWebportMenu(webports) {
           return value;
       }
     };
-    for await (const key of webports) {
-        const webport = await ResourcesManager.getResourceObject(key);
+    for await (const chunk of webports) {
+        const webport = await chunk.expand();
         menu.choices.push({
             name: webport.hostid.substring(0,8) +
                 '...@' +webport.protocol + '://' + webport.address +':'+webport.port,
-            value: key
+            value: chunk
         });
     }
     menu.choices.push('Back');
@@ -373,8 +373,8 @@ async function webportsMenu() {
     console.log(title('__________ Enviroment Webports configuration __________'));
     var list = [];
     const webports = env.elements.get('webports');
-    for await(const key of webports) {
-        const webport = await ResourcesManager.getResourceObject(key);
+    for await(const chunk of webports) {
+        const webport = await chunk.expand();
         list.push(webport);
     }
     if(list.length > 0) {
@@ -403,9 +403,9 @@ async function webportsMenu() {
             webportsMenu();
         }break;
         case 'Remove': {
-            const key = await selectWebportMenu(webports);
-            if(key !== '') {
-                const webport = await ResourcesManager.getResourceObject(key);
+            const chunk = await selectWebportMenu(webports);
+            if(chunk) {
+                const webport = await chunk.expand();
                 console.log("Review webport data: " + JSON.stringify(webport, null, 2));
                 const {confirm} = await inquirer.prompt({
                     type: 'confirm',
@@ -414,7 +414,7 @@ async function webportsMenu() {
                 });
                 if(confirm) {
                     try {
-                        await env.removeWebport(key);
+                        await env.removeWebport(chunk);
                     } catch(error) {
                         console.log(chalk.bgRed('Webport exclusion failed: ' + error));
                     }
@@ -524,8 +524,8 @@ export async function main(args) {
 
         case 'getWebports': {
             const webports = await env.elements.get('webports');
-            for await (const resource of webports) {
-                const webport = await ResourcesManager.getResourceObject(resource);
+            for await (const chunk of webports) {
+                const webport = await chunk.expand();
                 console.log(JSON.stringify(webport));
             }
             process.exit(0);

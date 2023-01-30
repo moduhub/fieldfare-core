@@ -1,19 +1,19 @@
 /**
  * Fieldfare: Backend framework for distributed networks
  *
- * Copyright 2021-2022 Adan Kvitschal
+ * Copyright 2021-2023 Adan Kvitschal
  * ISC LICENSE
  */
 
-import {LocalHost} from './LocalHost';
-import {ResourcesManager} from '../chunking/ChunkManager';
-import {HashLinkedTree} from '../structures/HashLinkedTree';
-import {VersionedData} from '../versioning/VersionedData';
-import {VersionStatement} from '../versioning/VersionStatement';
-import {ServiceDefinition} from './ServiceDefinition';
-import {NVD} from '../basic/NVD';
-import {Utils} from '../basic/Utils';
-import {logger} from '../basic/Log';
+import { LocalHost } from './LocalHost';
+import { Chunk } from '../chunking/Chunk';
+import { ChunkingUtils } from '../chunking/ChunkingUtils';
+import { VersionedData } from '../versioning/VersionedData';
+import { VersionStatement } from '../versioning/VersionStatement';
+import { ServiceDefinition } from './ServiceDefinition';
+import { NVD } from '../basic/NVD';
+import { Utils } from '../basic/Utils';
+import { logger } from '../basic/Log';
 
 
 export class Environment extends VersionedData {
@@ -54,7 +54,8 @@ export class Environment extends VersionedData {
 		const latestVersion = await NVD.load(uuid);
 		// logger.log('info', "Latest Version: " + latestVersion);
 		const rootStatement = await VersionStatement.createRoot(uuid);
-		const rootVersion = await ResourcesManager.storeResourceObject(rootStatement);
+		const rootChunk = await Chunk.fromObject(rootStatement);
+		const rootVersion = rootChunk.id;
 		// logger.log('info', "Root version: " + JSON.stringify(rootStatement, null, 2)
 		// + '=>' + rootVersion);
 		if(latestVersion
@@ -195,8 +196,8 @@ export class Environment extends VersionedData {
 	async getServicesForHost(hostid) {
 		var list = [];
 		const services = this.elements.get('services');
-		for await(const key of services) {
-			const definition = await ResourcesManager.getResourceObject(key);
+		for await(const chunk of services) {
+			const definition = chunk.expand();
 			// logger.info('iteration - definition: ' + JSON.stringify(definition));
 			const providerListName = definition.uuid + '.providers';
 			const providers = this.elements.get(providerListName);
@@ -216,8 +217,8 @@ export class Environment extends VersionedData {
 		const services = this.elements.get('services');
 		if(await this.hasService(definition.uuid)) {
 			if(merge) {
-				const resouceKey = await ResourcesManager.generateKeyForObject(definition);
-				if(await services.has(resourceKey)) {
+				const chunkID = await ChunkingUtils.generateIdentifierForObject(definition);
+				if(await services.has(chunkID)) {
 					logger.log('info', 'applyAddService succesfuly MERGED');
 					return;
 				} else {
@@ -228,8 +229,8 @@ export class Environment extends VersionedData {
 			}
 		}
 		await this.auth(issuer);
-		const resource = await ResourcesManager.storeResourceObject(definition);
-		await services.add(resource);
+		const chunk = await Chunk.fromObject(definition);
+		await services.add(chunk);
 		this.addSet(definition.uuid + '.providers');
 	}
 
@@ -255,8 +256,8 @@ export class Environment extends VersionedData {
 			}
 		}
 		await this.auth(issuer);
-		const resourceKey = await this.getServiceDefinition(uuid);
-		await services.remove(resourceKey);
+		const chunk = await this.getServiceDefinition(uuid);
+		await services.remove(chunk);
 		this.elements.delete(uuid + '.providers');
     }
 
@@ -272,8 +273,8 @@ export class Environment extends VersionedData {
 	async getServiceDefinition(uuid) {
 		var definition;
 		const services = this.elements.get('services');
-		for await(const resource of services) {
-			const service = await ResourcesManager.getResourceObject(resource);
+		for await(const chunk of services) {
+			const service = await chunk.expand();
 			//logger.log('info', JSON.stringify(service));
 			if(service.uuid === uuid) {
 				return service;
@@ -284,8 +285,8 @@ export class Environment extends VersionedData {
 
 	async hasService(uuid) {
 		const services = this.elements.get('services');
-		for await(const resourceKey of services) {
-			const service = await ResourcesManager.getResourceObject(resourceKey);
+		for await(const chunk of services) {
+			const service = await chunk.expand();
 			// logger.log('info', 'hasService ' + uuid + ' compare with ' + service.uuid);
 			if(service.uuid === uuid) {
 				return true;
@@ -374,9 +375,9 @@ export class Environment extends VersionedData {
 	async getWebports(hostID) {
 		var hostWebports = [];
 		const envWebports = this.elements.get('webports');
-		for await(const resourceKey of envWebports) {
-            logger.debug('[ENV] getWebports>resourceKey: '+ resourceKey);
-			const webport = await ResourcesManager.getResourceObject(resourceKey);
+		for await(const chunk of envWebports) {
+            //logger.debug('[ENV] getWebports>chunk.key: '+ chunk.key);
+			const webport = await chunk.expand();
 			// logger.log('info', 'webport info: ' + JSON.stringify(webport));
 			if(webport.hostid === hostID) {
 				hostWebports.push(webport);
@@ -389,8 +390,8 @@ export class Environment extends VersionedData {
 		Utils.validateParameters(params, ['hostid', 'protocol', 'address', 'port']);
 		await this.auth(issuer);
 		const webports = this.elements.get('webports');
-		const resourceKey = await ResourcesManager.storeResourceObject(params);
-		if(await webports.has(resourceKey)) {
+		const chunk = await Chunk.fromObject(params);
+		if(await webports.has(chunk)) {
 			//Exact same information already present
 			if(merge) {
 				logger.log('info', 'addWebport successfully MERGED');
@@ -399,7 +400,7 @@ export class Environment extends VersionedData {
 				throw Error('webport already defined');
 			}
 		}
-		await webports.add(resourceKey);
+		await webports.add(chunk);
 	}
 
 	async addWebport(info) {
@@ -411,11 +412,13 @@ export class Environment extends VersionedData {
 	}
 
     async applyRemoveWebport(issuer, params, merge=false) {
-        const key = params;
-        ResourcesManager.validateKey(key);
+        const chunk = params;
+        if(chunk instanceof Chunk === false) {
+			throw Error('applyRemoveWebport params must be a Chunk object');
+		}
         await this.auth(issuer);
         const webports = this.elements.get('webports');
-        if(await webports.has(key) === false) {
+        if(await webports.has(chunk) === false) {
             if(merge) {
                 logger.debug('removeWebport successfully MERGED');
                 return;
@@ -423,13 +426,13 @@ export class Environment extends VersionedData {
                 throw Error('webport does not exist');
             }
         }
-        await webports.remove(key);
+        await webports.remove(chunk);
     }
 
-    async removeWebport(key) {
-        await this.applyRemoveWebport(LocalHost.getID(), key);
+    async removeWebport(chunk) {
+        await this.applyRemoveWebport(LocalHost.getID(), chunk);
         await this.commit({
-            removeWebport: key
+            removeWebport: chunk
         });
         NVD.save(this.uuid, this.version);
     }

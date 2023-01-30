@@ -29,8 +29,8 @@ async function update() {
     var envServicesListContent = 'Environment Services: \n';
     const envServices = env.elements.get('services');
 
-    for await(const key of envServices) {
-        const definition = await host.getResourceObject(key);
+    for await(const chunk of envServices) {
+        const definition = await chunk.expand();
         envServicesListContent += definition.name
             + '(' + env.numActiveProviders(definition.uuid) + ' active providers)'
             + '\n';

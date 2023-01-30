@@ -4,15 +4,15 @@
  * and open the template in the editor.
  */
 
-import {LocalHost} from '../env/LocalHost';
-import {ResourcesManager} from '../chunking/ChunkManager';
-import {HashLinkedList} from '../structures/HashLinkedList';
-import {HashLinkedTree} from '../structures/HashLinkedTree';
-import {VersionStatement} from './VersionStatement';
-import {VersionChain} from './VersionChain';
-import {NVD} from '../basic/NVD';
-import {Utils} from '../basic/Utils';
-import {logger} from '../basic/Log';
+import { LocalHost } from '../env/LocalHost';
+import { Chunk } from '../chunking/Chunk';
+import { HashLinkedList } from '../structures/HashLinkedList';
+import { HashLinkedTree } from '../structures/HashLinkedTree';
+import { VersionStatement } from './VersionStatement';
+import { VersionChain } from './VersionChain';
+import { NVD } from '../basic/NVD';
+import { Utils } from '../basic/Utils';
+import { logger } from '../basic/Log';
 
 
 export class VersionedData {
@@ -41,10 +41,11 @@ export class VersionedData {
 			const elementState = element.getState();
 			state[name] = elementState;
 		}
-		return state;
+		return Chunk.fromObject(state);
 	}
 
-	setState(state) {
+	setState(chunk) {
+		state = await chunk.expand();
 		for(const prop in state) {
 			const value = state[prop];
 			if(this.elements.has(prop) === false) {
@@ -198,7 +199,7 @@ export class VersionedData {
 		//Create update message
 		var versionStatement = new VersionStatement();
 		versionStatement.source = LocalHost.getID();
-		const stateResource = await ResourcesManager.storeResourceObject(await this.getState());
+		const stateChunk = await this.toChunk();
 		versionStatement.data = {
 			prev: this.version,
 			state: stateResource,

@@ -1,37 +1,45 @@
-import { ResourcesManager } from "./ChunkManager";
-import { ResourceUtils } from "./ChunkingUtils";
+import { ChunkManager } from "./ChunkManager";
+import { ChunkingUtils } from "./ChunkingUtils";
 import { LocalHost } from "../env/LocalHost";
-import { Utils } from '../basic/Utils';
-import { cryptoManager } from "../basic/CryptoManager";
 
 
-export class Resource {
+export class Chunk {
 
     constructor() {
+        /**
+         * Chunk identifier in base64 format, preceeded by chunk prefix
+         * @type {string}
+         * @public
+         */
+        this.id = undefined;
+    }
+
+    static null() {
+        return new Chunk();
     }
 
     /**
-     * Build resource from key in base64 format
-     * @param {string} key resource key in base64 format
-     * @param {string} owner remote resource owner ID in base64 format
-     * @returns new Resource object assigned to given key
+     * Build Chunk from its indentifier
+     * @param {string} id chunk identifier in base64 format plus prefix
+     * @param {string} owner remote chunk owner ID in base64 format
+     * @returns new Chunk object assigned to given key
      */    
-    static fromKey(key, ownerID) {
-        if(key === null
-        || key === '') {
+    static fromIdentifier(id, ownerID) {
+        if(id === null
+        || id === '') {
             return null;
         }
-        ResourceUtils.validateKey(key);
-        const newResource = new Resource;
-        newResource.key = key;
-        newResource.ownerID = ownerID;
-        return newResource;
+        ChunkingUtils.validateIdentifier(id);
+        const newChunk = new Chunk;
+        newChunk.id = id;
+        newChunk.ownerID = ownerID;
+        return newChunk;
     }
 
     async fetch() {
         if(this.data === undefined)  {
             try {
-                this.data = await ResourcesManager.getLocalResourceData(this.key);
+                this.data = await ChunkManager.getLocalChunkContents(this.id);
                 this.local = true;
             } catch(error) {
                 if(error.name === 'NOT_FOUND_ERROR') {
@@ -39,11 +47,11 @@ export class Resource {
                     if(this.ownerID === null
                     || this.ownerID === undefined) {
                         //Owner not know, fail
-                        var error = Error('resource not found locally, owner unknown: ' + this.key);
+                        var error = Error('chunk not found locally, owner unknown: ' + this.id);
                         error.name = 'NOT_FOUND_ERROR';
                         throw error;
                     }
-                    this.data = await ResourcesManager.getRemoteResourceData(this.key, this.ownerID);
+                    this.data = await ChunkManager.getRemoteChunkContents(this.id, this.ownerID);
                     this.local = false;    
                 }                
                 throw error;
@@ -53,55 +61,46 @@ export class Resource {
     }
 
     static async fromObject(object) {
-        const newResource = new Resource;
-        newResource.local = true;
-        newResource.ownerID = LocalHost.getID();
-        //iterate object searching for Resource instances, convert them to keys
+        const newChunk = new Chunk;
+        newChunk.local = true;
+        newChunk.ownerID = LocalHost.getID();
+        //iterate object searching for Chunk instances, convert them to chunk ids
         var convertedObject = {};
         for(const prop in object) {
             const value = object[prop];
-            if(value instanceof Resource) {
-                convertedObject[prop] = value.key;
-                //await value.fetch(); //resource may be remote, must make it local
+            if(value instanceof Chunk) {
+                convertedObject[prop] = value.id;
+                //await value.fetch(); //chunk may be remote, must make it local
             } else {
                 convertedObject[prop] = value;
             }
         }
         // console.log('Original object: ' + JSON.stringify(object));
         // console.log('Converted object: ' + JSON.stringify(convertedObject));
-        newResource.data = ResourceUtils.convertObjectToData(convertedObject);
-        newResource.key = await ResourcesManager.storeResourceData(newResource.data);
-        return newResource;
+        newChunk.data = ChunkingUtils.convertObjectToData(convertedObject);
+        newChunk.id = await ChunkManager.storeChunkData(newChunk.data);
+        return newChunk;
     }
 
     async expand(depth=0) {
-        const object = ResourceUtils.convertDataToObject(await this.fetch());
-        //iterate properties searching for child resources
+        if(this.id === null
+        || this.id === undefined) {
+            return null;
+        }
+        const object = ChunkingUtils.convertDataToObject(await this.fetch());
+        //iterate properties searching for child chunks
         for(const prop in object) {
             const value = object[prop];
-            if(ResourceUtils.isValidKey(value)) {
-                const childResource = await Resource.fromKey(value, this.ownerID);
+            if(ChunkingUtils.isValidKey(value)) {
+                const childChunk = Chunk.fromIdentifier(value, this.ownerID);
                 if(depth > 0) {
-                    object[prop] = await childResource.expand(depth-1);
+                    object[prop] = await childChunk.expand(depth-1);
                 } else {
-                    object[prop] = childResource;
+                    object[prop] = childChunk;
                 }
             }
         }
         return object;
     }
 
-    /**
-	 * Fetch all child resources from a remote host iteratively by following resource keys  
-	 * contained inside JSON data down to a point where the resource is
-	 * already available at the local ResourcesManager, or down to the last key
-	 * depending on the value of the 'limit' parameter.
-	 * @param {boolean} limit true if the process should stop when a resource is already
-	 * available locally, if false or undefined, process continues until no more child
-	 * keys are available
-	 */
-	async touch(limit) {
-		const resourceObject = await ResourcesManager.getResourceObject(resourceKey, owner);
-
-	}
 }

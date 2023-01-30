@@ -5,20 +5,20 @@
  * ISC LICENSE
  */
 
-import {ResourcesManager} from '../chunking/ChunkManager';
-import {cryptoManager} from '../basic/CryptoManager';
-import {Environment} from '../env/Environment';
-import {LocalService} from './LocalService';
-import {RemoteHost} from './RemoteHost';
-import {Message} from '../trx/Message';
-import {Request} from '../trx/Request';
-import {NVD} from '../basic/NVD';
-import {Utils} from '../basic/Utils';
-import {logger} from '../basic/Log';
+import { ChunkManager } from '../chunking/ChunkManager';
+import { cryptoManager } from '../basic/CryptoManager';
+import { Environment } from '../env/Environment';
+import { LocalService } from './LocalService';
+import { RemoteHost } from './RemoteHost';
+import { Message } from '../trx/Message';
+import { Request } from '../trx/Request';
+import { NVD } from '../basic/NVD';
+import { Utils } from '../basic/Utils';
+import { logger } from '../basic/Log';
 
 export const localHost = {
 	bootChannels: new Set(),
-	resourcesManagers: new Set(),
+	chunkManagers: new Set(),
 	remoteHosts: new Map(),
 	requests: new Map(),
 	services: new Map(),
@@ -36,8 +36,8 @@ export const LocalHost = {
 	},
 
 	async init(keypair) {
-		if(ResourcesManager.available() === false) {
-			throw Error('Cannot setup ID without a resources manager');
+		if(ChunkManager.available() === false) {
+			throw Error('Cannot setup ID without a chunk manager');
 		}
 		if(keypair === undefined
 		|| keypair === null) {
@@ -46,7 +46,8 @@ export const LocalHost = {
 		localHost.keypair = keypair;
 		const jwkPubKey = await cryptoManager.exportPublicKey(keypair.publicKey);
 		logger.log('jwkPubKey: ' + JSON.stringify(jwkPubKey))
-		localHost.id = await ResourcesManager.storeResourceObject(jwkPubKey);
+		const pubKeyChunk = await Chunk.fromObject(jwkPubKey);
+		localHost.id = pubKeyChunk.id;
 		logger.log('info', 'HOST ID: ' + localHost.id);
 		setInterval(async () => {
 			// logger.log('info', "Host is announcing to "
@@ -237,21 +238,21 @@ export const LocalHost = {
 			//Accept both forms
 			Utils.validateParameters(webportInfo, ['protocol', 'address', 'port']);
 		}
-		const webportKey = await ResourcesManager.generateKeyForObject(webportInfo);
+		const webportChunk = await Chunk.fromObject(webportInfo);
 		const transceiver = localHost.webportTransceivers.get(webportInfo.protocol);
 		if(transceiver === undefined || transceiver === null) {
 			throw Error('Unsuported protocol: ' + webportInfo.protocol);
 		}
-		const channel = localHost.webportChannels.get(webportKey);
+		const channel = localHost.webportChannels.get(webportChunk.id);
 		if(channel) {
 			if(channel.active()) {
 				return channel;
 			} else {
-				localHost.webportChannels.delete(webportKey);
+				localHost.webportChannels.delete(webportChunk.id);
 			}
 		}
 		const newChannel = await transceiver.newChannel(webportInfo.address, webportInfo.port);
-		localHost.webportChannels.set(webportKey, newChannel);
+		localHost.webportChannels.set(webportChunk.id, newChannel);
 		LocalHost.bootChannel(newChannel);
 		return newChannel;
 	},

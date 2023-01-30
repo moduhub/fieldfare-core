@@ -5,141 +5,115 @@
 
  */
 
-import {LocalHost} from '../env/LocalHost';
-import {ResourcesManager} from '../chunking/ChunkManager'
-import {Utils} from '../basic/Utils';
-import {logger} from '../basic/Log';
+import { LocalHost } from '../env/LocalHost';
+import { Chunk } from '../chunking/Chunk'
+import { Utils } from '../basic/Utils';
+import { logger } from '../basic/Log';
 
 
 export class HashLinkedList {
 
-	constructor(lastHash) {
-
-		if(lastHash
-		&& lastHash !== 'null'
-		&& lastHash !== 'undefined'
-		&& lastHash !== '') {
-
-			if(Utils.isBase64(lastHash) === false) {
-				throw Error('invalid HLL initialization parameter');
-			}
-
-			this.lastHash = lastHash;
-
-		} else {
-
-			this.lastHash = '';
-
+	constructor(last, ownerID) {
+		if(last instanceof Chunk === false) {
+			throw Error('list pointer to last is not a valid chunk');
 		}
+		this.last = last;
+		if(ownerID
+		&& ownerID != LocalHost.getID()) {
+			this.local = false;
+			this.ownerID = ownerID;
+		} else {
+			this.local=true;
+		}
+	}
 
+	static async create() {
+		this.last = Chunk.null();
+		this.local = true;
+	}
+
+	static async fromDescriptor(descriptorChunk) {
+		if(descriptor instanceof Chunk === false) {
+			throw Error('hash linked list descriptor is not a valid Chunk');
+		}
+		descriptor = await descriptorChunk.expand();
+		Utils.validateParameters(descriptor, ['type', 'last', 'ownerID']);
+		if(descriptor.type !== 'list') {
+			throw Error('Descriptor type is not compatible with hash linked list');
+		}
+		if(descriptor.last instanceof Chunk === false) {
+			throw Error('List descriptor does not contain a valid container pointer');
+		}
+		if(descriptor.owner instanceof Chunk === false) {
+			throw Error('list descriptor does not contain a valid owner identifier');
+		}
+		return new HashLinkedList(descriptor.last, descriptor.ownerID);
+	}
+
+	toDescriptor() {
+		var ownerID;
+		if(this.local) {
+			ownerID = LocalHost.getID();
+		} else {
+			ownerID = this.ownerID;
+		}
+		return Chunk.fromObject({
+			type: 'list',
+			last: this.last,
+			owner: ownerID
+		});
 	}
 
 	async getNumElements() {
-
 		if(this.numElements) {
 			return this.numElements;
 		}
-
-		if(this.lastHash
-		&& this.lastHash !== '') {
-			const lastElement = await ResourcesManager.getResourceObject(this.lastHash);
-
-			this.numElements = lastElement.index;
+		if(this.last) {
+			const lastContainer = this.last.expand();
+			this.numElements = lastContainer.index;
 		}
-
 		return 0;
 	}
 
-	setOwnerID(id) {
-
-		ResourcesManager.validateKey(id);
-
-		this.ownerID = id;
-
-		if(id !== LocalHost.getID()) {
-			this.readOnly = true;
-		}
-	}
-
-	setState(state) {
-
-		if(state === null
-		|| state === undefined
-		|| state === '') {
-
-			this.lastHash = '';
-
-		} else {
-
-			if(Utils.isBase64(state) === false) {
-				throw Error('lastHash is not base64');
-			}
-
-			this.lastHash = state;
-
-		}
-
-	}
-
-	getState() {
-
-		var stateId = this.lastHash;
-
-		return stateId;
-	}
-
 	clear() {
-		this.lastHash = '';
+		this.last = Chunk.null();
+		this.numElements = 0;
 	}
 
 	async has(element) {
-		const key = await ResourcesManager.generateKeyForObject(element);
-		var iNodeKey = this.lastHash;
-		while(iNodeKey !== '') {
+		if(element instanceof Chunk === false) {
+			throw Error('element not an instance of Chunk');
+		}
+		var iContainer = this.last.expand();
+		while(iContainer) {
 			//logger.debug('iNodeKey: ' + iNodeKey + ' vs ' + key);
-			const iNode = await ResourcesManager.getResourceObject(iNodeKey);
-			if(iNode.objKey === key) {
+			if(iContainer.content === element) {
 				return true;
 			}
-			iNodeKey = iNode.prev;
+			iContainer = iContainer.prev.expand();
 		}
 		return false;
 	}
 
 	async append(element) {
-		if(this.readOny) {
-			throw Error('Attempt to edit a read only hash linked list');
+		if(!this.local) {
+			throw Error('Attempt to edit a remote linked list');
 		}
 		const currentNumElements = await this.getNumElements();
-		var newListElement = {
-			prev: this.lastHash,
+		this.last = await Chunk.fromObject({
+			prev: this.last,
 			index: currentNumElements,
-			objKey: await ResourcesManager.storeResourceObject(element)
-		};
-		//logger.debug("[HLL append] newListElement: " + JSON.stringify(newListElement));
-		this.lastHash = await ResourcesManager.storeResourceObject(newListElement);
+			content: element
+		});
 		this.numElements++;
-		// logger.log('info', "hash after append: " + this.lastHash);
+		//logger.debug("[HLL append] newListElement: " + JSON.stringify(newListElement));
 	}
 
 	async* [Symbol.asyncIterator]() {
-		var iNodeKey = this.lastHash;
-		while(iNodeKey !== '') {
-			const iNode = await ResourcesManager.getResourceObject(iNodeKey, this.ownerID);
-			// logger.debug('[HLL Iterator] iNode: ' + JSON.stringify(iNode));
-			if(iNode === null
-			|| iNode === undefined) {
-				throw Error('HashLinkedList: resource is null or undefined');
-			}
-			if(iNode.obj) {
-				logger.warn('[HLL Iterator] Iterating deprecated HLL format');
-				yield iNode.obj;
-			} else {
-				const object = await ResourcesManager.getResourceObject(iNode.objKey, this.ownerID);;
-				// logger.debug('[HLL iterator] Object: ' + JSON.stringify(object));
-				yield object;
-			}
-			iNodeKey = iNode.prev;
+		var iContainer = this.last.expand();
+		while(iContainer) {
+			yield iContainer.content;
+			iContainer = iContainer.prev.expand();
 		}
 	}
 };

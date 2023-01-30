@@ -1,7 +1,7 @@
 import { HashLinkedTree } from "./HashLinkedTree";
 import { TreeContainer } from "./TreeContainer";
 import { TreeBranch } from "./TreeBranch";
-import { Resource } from "../chunking/Resource
+import { Chunk } from "../chunking/Chunk
 
 
 export class HashLinkedMap extends HashLinkedTree {
@@ -15,8 +15,8 @@ export class HashLinkedMap extends HashLinkedTree {
         super(degree, root);
     }
 
-    static async fromResource(resource) {
-        const descriptor = await resource.expand();
+    static async fromDescriptor(descriptorChunk) {
+        const descriptor = await descriptorChunk.expand();
         Utils.validateParameters(descriptor, ['type', 'degree', 'root']);
         const degree = descriptor.degree;
         if(descriptor.type !== 'map') {
@@ -25,8 +25,8 @@ export class HashLinkedMap extends HashLinkedTree {
         return new HashLinkedMap(descriptor.degree, descriptor.root);
     }
 
-	toResource() {
-		return Resource.fromObject({
+	toDescriptor() {
+		return Chunk.fromObject({
             type: 'map',
             degree: this.degree,
             root: this.root

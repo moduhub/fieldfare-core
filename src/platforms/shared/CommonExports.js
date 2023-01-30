@@ -13,7 +13,7 @@ export * from '../../trx/Message';
 export * from '../../trx/Request';
 export * from '../../trx/Transceiver';
 
-export * from '../../chunking/Resource
+export * from '../../chunking/Chunk
 export * from '../../chunking/ChunkingUtils';
 export * from '../../chunking/VolatileChunkManager';
 

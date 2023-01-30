@@ -2,12 +2,18 @@
 import { Utils } from "../basic/Utils";
 import { cryptoManager } from "../basic/CryptoManager";
 
-export const ChunkingUtils = {
+const chunkIdentiferPrefix = 'd:';
 
+export const ChunkingUtils = {
+    
     isValidIdentifier(id) {
-        if(Utils.isBase64(id)
-        && id.length === 44) {
-            return true;
+        if(id.length === 46) {
+            const prefix = id.slice(0,2);
+            const base64part = id.slice(2,46);
+            if(prefix === chunkIdentiferPrefix
+            && Utils.isBase64(base64part)) {
+                return true;
+            }
         }
         return false;
     },
@@ -28,16 +34,16 @@ export const ChunkingUtils = {
         return JSON.parse(atob(base64data));
     },
 
-    async generateIdForData(base64data) {
+    async generateIdentifierForData(base64data) {
         const dataBuffer = Utils.base64ToArrayBuffer(base64data);
         const hashBuffer = await cryptoManager.digest(dataBuffer);
         const base64hash = Utils.arrayBufferToBase64(hashBuffer);
         return 'D:'+base64hash;
     },
 
-    async generateIdForObject(object) {
+    async generateIdentifierForObject(object) {
 		const base64data = ChunkingUtils.convertObjectToData(object);
-		const id = await ResourcesManager.generateKeyForData(base64data);
+		const id = await ChunkingUtils.generateIdentifierForData(base64data);
 		return id;
 	}
 }
