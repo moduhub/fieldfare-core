@@ -1,9 +1,9 @@
 
-import {LocalHost} from './LocalHost';
-import {ServiceDefinition} from './ServiceDefinition';
-import {ResourcesManager} from '../chunking/ChunkManager';
-import {Request} from '../trx/Request';
-import {logger} from '../basic/Log';
+import { LocalHost } from './LocalHost';
+import { ServiceDefinition } from './ServiceDefinition';
+import { ChunkingUtils } from '../chunking/ChunkingUtils';
+import { Request } from '../trx/Request';
+import { logger } from '../basic/Log';
 
 
 export class RemoteService {
@@ -34,9 +34,9 @@ export class RemoteService {
 
                 await LocalHost.signMessage(request);
 
-                const requestKey = await ResourcesManager.generateKeyForObject(request.data);
+                const requestIdentifier = await ChunkingUtils.generateidentifierForObject(request.data);
 
-                newService.owner.pendingRequests.set(requestKey, request);
+                newService.owner.pendingRequests.set(requestIdentifier, request);
 
                 newService.owner.send(request);
 
