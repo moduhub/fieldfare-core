@@ -6,7 +6,7 @@ export * from './WebServerTransceiver';
 
 export * from './NodeCryptoManager';
 
-export * from './LevelResourcesManager';
+export * from './LevelChunkManager';
 
 export * from './LevelNVD';
 

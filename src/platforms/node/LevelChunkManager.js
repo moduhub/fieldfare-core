@@ -1,56 +1,41 @@
 
-import {ResourcesManager} from '../../resources/ResourcesManager';
-import {logger} from '../../basic/Log';
+import { ChunkManager } from '../../chunking/ChunkManager';
+import { logger } from '../../basic/Log';
 
 const { Level } = require('level');
 
-export class LevelResourcesManager extends ResourcesManager {
+export class LevelChunkManager extends ChunkManager {
 
     constructor() {
         super();
-
-        this.db = new Level('resources', { valueEncoding: 'json' })
-
+        this.db = new Level('chunk', { valueEncoding: 'json' })
     }
 
     static init() {
-
-        const newInstance = new LevelResourcesManager;
-
-        ResourcesManager.addInstance(newInstance);
-
+        const newInstance = new LevelChunkManager;
+        ChunkManager.addInstance(newInstance);
         setInterval(async () => {
             logger.debug(await newInstance.report());
         }, 10000);
-
     }
 
     async report() {
-
         var starttime = performance.now();
         const iterator = this.db.keys();
         var numEntries = 0;
         for await (const key of iterator) numEntries++;
         var endtime = performance.now();
-
         var deltaReport = "";
-
         if(this.lastNumEntries !== undefined) {
-
             deltaReport = ", "
-
             if(numEntries >= this.lastNumEntries) {
                 deltaReport += (numEntries - this.lastNumEntries) + " more "
             } else {
                 deltaReport += (this.lastNumEntries - numEntries) + " less "
             }
-
             deltaReport += "since last report";
-
         }
-
         this.lastNumEntries = numEntries;
-
         return "Level Resources Manager: "
             + numEntries
             + " resources stored"
@@ -58,42 +43,29 @@ export class LevelResourcesManager extends ResourcesManager {
             + ". (Search took "
             + (endtime - starttime)
             + " ms)";
-
     }
 
-    async storeResource(base64data) {
-
-        //logger.log('info', "LevelResourcesManager storing res: " + base64data);
-
-        const base64hash = await ResourcesManager.generateKeyForData(base64data);
-
-        await this.db.put(base64hash, base64data);
-
-        return base64hash;
+    async storeChunkContents(contents) {
+        //logger.log('info', "LevelChunkManager storing res: " + contents);
+        const identifier = await ChunkManager.generateIdentifierForData(contents);
+        await this.db.put(identifier, contents);
+        return identifier;
     }
 
-    async getResource(base64hash) {
-
-        //logger.log('info', "LevelResourcesManager fetching res: " + base64hash);
-
-        var base64data;
-
+    async getChunkContents(identifier) {
+        //logger.log('info', "LevelChunkManager fetching res: " + identifier);
+        var contents;
         try {
-            base64data = await this.db.get(base64hash);
+            contents = await this.db.get(identifier);
         } catch (error) {
-
             var newError = Error('Resource fetch failed: ' + {cause: error});
-
             if (error.notFound === true) {
                 newError.name = 'NOT_FOUND_ERROR';
-                base64data = undefined;
+                contents = undefined;
             }
-
             throw newError;
         }
-
-        return base64data;
-
+        return contents;
     }
 
 }

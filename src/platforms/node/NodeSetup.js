@@ -1,13 +1,14 @@
 
-import {LocalHost} from '../../env/LocalHost'
-import {LevelResourcesManager} from './LevelResourcesManager';
-import {LevelNVD} from './LevelNVD';
-import {WebServerTransceiver} from './WebServerTransceiver';
-import {UDPTransceiver} from './UDPTransceiver';
-import {NVD} from '../../basic/NVD';
-import {logger} from '../../basic/Log';
-import { cryptoManager } from '../../basic/CryptoManager';
+import { LocalHost } from '../../env/LocalHost'
+import { LevelChunkManager } from './LevelChunkManager';
+import { LevelNVD } from './LevelNVD';
+import { WebServerTransceiver } from './WebServerTransceiver';
+import { UDPTransceiver } from './UDPTransceiver';
 import { NodeCryptoManager } from './NodeCryptoManager';
+import { NVD } from '../../basic/NVD';
+import { logger } from '../../basic/Log';
+import { cryptoManager } from '../../basic/CryptoManager';
+
 
 export * from '../shared/CommonSetup';
 
@@ -16,7 +17,7 @@ export async function setupLocalHost() {
         global.crypto = require('crypto').webcrypto;
     }
     LevelNVD.init();
-    LevelResourcesManager.init();
+    LevelChunkManager.init();
     NodeCryptoManager.init();
     const localKeypair = await cryptoManager.getLocalKeypair();
     LocalHost.init(localKeypair);
