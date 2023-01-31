@@ -6,6 +6,6 @@ export * from '../shared/WebClientTransceiver';
 export * from './BrowserCryptoManager';
 
 export * from './IndexedDBNVD';
-export * from './IndexedDBResourcesManager';
+export * from './IndexedDBChunkManager';
 
 export * as ffinit from './BrowserSetup';
