@@ -3,6 +3,11 @@ import { ChunkingUtils } from '../chunking/ChunkingUtils';
 import { ChunkManager } from '../chunking/ChunkManager';
 import { Utils } from '../basic/Utils';
 
+/**
+ * TreeContainer class is the basic building block for any HashLinked Tree strucutre,
+ * like set and maps of objects. It stores Chunk indentifier and allows navigating
+ * and building branches.
+ */
 export class TreeContainer {
 
 	constructor(leftChild=null, isMap=false) {
@@ -22,19 +27,28 @@ export class TreeContainer {
 		this.numElements = 0;
 	}
 
-	static async fromChunkID(key, ownerID) {
+	static async validateParameters(rawObject) {
+		Utils.validateParameters(rawObject, ['keys', 'children', 'numElements'], ['values']);
+		if(rawObject.keys instanceof Array === false
+		|| rawObject.children instanceof Array === false
+		|| Number.isInteger(rawObject.numElements) === false) {
+			throw Error('one of TreeContainer Chunk parameters has invalid type');
+		}
+	}
+
+	static async fromChunkIdentifier(identifier, ownerID) {
 		var newContainer = new TreeContainer();
-		const resourceObject = await ChunkManager.getResourceObject(key, ownerID);
-		if(resourceObject === null
-		|| resourceObject === undefined) {
-			throw Error('failed to fetch container resource');
+		const rawObject = await ChunkManager.getObjectFromIdentifier(identifier, ownerID);
+		if(rawObject === null
+		|| rawObject === undefined) {
+			throw Error('failed to fetch container chunk');
 		}
-		if('elements' in resourceObject) { //add translation from HLT 0.0.x format
-			resourceObject.keys = resourceObject.elements;
-			delete resourceObject.elements;
+		if('elements' in rawObject) { //add translation from HLT 0.0.x format
+			rawObject.keys = rawObject.elements;
+			delete rawObject.elements;
 		}
-		Utils.validateParameters(resourceObject, ['keys', 'children', 'numElements'], ['values']);
-		Object.assign(newContainer, resourceObject);
+		Utils.validateParameters(rawObject, ['keys', 'children', 'numElements'], ['values']);
+		Object.assign(newContainer, rawObject);
 		return newContainer;
 	}
 
@@ -52,9 +66,9 @@ export class TreeContainer {
 	 * considering key order. 
 	 * If the container is of 'set' type, contents must be a key in base64 format
 	 * If container is of 'map' type, contents must be an array containing a [key, value] pair.
-	 * @param {*} contents A resource key in base64 format, or an array
-	 * containing [key, value] pair of resource keys
-	 * @param {string} rightChildKey key to the rightChild resource in base64 format
+	 * @param {*} contents A chunk identifier in base64 format, or an array
+	 * containing [key, value] pair of chunk identifiers
+	 * @param {string} rightChildKey identifier of the rightChild chunk in base64 format
 	 */
 	add(contents, rightChildKey) {
 		var key, value;

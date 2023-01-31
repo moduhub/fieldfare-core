@@ -4,9 +4,9 @@
  * and open the template in the editor.
  */
 
-import {Resource} from '../chunking/Resource
-import {TreeBranch} from './TreeBranch';
-import {TreeContainer} from './TreeContainer';
+import { Chunk } from '../chunking/Chunk
+import { TreeBranch } from './TreeBranch';
+import { TreeContainer } from './TreeContainer';
 import { Utils } from '../basic/Utils';
 
  
@@ -14,23 +14,22 @@ export class HashLinkedTree {
 
 	constructor(degree=5, root=null) {
 		this.degree = degree;
-		this.root = root;
+		this.rootChunk = root;
 	}
 
-    async delete(element) {
-		if(element instanceof Resource === false) {
-            throw Error('key is no an instance of Resource');
+    async delete(key) {
+		if(key instanceof Chunk === false) {
+            throw Error('key is not a valid Chunk');
         }
-        if(this.readOnly) {
-            throw Error('Attempt to edit a read only hash linked tree');
+        if(!this.local) {
+            throw Error('Attempt to edit a remote hash linked tree');
         }
-        const key = element.key;
-		if(this.root == null
-		|| this.root == undefined) {
+		if(this.rootChunk == null
+		|| this.rootChunk == undefined) {
             throw Error('tree is empty');
 		} else {
-            const branch = new TreeBranch(this.root.key, this.root.ownerID);
-            await branch.getToKey(key);
+            const branch = new TreeBranch(this.rootChunk.id, this.rootChunk.ownerID);
+            await branch.getToKey(key.id);
             if(branch.containsKey === false) {
                 throw Error('key does not exist in tree');
             }
@@ -40,7 +39,7 @@ export class HashLinkedTree {
             const minElements = Math.floor(this.degree/2);
             var mergeDepth;
             if(ownerContainer.isLeaf()) {
-                ownerContainer.remove(key);
+                ownerContainer.remove(key.id);
                 // console.log('ownerContainer after key '+key+' was removed: ' + JSON.stringify(ownerContainer, null, 2));
                 if(ownerContainer.numElements < minElements
                 && branch.depth > 0) {
@@ -48,7 +47,7 @@ export class HashLinkedTree {
                     mergeDepth = await branch.rebalance(minElements);
                 }
             } else {
-                const [leftContainerKey, rightContainerKey] = ownerContainer.getChildrenAroundKey(key);
+                const [leftContainerKey, rightContainerKey] = ownerContainer.getChildrenAroundKey(key.id);
                 const leftBranch = new TreeBranch(leftContainerKey, this.ownerID);
                 await leftBranch.getToRightmostLeaf();
                 const leftStealLeaf = leftBranch.getLastContainer();
@@ -73,41 +72,35 @@ export class HashLinkedTree {
                 }
             }
             const newRootKey = await branch.update(mergeDepth);
-            this.root = Resource.fromKey(newRootKey);
+            this.rootChunk = Chunk.fromIdentfier(newRootKey);
         }
     }
 
-	async has(keyResource) {
-        if(keyResource instanceof Resource === false) {
-            throw Error('key is not an instance of Resource');
+	async has(key) {
+        if(key instanceof Chunk === false) {
+            throw Error('key is not a valid chunk');
         }
-        const key = keyResource.key;
-		if(this.root === null
-		|| this.root === undefined) {
-			return false;
-		} else {
-			var nextContainerHash = this.root.key;
-			do {
-				const iContainer = await TreeContainer.fromChunkID(nextContainerHash, this.ownerID);
-				nextContainerHash = iContainer.follow(key);
-				if(nextContainerHash === true) {
+		if(this.rootChunk) {
+			var iContainer = this.rootChunk.expandTo(TreeContainer, true);
+			while(iContainer) {
+				nextContainerIdentifier = iContainer.follow(key.id);
+				if(nextContainerIdentifier === true) {
 					return true;
 				}
-			} while(nextContainerHash !== '');
-			return false;
+                iContainer = Chunk.fromIdentifier(nextContainerIdentifier, this.root.ownerID).expandTo(TreeContainer, true);
+			}
 		}
+        return false;
 	}
 
 	async isEmpty() {
-		if(this.root
-		&& this.root !== null
-		&& this.root !== undefined) {
-            const rootObject = await this.root.expand();
-			if(rootObject.numElements > 0) {
-				return false;
+		if(this.rootChunk) {
+            const rootContainer = await this.rootChunk.expand(0, true);
+			if(rootContainer.numElements == 0) {
+				return true;
 			}
 		}
-		return true;
+		return false;
 	}
 
 };

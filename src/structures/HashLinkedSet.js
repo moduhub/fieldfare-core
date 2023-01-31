@@ -1,13 +1,13 @@
 import { HashLinkedTree } from "./HashLinkedTree";
-import { Resource } from  "../chunking/Resource
+import { Chunk } from  "../chunking/Chunk";
 import { TreeContainer } from "./TreeContainer";
 import { TreeBranch } from "./TreeBranch";
 
 
 export class HashLinkedSet extends HashLinkedTree {
 
-    static async fromResource(resource) {
-        const descriptor = await resource.expand();
+    static async fromDescriptor(descriptorChunk) {
+        const descriptor = await descriptorChunk.expand();
         Utils.validateParameters(descriptor, ['type', 'degree', 'root']);
         HashLinkedTree.validateDegree(descriptor.degree);
         const degree = descriptor.degree;
@@ -17,56 +17,52 @@ export class HashLinkedSet extends HashLinkedTree {
         return new HashLinkedSet(descriptor.degree, descriptor.root);
     }
 
-	toResource() {
-		return Resource.fromObject({
+	toDescriptor() {
+		return Chunk.fromObject({
             type: 'set',
             degree: this.degree,
-            root: this.root
+            root: this.rootChunk
         });
 	}
 
 	async add(element) {
-        if(this.readOny) {
-            throw Error('Attempt to edit a read only hash linked set');
+        if(!this.local) {
+            throw Error('Attempt to edit a remote hash linked set');
         }
-        if(element instanceof Resource === false) {
-            throw Error('inserting an element that is not a resource');
+        if(element instanceof Chunk === false) {
+            throw Error('inserting an element that is not a chunk');
         }
-        const key = element.key;
-		if(this.root === null
-		|| this.root === undefined) {
+		if(this.rootChunk === null
+		|| this.rootChunk === undefined) {
             var newRoot = new TreeContainer(null, false);
-    		newRoot.add(key);
-    		this.root = await Resource.fromObject(newRoot);
+    		newRoot.add(element.id);
+    		this.rootChunk = await Chunk.fromObject(newRoot);
 		} else {
-            const branch = new TreeBranch(this.root.key, this.root.ownerID);
-            await branch.getToKey(key);
+            const branch = new TreeBranch(this.rootChunk.id, this.rootChunk.ownerID);
+            await branch.getToKey(element.id);
             var iContainer = branch.getLastContainer();
             if(branch.containsKey) {
-                throw Error('attempt to add a duplicate key');
+                throw Error('attempt to add a duplicate and element');
             }
-   			iContainer.add(key);
+   			iContainer.add(element.id);
             const maxElements = this.degree;
-            var newRootKey;
+            var newRootIdentifier;
             if(iContainer.numElements === maxElements) {
                 const splitDepth = await branch.split(maxElements);
-                newRootKey = await branch.update(splitDepth);    //update only from split down to root
+                newRootIdentifier = await branch.update(splitDepth);    //update only from split down to root
             } else {
-                newRootKey = await branch.update();
+                newRootIdentifier = await branch.update();
             }
-            this.root = await Resource.fromKey(newRootKey);
+            this.rootChunk = await Chunk.fromKey(newRootIdentifier, this.ownerID);
 		}
-		return this.root;
+		return this.rootChunk;
 	}
 
     async* [Symbol.asyncIterator]() {
-		if(this.root !== null
-		&& this.root !== undefined
-        && this.root !== '') {
-			var rootContainer = await TreeContainer.fromChunkID(this.root.key);
-            for await(const key of rootContainer.iterator(this.root.ownerID)) {
-                const keyResource = Resource.fromKey(key);
-                yield keyResource;
+		if(this.rootChunk) {
+			var rootContainer = await this.rootChunk.expandTo(TreeContainer, true);
+            for await(const identifier of rootContainer.iterator(this.rootChunk.ownerID)) {
+                yield Chunk.fromIdentifier(identifier);;
             }
 		}
 	}

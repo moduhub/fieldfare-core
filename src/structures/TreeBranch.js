@@ -1,14 +1,12 @@
 
-import {ResourcesManager} from '../chunking/ChunkManager';
-import {TreeContainer} from './TreeContainer';
-import {Utils} from '../basic/Utils';
-import {logger} from '../basic/Log';
+import { ChunkManager } from '../chunking/ChunkManager';
+import { TreeContainer } from './TreeContainer';
 
 export class TreeBranch {
 
     /**
      * 
-     * @param {string} origin Branch origin resource key in base64 format
+     * @param {string} origin Branch origin chunk identifier in base64 format
      * @param {string} ownerID Branch owner ID in base64 format
      */
     constructor(origin, ownerID) {
@@ -90,8 +88,8 @@ export class TreeBranch {
             const meanElement = iContainer.split(rightContainer);
             const leftContainer = iContainer;
             const prevLeftContainerKey = this.containerKeys[depth-1];
-            const newLeftContainerKey = await ResourcesManager.storeResourceObject(leftContainer);
-            const rightContainerKey = await ResourcesManager.storeResourceObject(rightContainer);
+            const newLeftContainerKey = await ChunkManager.storeChunkContents(leftContainer);
+            const rightContainerKey = await ChunkManager.storeChunkContents(rightContainer);
             if(depth > 1) {
                 depth--;
                 iContainer = this.containers[depth-1];
@@ -148,15 +146,15 @@ export class TreeBranch {
                         //rotate from left
                         const [rotatedElement, rotatedChildKey] = leftSibling.pop();
                         parentContainer.substituteElement(leftKey, rotatedElement);
-                        const newLeftSiblingKey = await ResourcesManager.storeResourceObject(leftSibling);
+                        const newLeftSiblingKey = await ChunkManager.storeChunkContents(leftSibling);
                         parentContainer.updateChild(leftSiblingKey, newLeftSiblingKey);
                         iContainer.unshift(leftElement, rotatedChildKey);
-                        const newContainerKey = await ResourcesManager.storeResourceObject(iContainer);
+                        const newContainerKey = await ChunkManager.storeChunkContents(iContainer);
                         parentContainer.updateChild(iContainerKey, newContainerKey);
                     } else {
                         //merge around left key
                         iContainer.mergeLeft(leftSibling, leftElement);
-                        const mergedChildKey = await ResourcesManager.storeResourceObject(iContainer);
+                        const mergedChildKey = await ChunkManager.storeChunkContents(iContainer);
                         const parentNumElements = parentContainer.mergeChildren(leftKey, mergedChildKey);
                         if(parentNumElements == 0) {
                             debugger;
@@ -177,15 +175,15 @@ export class TreeBranch {
                         //rotate from right
                         const [rotatedElement, rotatedChildKey] = rightSibling.shift();
                         parentContainer.substituteElement(rightKey, rotatedElement);
-                        const newRightSiblingKey = await ResourcesManager.storeResourceObject(rightSibling);
+                        const newRightSiblingKey = await ChunkManager.storeChunkContents(rightSibling);
                         parentContainer.updateChild(rightSiblingKey, newRightSiblingKey);
                         iContainer.push(rightElement, rotatedChildKey);
-                        const newContainerKey = await ResourcesManager.storeResourceObject(iContainer);
+                        const newContainerKey = await ChunkManager.storeChunkContents(iContainer);
                         parentContainer.updateChild(iContainerKey, newContainerKey);
                     } else {
                         //merge around right key
                         iContainer.mergeRight(rightSibling, rightElement);
-                        const mergedChildKey = await ResourcesManager.storeResourceObject(iContainer);
+                        const mergedChildKey = await ChunkManager.storeChunkContents(iContainer);
                         const parentNumElements = parentContainer.mergeChildren(rightKey, mergedChildKey);
                         if(parentNumElements == 0) {
                             debugger;
@@ -215,14 +213,14 @@ export class TreeBranch {
                 const parentContainer = this.containers[depth-2];
                 const iContainer = this.containers[depth-1];
                 const prevContainerKey = this.containerKeys[depth-1];
-                const newContainerKey = await ResourcesManager.storeResourceObject(iContainer);
+                const newContainerKey = await ChunkManager.storeChunkContents(iContainer);
                 this.containerKeys[depth-1] = newContainerKey;
                 // if(prevContainerKey !== newContainerKey) {
                     parentContainer.updateChild(prevContainerKey, newContainerKey);
                 // }
                 depth--;
             }
-            this.containerKeys[0] = await ResourcesManager.storeResourceObject(this.containers[0]);
+            this.containerKeys[0] = await ChunkManager.storeChunkContents(this.containers[0]);
         } else {
             this.depth = 0;
             this.containerKeys[0] = null;
