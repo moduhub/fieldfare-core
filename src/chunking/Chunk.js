@@ -19,7 +19,8 @@ export class Chunk {
     }
 
     /**
-     * Build Chunk from its indentifier
+     * Build Chunk from its indentifier. If teh identifier is null or
+     * a null string like '', the function will return null.
      * @param {string} id chunk identifier in base64 format plus prefix
      * @param {string} owner remote chunk owner ID in base64 format
      * @returns new Chunk object assigned to given key
@@ -82,25 +83,60 @@ export class Chunk {
         return newChunk;
     }
 
-    async expand(depth=0) {
+    /**
+     * Expand chunk to a JavaScript object, following object properties 
+     * that are recognized as chunk identifiers and transforming them to 
+     * Chunk objects, unless keepIdentifiers is set, in which case the 
+     * identifiers are kept as strings in base64 format plus prefix.
+     * @param {integer} depth Depth to which the algoritm iterates down
+     * os object properties expanding chunk identifiers to objects, where
+     * zero will expand only the root object.
+     * @param {boolean} keepIdentifiers setting this to true will convert no
+     * identifer at all, keeping all strings in their original form even if 
+     * they correspond to a chunk identifier.
+     * @returns an Object containing all properties recovered from the chunk data
+     */
+    async expand(depth=0, keepIdentifiers=false) {
         if(this.id === null
         || this.id === undefined) {
             return null;
         }
         const object = ChunkingUtils.convertDataToObject(await this.fetch());
-        //iterate properties searching for child chunks
-        for(const prop in object) {
-            const value = object[prop];
-            if(ChunkingUtils.isValidKey(value)) {
-                const childChunk = Chunk.fromIdentifier(value, this.ownerID);
-                if(depth > 0) {
-                    object[prop] = await childChunk.expand(depth-1);
-                } else {
-                    object[prop] = childChunk;
+        if(!keepIdentifiers) {
+            //iterate properties searching for child chunks
+            for(const prop in object) {
+                const value = object[prop];
+                if(ChunkingUtils.isValidKey(value)) {
+                    const childChunk = Chunk.fromIdentifier(value, this.ownerID);
+                    if(depth > 0) {
+                        object[prop] = await childChunk.expand(depth-1);
+                    } else {
+                        object[prop] = childChunk;
+                    }
                 }
             }
         }
         return object;
+    }
+
+    /**
+     * Expands the chunk in the same way as Chunk.expand(0), but will cast the
+     * resulting object to a specific class type. The methos also searches for
+     * a static method called validateParameters in the given class to perform
+     * any content validation on the object recovered from the chunk.
+     * @param {class} type class to which the resulting object will be cast into
+     * @param {boolean} keepIdentifiers if set, will not expand any property
+     * that matches a Chunk indentifier, keeping them as strings
+     * @returns the resulting object as an instance of given type
+     */
+    async expandTo(type, keepIdentifiers=false) {
+        const rawObject = await this.expand(0, keepIdentifiers);
+        if(type.validateParameters) {
+            type.validateParameters(rawObject);
+        }
+        const typedObject = new type;
+        Object.assign(typedObject, rawObject);
+		return typedObject;
     }
 
 }
