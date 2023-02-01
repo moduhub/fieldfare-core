@@ -1,10 +1,5 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+// 2023 Adan Kvitschal <adan@moduhub.com>
 
-import {ResourcesManager} from '../chunking/ChunkManager';
 import {logger} from '../basic/Log';
 
 export class VersionStatement {
@@ -17,52 +12,40 @@ export class VersionStatement {
 		};
 	}
 
-	static validate(message) {
-
+	/**
+	 * method used by chunk expansion to validate the raw object fields before
+	 * casting into a VersionStatement instance
+	 * @param {*} message message of which parameters will be validated
+	 */
+	static validateParameters(message) {
 		if(!message) {
 			throw Error('message is null');
 		}
-
 		if('signature' in message === false
 		|| 'source' in message === false
 		|| 'data' in message === false) {
-
 			logger.log('info', "Update message validate failed: " + JSON.stringify(message));
-
 			throw Error('malformed update message');
 		}
-
 		if('prev' in message.data === false
 		|| 'state' in message.data === false
 		|| 'changes' in message.data === false) {
 			throw Error('malformed update message data');
 		}
-
 	}
 
-	static async fromResource(hash, source) {
-
-		const resourceObject = await ResourcesManager.getResourceObject(hash, source);
-
-		VersionStatement.validate(resourceObject);
-
-		var newMessage = new VersionStatement();
-
-		Object.assign(newMessage, resourceObject);
-
-		return newMessage;
-	}
-
+	/**
+	 * Create a root verison statement, only used when a new environment is created
+	 * @param {*} uuid version 4 uuid used to uniquely identify the environment
+	 * @returns a VersionStatement instance corresponding to the root data
+	 */
 	static async createRoot(uuid) {
-
 		var rootStatement = new VersionStatement();
-
 		rootStatement.data = {
 			prev: '',
 			state: '',
 			changes: await ResourcesManager.storeResourceObject({uuid:uuid})
 		};
-
 		return rootStatement;
 	}
 
