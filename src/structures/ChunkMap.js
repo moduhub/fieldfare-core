@@ -6,7 +6,7 @@ import { Chunk } from '../chunking/Chunk';
 
 export class ChunkMap extends ChunkTree {
     
-    constructor(degree, root) {
+    constructor(degree=5, root) {
         if(Number.isInteger(degree) === false
         || degree < 2
         || degree > 10) {
@@ -90,7 +90,7 @@ export class ChunkMap extends ChunkTree {
 
     async* [Symbol.asyncIterator]() {
 		if(this.rootChunk) {
-			const rootContainer = await TreeContainer.fromChunkID(this.rootChunk.key);
+			var rootContainer = await this.rootChunk.expandTo(TreeContainer, true);
    			for await(const [keyIdentifier, valueIdentifier] of rootContainer.iterator(this.rootChunk.ownerID)) {
                 const key = Chunk.fromIdentifier(keyIdentifier);
                 const value = Chunk.fromIdentifier(valueIdentifier);
