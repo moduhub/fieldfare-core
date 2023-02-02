@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+// 2023 Adan Kvitschal <adan@moduhub.com>
 
 import { LocalHost } from '../env/LocalHost';
 import { Chunk } from '../chunking/Chunk';
@@ -14,20 +10,69 @@ import { NVD } from '../basic/NVD';
 import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
 
+const gTypeMap = new Map;
 
-export class VersionedData {
+/**
+ * Represents a group of elements that can be altered
+ * by a group of hosts in a collaborative manner. Any changes made to
+ * the data must be commited by creating VersionStatements and sharing
+ * them with all other hosts in the admin group, that may accept or
+ * reject the changes based on a shared set of rules.
+ */
+export class VersionedCollection {
 
 	constructor() {
-		this.elements = new Map();
+		/**
+         * List of elements under version control, identified by a name string
+         * @type {ChunkMap}
+         * @private
+         */
+		this.elements = new ChunkMap();
+		/**
+         * List of methods that can alter the contents of the elements under version control
+         * @type {Map}
+         * @private
+         */
 		this.methods = new Map();
+
 		this.addSet('admins');
 		this.methods.set('addAdmin', this.applyAddAdmin.bind(this));
 		this.methods.set('removeAdmin', this.applyRemoveAdmin.bind(this));
+		this.methods.set('createElement', this.applyCreateElement.bind(this));
+		this.methods.set('deleteElement', this.applyDeleteElement.bind(this));
 		this.version = '';
 		this.versionBlacklist = new Set();
 	}
 
-	addSet(name) {
+	static registerType(typeName, type) {
+		gTypeMap.set(typeName, type);
+	}
+
+	async fromChunk(chunk) {
+		elements = await chunk.expand();
+		for(const prop in elements) {
+			const value = state[prop];
+			if(this.elements.has(prop) === false) {
+				this.addSet(prop);
+			}
+			const element = this.elements.get(prop);
+			element.setState(value);
+		}
+		//remove elements not in stateID
+		for(const [name, element] of this.elements) {
+			if(name in state === false) {
+				this.elements.delete(name);
+			}
+		}
+	}
+
+	contentsToChunk() {
+
+	}
+
+	async addSet(name) {
+		const newSet = await HashLinkedSet.create(5);
+
 		this.elements.set(name, new HashLinkedTree(5));
 	}
 
@@ -44,7 +89,7 @@ export class VersionedData {
 		return Chunk.fromObject(state);
 	}
 
-	setState(chunk) {
+	async setState(chunk) {
 		state = await chunk.expand();
 		for(const prop in state) {
 			const value = state[prop];
@@ -227,6 +272,66 @@ export class VersionedData {
 		}
 		logger.debug('>> ' + id + ' auth OK');
 	}
+
+	async applyCreateElement(issuer, params, merge=false) {
+		logger.debug("applyCreateElement params: " + JSON.stringify(params));
+		Utils.validateParameters(params, ['name', 'descriptor']);
+		const descriptorChunk = params.descriptor;
+		descriptor = descriptorChunk.expand(0);
+		if('type' in descriptor == false) {
+			throw Error('missing type in element descriptor');
+		}
+		if(gTypeMap.has(descriptor.type) === false) {
+			throw Error('element type not registered');
+		}
+		const nameChunk = await Chunk.fromObject({name: params.name});
+		if(await this.elements.has(newAdminID)) {
+			if(merge) {
+				logger.log('info', 'applyCreateElement successfully MERGED');
+				return;
+			} else {
+				throw Error('applyCreateElement failed: name already exists');
+			}
+		}
+		await this.auth(issuer);
+		//Perform local changes
+		await this.elements.set(nameChunk, descriptorChunk);
+		logger.log('info', "Current elements: ");
+		for await (const [key, value] of elements) {
+			logger.log('info', '> ' + key.expand().name + ': ' + value.id);
+		}
+	}
+
+	async createElement(name, descriptorChunk) {
+		const params = {name: name, descriptor: descriptorChunk};
+		//newAdmin must be a valid host ID
+		logger.log('info', "VersionedData.createElement name="+name + ", descriptor(id)="+descriptorChunk.id);
+		await this.applyCreateElement(LocalHost.getID(), params);
+		await this.commit({
+			createElement: params
+		});
+		await NVD.save(this.uuid, this.version);
+	}
+
+	/**
+	 * Retrieves the element from the versioned data identified
+	 * by the given name. The element type must be registered
+	 * previously using the registerType method.
+	 * @param {string} name name identifier of the object to be retrived
+	 * @return the element as an instance of the class given by its descriptor
+	 */
+	async getElement(name) {
+		const nameChunk = await Chunk.fromObject({name: name});
+		const descriptorChunk = await this.elements.get(nameChunk);
+		const descriptor = await descriptorChunk.expand();
+		const type = gTypeMap.get(descriptor.type);
+		if(type == null
+		|| type == undefined) {
+			throw Error('element type not registered');
+		}
+		return type.fromChunk(descriptorChunk);
+	}
+
 
 	async applyAddAdmin(issuer, params, merge=false) {
 		logger.debug("applyAddAdmin params: " + JSON.stringify(params));
