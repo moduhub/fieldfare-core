@@ -13,9 +13,6 @@ import { cryptoManager } from '../../basic/CryptoManager';
 export * from '../shared/CommonSetup';
 
 export async function setupLocalHost() {
-    if(global.crypto === undefined) {
-        global.crypto = require('crypto').webcrypto;
-    }
     LevelNVD.init();
     LevelChunkManager.init();
     NodeCryptoManager.init();
