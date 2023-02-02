@@ -2,7 +2,7 @@ import {
     Resource,
     VolatileResourcesManager,
     NodeCryptoManager,
-    HashLinkedMap,
+    ChunkMap,
     logger
 } from 'fieldfare/node';
 
@@ -15,7 +15,7 @@ const numExistingKeys = numCreatedElements-numRemovedKeys;
 const gKeyDescriptor = 'key';
 const gValueDescriptor = 'value';
 
-const map = new HashLinkedMap(5);
+const map = new ChunkMap(5);
 
 //Build an array of elements to add
 const preUpdateMap = new Map;

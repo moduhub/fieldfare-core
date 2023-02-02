@@ -2,7 +2,7 @@ import {
     Resource,
     VolatileResourcesManager,
     NodeCryptoManager,
-    HashLinkedSet,
+    ChunkSet,
     logger
 } from 'fieldfare/node';
 
@@ -13,7 +13,7 @@ const numExistingElements = numCreatedElements-numRemovedElements;
 
 const gSalt = 'hlt';
 
-const set = new HashLinkedSet(5);
+const set = new ChunkSet(5);
 
 //Build an array of elements to add
 const createdElements = [];
