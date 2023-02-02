@@ -1,3 +1,4 @@
+// 2023 Adan Kvitschal <adan@moduhub.com>
 
 import { ChunkingUtils } from '../chunking/ChunkingUtils';
 import { ChunkManager } from '../chunking/ChunkManager';

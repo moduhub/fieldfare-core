@@ -1,3 +1,4 @@
+// 2023 Adan Kvitschal <adan@moduhub.com>
 
 import { ChunkManager } from '../chunking/ChunkManager';
 import { TreeContainer } from './TreeContainer';
