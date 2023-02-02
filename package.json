@@ -46,6 +46,10 @@
     "./node": {
       "require": "./src/platforms/node/NodeExports.js",
       "import": "./src/platforms/node/NodeExports"
+    },
+    "./test": {
+      "require": "./src/platforms/test/TestExports.js",
+      "import": "./src/platforms/test/TestExports"
     }
   },
   "devDependencies": {
