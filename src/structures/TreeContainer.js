@@ -21,7 +21,7 @@ export class TreeContainer {
 		|| leftChild === '') {
 			this.children[0] = '';
 		} else {
-			ChunkingUtils.validateKey(leftChild);
+			ChunkingUtils.validateIdentifier(leftChild);
 			this.children[0] = leftChild;
 		}
 		this.numElements = 0;
@@ -78,17 +78,17 @@ export class TreeContainer {
 			}
 			key = contents[0];
 			value = contents[1];
-			ChunkingUtils.validateKey(value);
+			ChunkingUtils.validateIdentifier(value);
 		} else {
 			key = contents;
 		}
-		ChunkingUtils.validateKey(key);
+		ChunkingUtils.validateIdentifier(key);
 		if(rightChildKey === undefined
 		|| rightChildKey === null
 		|| rightChildKey === '') {
 			rightChildKey = '';
 		} else {
-			ChunkingUtils.validateKey(rightChildKey);
+			ChunkingUtils.validateIdentifier(rightChildKey);
 		}
 		if(this.numElements === 0) {
 			this.keys[0] = key;
