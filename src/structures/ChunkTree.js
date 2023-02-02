@@ -1,10 +1,6 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+// 2023 Adan Kvitschal <adan@moduhub.com>
 
-import { Chunk } from '../chunking/Chunk
+import { Chunk } from '../chunking/Chunk';
 import { TreeBranch } from './TreeBranch';
 import { TreeContainer } from './TreeContainer';
  

@@ -1,3 +1,5 @@
+// 2023 Adan Kvitschal <adan@moduhub.com>
+
 import { ChunkTree } from "./ChunkTree";
 import { TreeContainer } from "./TreeContainer";
 import { TreeBranch } from "./TreeBranch";
