@@ -79,7 +79,7 @@ export class Chunk {
         // console.log('Original object: ' + JSON.stringify(object));
         // console.log('Converted object: ' + JSON.stringify(convertedObject));
         newChunk.data = ChunkingUtils.convertObjectToData(convertedObject);
-        newChunk.id = await ChunkManager.storeChunkData(newChunk.data);
+        newChunk.id = await ChunkManager.storeChunkContents(newChunk.data);
         return newChunk;
     }
 
@@ -106,7 +106,7 @@ export class Chunk {
             //iterate properties searching for child chunks
             for(const prop in object) {
                 const value = object[prop];
-                if(ChunkingUtils.isValidKey(value)) {
+                if(ChunkingUtils.isValidIdentifier(value)) {
                     const childChunk = Chunk.fromIdentifier(value, this.ownerID);
                     if(depth > 0) {
                         object[prop] = await childChunk.expand(depth-1);
@@ -130,6 +130,10 @@ export class Chunk {
      * @returns the resulting object as an instance of given type
      */
     async expandTo(type, keepIdentifiers=false) {
+        if(type == null
+        || type == undefined) {
+            throw Error('expandTo failed, type not defined');
+        }
         const rawObject = await this.expand(0, keepIdentifiers);
         if(type.validateParameters) {
             type.validateParameters(rawObject);
