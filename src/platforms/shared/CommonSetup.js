@@ -1,6 +1,10 @@
 import {LocalHost} from '../../env/LocalHost';
 import {Environment} from '../../env/Environment';
 import {NVD} from '../../basic/NVD';
+import { ChunkList } from './CommonExports';
+import { ChunkSet } from './CommonExports';
+import { ChunkMap } from './CommonExports';
+import { VersionedCollection } from './CommonExports';
 import {logger} from '../../basic/Log';
 
 export async function setEnvironmentUUID(uuid) {
@@ -18,4 +22,10 @@ export async function setupEnvironment() {
         LocalHost.serveWebport(webport);
     }
     return env;
+}
+
+export function setupBasicCollectionTypes() {
+    VersionedCollection.registerType('list', ChunkList);
+    VersionedCollection.registerType('set', ChunkSet);
+    VersionedCollection.registerType('map', ChunkMap);
 }
