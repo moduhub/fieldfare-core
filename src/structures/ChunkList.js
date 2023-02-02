@@ -11,7 +11,7 @@ import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
 
 
-export class HashLinkedList {
+export class ChunkList {
 
 	constructor(last, ownerID) {
 		if(last instanceof Chunk === false) {
@@ -34,12 +34,12 @@ export class HashLinkedList {
 
 	static async fromDescriptor(descriptorChunk) {
 		if(descriptor instanceof Chunk === false) {
-			throw Error('hash linked list descriptor is not a valid Chunk');
+			throw Error('chunk list descriptor is not a valid Chunk');
 		}
 		descriptor = await descriptorChunk.expand();
 		Utils.validateParameters(descriptor, ['type', 'last', 'ownerID']);
 		if(descriptor.type !== 'list') {
-			throw Error('Descriptor type is not compatible with hash linked list');
+			throw Error('Descriptor type is not compatible with chunk list');
 		}
 		if(descriptor.last instanceof Chunk === false) {
 			throw Error('List descriptor does not contain a valid container pointer');
@@ -47,7 +47,7 @@ export class HashLinkedList {
 		if(descriptor.owner instanceof Chunk === false) {
 			throw Error('list descriptor does not contain a valid owner identifier');
 		}
-		return new HashLinkedList(descriptor.last, descriptor.ownerID);
+		return new ChunkList(descriptor.last, descriptor.ownerID);
 	}
 
 	toDescriptor() {

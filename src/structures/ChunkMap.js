@@ -1,10 +1,10 @@
-import { HashLinkedTree } from "./HashLinkedTree";
+import { ChunkTree } from "./ChunkTree";
 import { TreeContainer } from "./TreeContainer";
 import { TreeBranch } from "./TreeBranch";
 import { Chunk } from '../chunking/Chunk';
 
 
-export class HashLinkedMap extends HashLinkedTree {
+export class ChunkMap extends ChunkTree {
     
     constructor(degree, root) {
         if(Number.isInteger(degree) === false
@@ -22,7 +22,7 @@ export class HashLinkedMap extends HashLinkedTree {
         if(descriptor.type !== 'map') {
             throw Error('Unexpected type value');
         }
-        return new HashLinkedMap(descriptor.degree, descriptor.root);
+        return new ChunkMap(descriptor.degree, descriptor.root);
     }
 
 	toDescriptor() {
@@ -35,7 +35,7 @@ export class HashLinkedMap extends HashLinkedTree {
 
     async set(key, value) {
         if(this.readOny) {
-            throw Error('Attempt to edit a read only hash linked set');
+            throw Error('Attempt to edit a read only chunk set');
         }
         if(key instanceof Chunk === false) {
             throw Error('inserting a key element that is not a chunk');

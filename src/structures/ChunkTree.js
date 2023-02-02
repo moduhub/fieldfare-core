@@ -7,10 +7,8 @@
 import { Chunk } from '../chunking/Chunk
 import { TreeBranch } from './TreeBranch';
 import { TreeContainer } from './TreeContainer';
-import { Utils } from '../basic/Utils';
-
  
-export class HashLinkedTree {
+export class ChunkTree {
 
 	constructor(degree=5, root=null) {
 		this.degree = degree;
@@ -22,7 +20,7 @@ export class HashLinkedTree {
             throw Error('key is not a valid Chunk');
         }
         if(!this.local) {
-            throw Error('Attempt to edit a remote hash linked tree');
+            throw Error('Attempt to edit a remote chunk tree');
         }
 		if(this.rootChunk == null
 		|| this.rootChunk == undefined) {

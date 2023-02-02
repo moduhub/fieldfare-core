@@ -1,20 +1,21 @@
-import { HashLinkedTree } from "./HashLinkedTree";
+import { ChunkTree } from "./ChunkTree";
 import { Chunk } from  "../chunking/Chunk";
 import { TreeContainer } from "./TreeContainer";
 import { TreeBranch } from "./TreeBranch";
 
 
-export class HashLinkedSet extends HashLinkedTree {
+export class ChunkSet extends ChunkTree {
 
     static async fromDescriptor(descriptorChunk) {
         const descriptor = await descriptorChunk.expand();
         Utils.validateParameters(descriptor, ['type', 'degree', 'root']);
-        HashLinkedTree.validateDegree(descriptor.degree);
+        ChunkTree
+    .validateDegree(descriptor.degree);
         const degree = descriptor.degree;
         if(descriptor.type !== 'set') {
             throw Error('Unexpected type value');
         }
-        return new HashLinkedSet(descriptor.degree, descriptor.root);
+        return new ChunkSet(descriptor.degree, descriptor.root);
     }
 
 	toDescriptor() {
@@ -27,7 +28,7 @@ export class HashLinkedSet extends HashLinkedTree {
 
 	async add(element) {
         if(!this.local) {
-            throw Error('Attempt to edit a remote hash linked set');
+            throw Error('Attempt to edit a remote chunk set');
         }
         if(element instanceof Chunk === false) {
             throw Error('inserting an element that is not a chunk');
