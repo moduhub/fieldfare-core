@@ -96,7 +96,7 @@ export class ChunkManager {
 		var base64data;
 		for(const instance of instances) {
 			try {
-				base64data = await instance.getDataFromIdentifier(id);
+				base64data = await instance.getChunkContents(id);
 				if(base64data !== undefined) {
 					return base64data;
 				}
