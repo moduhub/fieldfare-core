@@ -4,15 +4,12 @@ import { ChunkTree } from "./ChunkTree";
 import { Chunk } from  "../chunking/Chunk";
 import { TreeContainer } from "./TreeContainer";
 import { TreeBranch } from "./TreeBranch";
-
+import { Utils } from "../basic/Utils";
 
 export class ChunkSet extends ChunkTree {
 
-    static async fromDescriptor(descriptorChunk) {
-        const descriptor = await descriptorChunk.expand();
+    static async fromDescriptor(descriptor) {
         Utils.validateParameters(descriptor, ['type', 'degree', 'root']);
-        ChunkTree
-    .validateDegree(descriptor.degree);
         const degree = descriptor.degree;
         if(descriptor.type !== 'set') {
             throw Error('Unexpected type value');
@@ -21,11 +18,11 @@ export class ChunkSet extends ChunkTree {
     }
 
 	toDescriptor() {
-		return Chunk.fromObject({
+		return {
             type: 'set',
             degree: this.degree,
             root: this.rootChunk
-        });
+        };
 	}
 
 	async add(element) {
