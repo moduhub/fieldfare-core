@@ -8,7 +8,7 @@
 import { LocalHost } from './LocalHost';
 import { Chunk } from '../chunking/Chunk';
 import { ChunkingUtils } from '../chunking/ChunkingUtils';
-import { VersionedData } from '../versioning/VersionedData';
+import { VersionedCollection } from '../versioning/VersionedCollection';
 import { VersionStatement } from '../versioning/VersionStatement';
 import { ServiceDefinition } from './ServiceDefinition';
 import { NVD } from '../basic/NVD';
@@ -16,7 +16,7 @@ import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
 
 
-export class Environment extends VersionedData {
+export class Environment extends VersionedCollection {
 
 	constructor() {
 		super();

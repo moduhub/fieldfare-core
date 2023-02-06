@@ -1,12 +1,12 @@
 
-import {HashLinkedList} from '../structures/HashLinkedList';
-import {HashLinkedTree} from '../structures/HashLinkedTree';
+import {ChunkList} from '../structures/ChunkList';
+import {ChunkSet} from '../structures/ChunkTree';
 import {Utils} from '../basic/Utils';
 
 const dataTypes = {
-    'list': HashLinkedList,
-    'set': HashLinkedTree,
-    'map': HashLinkedTree,
+    'list': ChunkList,
+    'set': ChunkSet,
+    'map': ChunkMap,
     'obj': Object
 };
 

@@ -6,6 +6,7 @@
  */
 
 import { ChunkManager } from '../chunking/ChunkManager';
+import { Chunk } from '../chunking/Chunk';
 import { cryptoManager } from '../basic/CryptoManager';
 import { Environment } from '../env/Environment';
 import { LocalService } from './LocalService';
