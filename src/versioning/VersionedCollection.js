@@ -2,13 +2,14 @@
 
 import { LocalHost } from '../env/LocalHost';
 import { Chunk } from '../chunking/Chunk';
-import { HashLinkedList } from '../structures/HashLinkedList';
-import { HashLinkedTree } from '../structures/HashLinkedTree';
+import { ChunkingUtils } from '../chunking/ChunkingUtils';
+import { ChunkMap } from '../structures/ChunkMap';
 import { VersionStatement } from './VersionStatement';
 import { VersionChain } from './VersionChain';
 import { NVD } from '../basic/NVD';
 import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
+const util = require('node:util');
 
 const gTypeMap = new Map;
 
@@ -51,7 +52,7 @@ export class VersionedCollection {
 	async applyChain(chain, merge=false) {
 		//just accept remote changes
 		const changes = await chain.getChanges();
-		// logger.log('info', "remoteChanges:" + JSON.stringify(remoteChanges));
+		logger.log('info', "applyChain: changes:" + JSON.stringify(changes));
 		for await (const [issuer, method, params] of changes) {
 			if(method === 'merge') {
 				const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
@@ -187,17 +188,25 @@ export class VersionedCollection {
 			+ "->" + this.versionIdentifier);
 	}
 
-	async auth(id, strict=true) {
-		if(Utils.isBase64(id) == false) {
-			throw Error('invalid id parameter');
+	async auth(id, strict=false) {
+		console.log('auth> ' + JSON.stringify(id));
+		const hostChunk = Chunk.fromIdentifier(id, id);
+		const admins = await this.getElement('admins');
+		console.log(admins);
+		if(admins) {
+			console.log('admins is empty? ' + await admins.isEmpty());
 		}
-		const admins = this.elements.get('admins');
-		if(await admins.isEmpty()) {
+		if(admins == undefined
+		|| await admins.isEmpty()) {
 			if(strict) {
-				throw Error('strict auth failed, admin group empty');
+				throw Error('strict auth failed, no admins defined');
 			}
 		} else {
-			if(await admins.has(id) === false) {
+			console.log('current admins:')
+			for await (const chunk of admins) {
+				console.log('>> ' + chunk.id);
+			}
+			if(await admins.has(hostChunk) === false) {
 				throw Error('not authorized');
 			}
 		}
@@ -246,37 +255,44 @@ export class VersionedCollection {
 	}
 
 	/**
-	 * Retrieves the element from the versioned data identified
-	 * by the given name. The element type must be registered
-	 * previously using the registerType method.
+	 * Retrieves from the current version of the collection the element identified
+	 * by the given name.
+	 * The element type must be registered previously using the registerType method.
 	 * @param {string} name name identifier of the object to be retrived
+	 * @param {string} version version of the collection from which the object will
+	 * be retrieved, defaults to lastest.
 	 * @return the element as an instance of the class given by its descriptor
 	 */
 	async getElement(name) {
 		const nameChunk = await Chunk.fromObject({name: name});
 		const descriptorChunk = await this.elements.get(nameChunk);
-		const descriptor = await descriptorChunk.expand();
-		const type = gTypeMap.get(descriptor.type);
-		if(type == null
-		|| type == undefined) {
-			throw Error('element type not registered');
+		if(descriptorChunk) {
+			const descriptor = await descriptorChunk.expand();
+			const type = gTypeMap.get(descriptor.type);
+			if(type == null
+			|| type == undefined) {
+				throw Error('element type not registered');
+			}
+			return descriptorChunk.expandTo(type);
 		}
-		return type.fromChunk(descriptorChunk);
+		return undefined;
 	}
-
 
 	async applyAddAdmin(issuer, params, merge=false) {
 		logger.debug("applyAddAdmin params: " + JSON.stringify(params));
 		Utils.validateParameters(params, ['id']);
-		const newAdminID = params.id;
-		ResourcesManager.validateKey(newAdminID);
-		const admins = this.elements.get('admins');
+		const newAdminChunk = Chunk.fromIdentifier(params.id, params.id);
+		const admins = await this.getElement('admins');
+		if(!admins) {
+			throw Error('admins groups does not exist');
+		}
 		logger.log('info', "Current admins: ");
 		for await (const admin of admins) {
 			logger.log('info', '> ' + admin);
 		}
 		//Check if admin was not already present
-		if(await admins.has(newAdminID)) {
+		console.log('applyAddAdmin admins: ' + util.inspect(admins));
+		if(await admins.has(newAdminChunk)) {
 			if(merge) {
 				logger.log('info', 'applyAddAdmin successfully MERGED');
 				return;
@@ -287,25 +303,33 @@ export class VersionedCollection {
 		//Check auth, non strict
 		await this.auth(issuer, false);
 		//Perform local changes
-		await admins.add(newAdminID);
+		await admins.add(newAdminChunk);
 	}
 
 	async addAdmin(newAdminID) {
 		const params = {id: newAdminID};
 		//newAdmin must be a valid host ID
+		const admins = await this.getElement('admins');
+		if(!admins) {
+			await this.createElement('admins', {
+				type: 'set',
+				degree: 5,
+				root: null
+			});
+		}
 		logger.log('info', "VersionedData.addAdmin ID="+newAdminID);
 		await this.applyAddAdmin(LocalHost.getID(), params);
 		await this.commit({
 			addAdmin: params
 		});
-		await NVD.save(this.uuid, this.version);
+		await NVD.save(this.uuid, this.versionIdentifier);
 	}
 
 	async applyRemoveAdmin(issuer, params, merge=false) {
 		logger.debug("applyRemoveAdmin params: " + JSON.stringify(params));
 		Utils.validateParameters(params, ['id']);
 		const adminID = params.id;
-		ResourcesManager.validateKey(adminID);
+		ChunkingUtils.validateIdentifier(adminID);
 		const admins = this.elements.get('admins');
 		if(await admins.has(adminID)===false) {
 			if(merge) {
@@ -328,7 +352,7 @@ export class VersionedCollection {
 		await this.commit({
 			removeAdmin: params
 		});
-		await NVD.save(this.uuid, this.version);
+		await NVD.save(this.uuid, this.versionIdentifier);
 	}
 
 };
