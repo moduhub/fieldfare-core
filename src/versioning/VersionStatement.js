@@ -13,7 +13,7 @@ export class VersionStatement {
 	}
 
 	/**
-	 * method used by chunk expansion to validate the raw object fields before
+	 * used by chunk expansion to validate the raw object fields before
 	 * casting into a VersionStatement instance
 	 * @param {*} message message of which parameters will be validated
 	 */
@@ -28,7 +28,7 @@ export class VersionStatement {
 			throw Error('malformed update message');
 		}
 		if('prev' in message.data === false
-		|| 'state' in message.data === false
+		|| 'elements' in message.data === false
 		|| 'changes' in message.data === false) {
 			throw Error('malformed update message data');
 		}

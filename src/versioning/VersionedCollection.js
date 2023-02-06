@@ -174,16 +174,17 @@ export class VersionedCollection {
 		//Create update message
 		var versionStatement = new VersionStatement();
 		versionStatement.source = LocalHost.getID();
-		const stateChunk = await this.toChunk();
+		const stateChunk = await this.elements.toDescriptor();
 		versionStatement.data = {
-			prev: this.version,
-			state: stateResource,
-			changes: await ResourcesManager.storeResourceObject(changes)
+			prev: this.versionIdentifier,
+			elements: stateChunk,
+			changes: await Chunk.fromObject(changes)
 		};
 		await LocalHost.signMessage(versionStatement);
-		this.version = await ResourcesManager.storeResourceObject(versionStatement);
+		const versionChunk = await Chunk.fromObject(versionStatement);
+		this.versionIdentifier = versionChunk.id;
 		logger.debug("New version statement: " + JSON.stringify(versionStatement, null, 2)//.replaceAll('\\', '')
-			+ "->" + this.version);
+			+ "->" + this.versionIdentifier);
 	}
 
 	async auth(id, strict=true) {
