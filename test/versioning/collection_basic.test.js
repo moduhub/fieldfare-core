@@ -1,6 +1,7 @@
 import {
     ffinit,
     LocalHost,
+    ChunkSet,
     ChunkMap,
     VersionedCollection,
     logger
@@ -21,9 +22,10 @@ test('Collection elements is a ChunkMap of degree=5', () => {
 });
 
 test('Collection can add an admin', async () => {
-    const admins = await gTestCollection.getElement('admins');
-    expect(admins).toBeUndefined();
+    const adminsBefore = await gTestCollection.getElement('admins');
+    expect(adminsBefore).toBeUndefined();
     await gTestCollection.addAdmin(LocalHost.getID());
-    expect(admins).toBeInstaceOf(ChunkMap);
+    const adminsAfter = await gTestCollection.getElement('admins');
+    expect(adminsAfter).toBeInstanceOf(ChunkSet);
     return;
 });
