@@ -26,14 +26,14 @@ export class Chunk {
      * @returns new Chunk object assigned to given key
      */    
     static fromIdentifier(id, ownerID) {
-        if(id === null
-        || id === '') {
-            return null;
-        }
-        ChunkingUtils.validateIdentifier(id);
         const newChunk = new Chunk;
+        if(id
+        && id !== null
+        && id !== '') {
+        ChunkingUtils.validateIdentifier(id);
         newChunk.id = id;
         newChunk.ownerID = ownerID;
+        }
         return newChunk;
     }
 
