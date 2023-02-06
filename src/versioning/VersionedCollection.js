@@ -207,8 +207,9 @@ export class VersionedCollection {
 	async applyCreateElement(issuer, params, merge=false) {
 		logger.debug("applyCreateElement params: " + JSON.stringify(params));
 		Utils.validateParameters(params, ['name', 'descriptor']);
-		const descriptorChunk = params.descriptor;
-		descriptor = descriptorChunk.expand(0);
+		const descriptor = params.descriptor;
+		// console.log('descriptorChunk: ' + JSON.stringify(descriptorChunk));
+		// console.log('descriptor: ' + JSON.stringify(descriptor));
 		if('type' in descriptor == false) {
 			throw Error('missing type in element descriptor');
 		}
@@ -216,7 +217,7 @@ export class VersionedCollection {
 			throw Error('element type not registered');
 		}
 		const nameChunk = await Chunk.fromObject({name: params.name});
-		if(await this.elements.has(newAdminID)) {
+		if(await this.elements.has(nameChunk)) {
 			if(merge) {
 				logger.log('info', 'applyCreateElement successfully MERGED');
 				return;
@@ -224,24 +225,24 @@ export class VersionedCollection {
 				throw Error('applyCreateElement failed: name already exists');
 			}
 		}
-		await this.auth(issuer);
+		await this.auth(issuer, false);
 		//Perform local changes
+		const descriptorChunk = await Chunk.fromObject(descriptor);
 		await this.elements.set(nameChunk, descriptorChunk);
-		logger.log('info', "Current elements: ");
-		for await (const [key, value] of elements) {
-			logger.log('info', '> ' + key.expand().name + ': ' + value.id);
+		console.log('info', "Current elements: ");
+		for await (const [key, value] of this.elements) {
+			console.log('info', '> ' + JSON.stringify(await key.expand()) + ': ' + JSON.stringify(await value.expand()));
 		}
 	}
 
-	async createElement(name, descriptorChunk) {
-		const params = {name: name, descriptor: descriptorChunk};
-		//newAdmin must be a valid host ID
-		logger.log('info', "VersionedData.createElement name="+name + ", descriptor(id)="+descriptorChunk.id);
+	async createElement(name, descriptor) {
+		const params = {name: name, descriptor: descriptor};
+		logger.log('info', "VersionedData.createElement name="+name + ", descriptor="+descriptor);
 		await this.applyCreateElement(LocalHost.getID(), params);
 		await this.commit({
 			createElement: params
 		});
-		await NVD.save(this.uuid, this.version);
+		await NVD.save(this.uuid, this.versionIdentifier);
 	}
 
 	/**
