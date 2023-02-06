@@ -23,11 +23,12 @@ export class VersionedCollection {
 
 	constructor() {
 		/**
-         * List of elements under version control, identified by a name string
+         * A map of elements under version control, the key is a chunk that expands to an
+		 * object with a name property identifying the elements and the value is a descriptor chunk
          * @type {ChunkMap}
          * @private
          */
-		this.elements = new ChunkMap();
+		this.elements = new ChunkMap(5);
 		/**
          * List of methods that can alter the contents of the elements under version control
          * @type {Map}
@@ -35,12 +36,11 @@ export class VersionedCollection {
          */
 		this.methods = new Map();
 
-		this.addSet('admins');
 		this.methods.set('addAdmin', this.applyAddAdmin.bind(this));
 		this.methods.set('removeAdmin', this.applyRemoveAdmin.bind(this));
 		this.methods.set('createElement', this.applyCreateElement.bind(this));
-		this.methods.set('deleteElement', this.applyDeleteElement.bind(this));
-		this.version = '';
+		//this.methods.set('deleteElement', this.applyDeleteElement.bind(this));
+		this.versionIdentifier = '';
 		this.versionBlacklist = new Set();
 	}
 
@@ -73,39 +73,38 @@ export class VersionedCollection {
 		await methodCallback(issuer, params, merge);
 	}
 
-	async revertToVersion(version) {
+	async checkout(versionChunk) {
 		// logger.log('info', "REVERTING TO VERSION: "  + version);
-		const statement = await ResourcesManager.getResourceObject(version);
-		const stateKey = statement.data.state;
-		// logger.log('info', "State key: \'" + stateKey + '\'');
-		if(stateKey !== '') {
-			const state = await ResourcesManager.getResourceObject(statement.data.state);
-			// logger.log('info', "Revert to state object: " + JSON.stringify(state));
-			this.setState(state);
-		} else {
-			// logger.log('info', 'Revert to NULL state');
-			this.resetState();
+		if(versionChunk instanceof Chunk === false) {
+			throw Error('versionChunk not a valid chunk');
 		}
-		this.version = version;
+		const statement = await versionChunk.expandTo(VersionStatement);
+		const elementsChunk = statement.data.elements;
+		if(elementsChunk instanceof Chunk === false) {
+			throw Error('elements inside versionChunk not a valid chunk');
+		}
+		this.elements = await ChunkMap.fromDescritor(elementsChunk);
+		this.versionIdentifier = versionChunk.id;
 	}
 
-	async update(version, owner) {
-		if(this.updateInProgress === version) {
+	async pull(versionChunk) {
+		const versionIdentifier = versionChunk.id;
+		if(this.updateInProgress === versionIdentifier) {
 			//Already updating to same version, consider success?
 			return;
 		}
 		if(this.updateInProgress) {
 			throw Error('another update in progress');
 		}
-		if(this.versionBlacklist.has(version)) {
+		if(this.versionBlacklist.has(versionIdentifier)) {
 			throw Error('This version has been blacklisted');
 		}
-		logger.debug(">> Env update to version: " + version);
-		this.updateInProgress = version;
-		const receivedMessage = await VersionStatement.fromResource(version, owner);
-		logger.debug("Received update statement: " + JSON.stringify(receivedMessage,null, 2));
-		const localChain = new VersionChain(this.version, LocalHost.getID(), 50);
-		const remoteChain = new VersionChain(version, owner, 50);
+		logger.debug(">> pull changes to version: " + versionIdentifier);
+		this.updateInProgress = versionIdentifier;
+		const versionStatement = await versionChunk.expandTo(VersionStatement);
+		logger.debug("Received version statement: " + JSON.stringify(versionStatement,null, 2));
+		const localChain = new VersionChain(this.versionIdentifier, LocalHost.getID(), 50);
+		const remoteChain = new VersionChain(versionIdentifier, owner, 50);
 		const commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
 		//Limit to commonVersion, not including
 		localChain.limit(commonVersion, false);
@@ -116,24 +115,24 @@ export class VersionedCollection {
 		logger.debug("Local env is " + localCommitsAhead + " commits ahead");
 		logger.debug("Remote env is " + remoteCommitsAhead + " commits ahead");
 		// 		1) I have concurrent changes
-		// && 	2) remote chain is LoggerManager
+		// && 	2) remote chain is longer
 		// 			so... stash localChanges and perform remote before
 		if(remoteCommitsAhead > 0
 		&& remoteCommitsAhead >= localCommitsAhead) {
 			if(localCommitsAhead > 0) {
 				// logger.log('info', "Stashing local changes");
-				await this.revertToVersion(commonVersion);
+				await this.checkout(commonVersion);
 			}
 			try {
 				await this.applyChain(remoteChain);
-				const stateKey = await ResourcesManager.storeResourceObject(await this.getState());
+				const newElementsChunk = await this.elements.toDescriptor();
 				const expectedState = await remoteChain.getHeadState();
 				// logger.log('info', "state after apply: " + stateKey);
 				// logger.log('info', "expected state: " + expectedState);
-				if(stateKey !== expectedState) {
-					throw Error('version mismatch after remote changes applied');
+				if(newElementsChunk.id !== expectedState) {
+					throw Error('state mismatch after remote changes applied');
 				}
-				this.version = remoteChain.head;
+				this.versionIdentifier = remoteChain.head;
 				const localChanges = await localChain.getChanges();
 				//now merge local changes at end of remote chain, if any
 				if(localCommitsAhead > 0) {
@@ -152,13 +151,13 @@ export class VersionedCollection {
 					}
 				}
 				//Save changes permanently
-				await NVD.save(this.uuid, this.version);
+				await NVD.save(this.uuid, this.versionIdentifier);
 				// Reset blacklist
 				this.versionBlacklist.clear();
-				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.version);
+				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.versionIdentifier);
 			} catch (error) {
 				// Recover previous state
-				await this.revertToVersion(localChain.head);
+				await this.checkout(localChain.head);
 				throw Error('environment changes apply all failed: ', {cause: error});
 			} finally {
 				this.updateInProgress = null;
