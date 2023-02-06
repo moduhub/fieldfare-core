@@ -30,9 +30,9 @@ export class Chunk {
         if(id
         && id !== null
         && id !== '') {
-        ChunkingUtils.validateIdentifier(id);
-        newChunk.id = id;
-        newChunk.ownerID = ownerID;
+            ChunkingUtils.validateIdentifier(id);
+            newChunk.id = id;
+            newChunk.ownerID = ownerID;
         }
         return newChunk;
     }
@@ -135,12 +135,19 @@ export class Chunk {
             throw Error('expandTo failed, type not defined');
         }
         const rawObject = await this.expand(0, keepIdentifiers);
-        if(type.validateParameters) {
-            type.validateParameters(rawObject);
+        if(rawObject) {
+            if(type.validateParameters) {
+                type.validateParameters(rawObject);
+            }
+            if(type.fromDescriptor) {
+                return type.fromDescriptor(rawObject);
+            } else {
+                const typedObject = new type;
+                Object.assign(typedObject, rawObject);
+                return typedObject;
+            }
         }
-        const typedObject = new type;
-        Object.assign(typedObject, rawObject);
-		return typedObject;
+		return null;
     }
 
 }
