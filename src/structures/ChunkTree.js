@@ -6,9 +6,10 @@ import { TreeContainer } from './TreeContainer';
  
 export class ChunkTree {
 
-	constructor(degree=5, root=null) {
+	constructor(degree=5, root=null, local=true) {
 		this.degree = degree;
 		this.rootChunk = root;
+        this.local = local;
 	}
 
     async delete(key) {
@@ -90,11 +91,11 @@ export class ChunkTree {
 	async isEmpty() {
 		if(this.rootChunk) {
             const rootContainer = await this.rootChunk.expand(0, true);
-			if(rootContainer.numElements == 0) {
-				return true;
+			if(rootContainer.numElements > 0) {
+				return false;
 			}
 		}
-		return false;
+		return true;
 	}
 
 };

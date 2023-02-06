@@ -77,14 +77,15 @@ export class ChunkMap extends ChunkTree {
             throw Error('get() failed: key is not a Chunk');
         }
         if(this.rootChunk) {
-            var iContainer = this.rootChunk.expandTo(TreeContainer, true);
+            var iContainer = await this.rootChunk.expandTo(TreeContainer, true);
             while(iContainer) {
-                nextContainerIdentifier = iContainer.follow(key.id);
+                const nextContainerIdentifier = iContainer.follow(key.id);
                 if(nextContainerIdentifier === true) {
                     const valueIdentifier = iContainer.getKeyValue(key.id);
                     return Chunk.fromIdentifier(valueIdentifier, this.rootChunk.ownerID);
                 }
-                iContainer = Chunk.fromIdentifier(nextContainerIdentifier, this.rootChunk.ownerID).expandTo(TreeContainer, true);
+                const containerChunk = Chunk.fromIdentifier(nextContainerIdentifier, this.rootChunk.ownerID);
+                iContainer = await containerChunk.expandTo(TreeContainer, true);
             }
         }
         return undefined;
