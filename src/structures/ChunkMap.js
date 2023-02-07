@@ -17,6 +17,11 @@ export class ChunkMap extends ChunkTree {
         super(degree, root);
     }
 
+    /**
+     * Create a new ChunkMap from information contained in this descriptor
+     * @param {Chunk} descriptorChunk chunk containing a valid descriptor of a chunk map
+     * @returns the new ChunkMap
+     */
     static async fromDescriptor(descriptorChunk) {
         const descriptor = await descriptorChunk.expand();
         Utils.validateParameters(descriptor, ['type', 'degree', 'root']);
@@ -54,21 +59,21 @@ export class ChunkMap extends ChunkTree {
             const branch = new TreeBranch(this.rootChunk.id, this.rootChunk.ownerID);
             await branch.getToKey(key.id);
             var iContainer = branch.getLastContainer();
-            var newRootKey;
+            var newRootIdentifier;
             if(branch.containsKey) {
                 iContainer.updateKeyValue(key.id, value.id);
-                newRootKey = await branch.update();
+                newRootIdentifier = await branch.update();
             } else {
                 iContainer.add([key.id, value.id]);
                 const maxElements = this.degree;
                 if(iContainer.numElements === maxElements) {
                     const splitDepth = await branch.split(maxElements);
-                    newRootKey = await branch.update(splitDepth);    //update only from split down to root
+                    newRootIdentifier = await branch.update(splitDepth);    //update only from split down to root
                 } else {
-                    newRootKey = await branch.update();
+                    newRootIdentifier = await branch.update();
                 }
             }
-            this.rootChunk = Chunk.fromKey(newRootKey);
+            this.rootChunk = Chunk.fromIdentifier(newRootIdentifier);
         }
     }
 

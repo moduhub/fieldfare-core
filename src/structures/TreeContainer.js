@@ -423,7 +423,7 @@ export class TreeContainer {
 
 	async* iterator(ownerID) {
 		if(this.children[0] !== '') {
-			const leftmostChild = await TreeContainer.fromChunkID(this.children[0], ownerID);
+			const leftmostChild = await TreeContainer.fromChunkIdentifier(this.children[0], ownerID);
 			//Descent on leftmost child
 			for await (const element of leftmostChild.iterator(ownerID)) {
 				yield element;
@@ -437,7 +437,7 @@ export class TreeContainer {
 				yield this.keys[i];
 			}
 			if(this.children[i+1] !== '') {
-				var iChild = await TreeContainer.fromChunkID(this.children[i+1], ownerID);
+				var iChild = await TreeContainer.fromChunkIdentifier(this.children[i+1], ownerID);
 				for await (const element of iChild.iterator(ownerID)) {
 					yield element;
 				}

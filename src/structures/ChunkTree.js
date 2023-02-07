@@ -59,7 +59,7 @@ export class ChunkTree {
                     stolenElement = shiftedKey;
                     branch.append(rightBranch);
                 }
-                ownerContainer.substituteElement(key, stolenElement);
+                ownerContainer.substituteElement(key.id, stolenElement);
                 const branchLeaf = branch.getLastContainer();
                 if(branchLeaf.numElements < minElements) {
                     debugger;
@@ -67,7 +67,7 @@ export class ChunkTree {
                 }
             }
             const newRootKey = await branch.update(mergeDepth);
-            this.rootChunk = Chunk.fromIdentfier(newRootKey);
+            this.rootChunk = Chunk.fromIdentifier(newRootKey);
         }
     }
 
@@ -76,20 +76,21 @@ export class ChunkTree {
             throw Error('key is not a valid chunk');
         }
 		if(this.rootChunk) {
-			var iContainer = this.rootChunk.expandTo(TreeContainer, true);
+			var iContainer = await this.rootChunk.expandTo(TreeContainer, true);
 			while(iContainer) {
-				nextContainerIdentifier = iContainer.follow(key.id);
+				const nextContainerIdentifier = iContainer.follow(key.id);
 				if(nextContainerIdentifier === true) {
 					return true;
 				}
-                iContainer = Chunk.fromIdentifier(nextContainerIdentifier, this.root.ownerID).expandTo(TreeContainer, true);
+                iContainer = await Chunk.fromIdentifier(nextContainerIdentifier, this.rootChunk.ownerID).expandTo(TreeContainer, true);
 			}
 		}
         return false;
 	}
 
 	async isEmpty() {
-		if(this.rootChunk) {
+		if(this.rootChunk
+        && this.rootChunk.id) {
             const rootContainer = await this.rootChunk.expand(0, true);
 			if(rootContainer.numElements > 0) {
 				return false;
