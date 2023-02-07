@@ -1,6 +1,7 @@
 
 import {ChunkList} from '../structures/ChunkList';
-import {ChunkSet} from '../structures/ChunkTree';
+import {ChunkSet} from '../structures/ChunkSet';
+import {ChunkMap} from '../structures/ChunkMap';
 import {Utils} from '../basic/Utils';
 
 const dataTypes = {
