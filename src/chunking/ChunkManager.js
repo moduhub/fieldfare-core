@@ -34,7 +34,7 @@ export class ChunkManager {
 	}
 
 	static async getObjectFromIdentifier(id, owner) {
-		const base64data = await ChunkManager.getDataFromIdentifier(id, owner);
+		const base64data = await ChunkManager.getChunkContents(id, owner);
 		const object = ChunkingUtils.convertDataToObject(base64data);
 		return object;
 	}
