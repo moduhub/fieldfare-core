@@ -53,7 +53,7 @@ export class ChunkSet extends ChunkTree {
             } else {
                 newRootIdentifier = await branch.update();
             }
-            this.rootChunk = await Chunk.fromKey(newRootIdentifier, this.ownerID);
+            this.rootChunk = await Chunk.fromIdentifier(newRootIdentifier, this.ownerID);
 		}
 		return this.rootChunk;
 	}
