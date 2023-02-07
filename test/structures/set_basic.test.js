@@ -1,135 +1,133 @@
 import {
-    Resource,
-    VolatileResourcesManager,
-    NodeCryptoManager,
+    Chunk,
+    VolatileChunkManager,
+    TestCryptoManager,
     ChunkSet,
     logger
-} from 'fieldfare/node';
+} from 'fieldfare/test';
 
-const numCreatedElements = 100;
-const numNonExistingElements = Math.floor(numCreatedElements/5);
-const numRemovedElements = Math.floor(numCreatedElements/5);
-const numExistingElements = numCreatedElements-numRemovedElements;
+const numCreatedChunks = 100;
+const numNonExistingChunks = Math.floor(numCreatedChunks/5);
+const numRemovedChunks = Math.floor(numCreatedChunks/5);
+const numExistingChunks = numCreatedChunks-numRemovedChunks;
 
 const gSalt = 'hlt';
 
-const set = new ChunkSet(5);
+const chunkSet = new ChunkSet(5);
 
 //Build an array of elements to add
-const createdElements = [];
-const removedElements = [];
-const removedKeys = [];
-const existingElements = [];
-const existingKeys = [];
-const nonExistingElements = [];
-const nonExistingKeys = [];
+const createdChunks = [];
+const removedChunks = [];
+const removedChunkIdentifiers = [];
+const existingChunks = [];
+const existingChunkIdentifiers = [];
+const nonExistingChunks = [];
+const nonExistingChunkIdentifiers = [];
 
 beforeAll(async () => {
 
     logger.disable();
-    NodeCryptoManager.init();
-    VolatileResourcesManager.init();
+    TestCryptoManager.init();
+    VolatileChunkManager.init();
 
-    for (var i=0; i<numCreatedElements; i++) {
-        const element = await Resource.fromObject({
+    for (var i=0; i<numCreatedChunks; i++) {
+        const chunk = await Chunk.fromObject({
             index: i,
             salt: gSalt
         });
-        createdElements.push(element);
-        if(i<numRemovedElements) {
-            removedElements.push(element);
-            removedKeys.push(element.key);
+        createdChunks.push(chunk);
+        if(i<numRemovedChunks) {
+            removedChunks.push(chunk);
+            removedChunkIdentifiers.push(chunk.id);
         } else {
-            existingElements.push(element);
-            existingKeys.push(element.key);
+            existingChunks.push(chunk);
+            existingChunkIdentifiers.push(chunk.id);
         }
     }
 
-    for(var i=0; i<numNonExistingElements; i++) {
-        const element = await Resource.fromObject({
-            index: numCreatedElements+i,
+    for(var i=0; i<numNonExistingChunks; i++) {
+        const chunk = await Chunk.fromObject({
+            index: numCreatedChunks+i,
             salt: gSalt
         });
-        nonExistingElements.push(element);
-        nonExistingKeys.push(element.key);
+        nonExistingChunks.push(chunk);
+        nonExistingChunkIdentifiers.push(chunk.id);
     }
 
     return;
 });
 
-test('Set stores '+numCreatedElements+' elements', async () => {
-    expect(set.root).toBe(null);
-    for(const element of createdElements) {
-        //console.log('set.add('+JSON.stringify(element)+')');
-        await set.add(element);
+test('ChunkSet stores '+numCreatedChunks+' chunks', async () => {
+    //expect(chunkSet.rootChunk).toBe(null);
+    await expect(chunkSet.isEmpty()).resolves.toBe(true);
+    for(const chunk of createdChunks) {
+        //console.log('chunkSet.add('+JSON.stringify(chunk)+')');
+        await chunkSet.add(chunk);
+        await expect(chunkSet.isEmpty()).resolves.toBe(false);
     }
     return;
 });
 
-test('Set removes '+numRemovedElements+' elements', async () => {
-    for(const element of removedElements) {
-        await set.delete(element);
+test('ChunkSet removes '+numRemovedChunks+' chunks', async () => {
+    for(const chunk of removedChunks) {
+        await chunkSet.delete(chunk);
     }
     return;
 });
 
-test('Set throws on attempt to remove elements that do not exist, root remains uchanged', async () => {
-    const prevRoot = set.rootHash;
-    for(const element of nonExistingElements) {
-        await expect(set.delete(element))
+test('ChunkSet throws on attempt to remove chunks that do not exist, root remains uchanged', async () => {
+    const prevRoot = chunkSet.rootHash;
+    for(const chunk of nonExistingChunks) {
+        await expect(chunkSet.delete(chunk))
         .rejects
         .toThrow();
     }
-    expect(set.rootHash).toBe(prevRoot);
+    expect(chunkSet.rootHash).toBe(prevRoot);
     return;
 });
 
-test('Set iterates set elements in order, without duplications or invalid elements', async () => {
-    const iteratedKeys = [];
-    var lastElementKey = '';
-    for await(const element of set) {
-        expect(iteratedKeys.includes(element.key)).toBe(false); //check for duplicated elements
-        expect(element.key > lastElementKey).toBe(true); //check if elements are in order
-        iteratedKeys.push(element.key);
-        expect(existingKeys.includes(element.key)).toBe(true);
-        expect(removedKeys.includes(element.key)).toBe(false);
-        lastElementKey = element.key;
+test('ChunkSet iterates set elements in order, without duplications or invalid elements', async () => {
+    const iteratedChunkIdentifiers = [];
+    var lastChunkIdentifier = '';
+    for await(const chunk of chunkSet) {
+        expect(iteratedChunkIdentifiers.includes(chunk.id)).toBe(false); //check for duplicated chunks
+        expect(chunk.id > lastChunkIdentifier).toBe(true); //check if chunks are in order
+        iteratedChunkIdentifiers.push(chunk.id);
+        expect(existingChunkIdentifiers.includes(chunk.id)).toBe(true);
+        expect(removedChunkIdentifiers.includes(chunk.id)).toBe(false);
+        lastChunkIdentifier = chunk.id;
     }
-    expect(iteratedKeys.length).toBe(numExistingElements);
+    expect(iteratedChunkIdentifiers.length).toBe(numExistingChunks);
     return;
 });
 
-test('Set confirms existance of '+numExistingElements+' elements', async () => {
-    for(const element of existingElements) {
-        const hasElement = await set.has(element);
-        expect(hasElement).toBe(true);
-    }
-    return;
-});
-
-test('Set confirms non-existance of '+(numNonExistingElements)+' not-added elements', async () => {
-    for(const element of nonExistingElements) {
-        const hasElement = await set.has(element);
-        expect(hasElement).toBe(false);
+test('ChunkSet confirms existance of '+numExistingChunks+' elements', async () => {
+    for(const chunk of existingChunks) {
+        await expect(chunkSet.has(chunk)).resolves.toBe(true);
     }
     return;
 });
 
-test('Set confirms non-existance of '+(numRemovedElements)+' removed elements', async () => {
-    for(const element of removedElements) {
-        const hasElement = await set.has(element);
-        expect(hasElement).toBe(false);
+test('ChunkSet confirms non-existance of '+(numNonExistingChunks)+' not-added elements', async () => {
+    for(const chunk of nonExistingChunks) {
+        await expect(chunkSet.has(chunk)).resolves.toBe(false);
     }
     return;
 });
 
-test('Set removes all elements, root goes back to \'\'', async () => {
-    var iteration = 0;
-    for(const element of existingElements) {
-        await expect(set.delete(element))
+test('ChunkSet confirms non-existance of '+(numRemovedChunks)+' removed elements', async () => {
+    for(const element of removedChunks) {
+        await expect(chunkSet.has(element)).resolves.toBe(false);
+    }
+    return;
+});
+
+test('ChunkSet removes all elements, root goes back to \'\'', async () => {
+    for(const chunk of existingChunks) {
+        await expect(chunkSet.delete(chunk))
         .resolves
         .not.toThrow();
     }
-    expect(set.root).toBe(null);
+    expect(chunkSet.rootChunk.id).toBe(undefined);
     return;
 });
