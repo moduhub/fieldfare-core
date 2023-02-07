@@ -34,14 +34,19 @@ export const Utils = {
 			.join('');
 	},
 
-	base64ToArrayBuffer: function (base64) {
+	base64ToUint8Array: function (base64) {
 		var binary_string = atob(base64);
 		var len = binary_string.length;
 		var bytes = new Uint8Array(len);
 		for (var i = 0; i < len; i++) {
 			bytes[i] = binary_string.charCodeAt(i);
 		}
-		return bytes.buffer;
+		return bytes;
+	},
+
+	base64ToArrayBuffer: function (base64) {
+		const uint8Array = Utils.base64ToUint8Array(base64);
+		return uint8Array.buffer;
 	},
 
 	base64ToHex: function (str) {
@@ -52,16 +57,23 @@ export const Utils = {
 	    result += (hex.length === 2 ? hex : '0' + hex);
 	  }
 	  return result.toUpperCase();
-  },
+  	},
+
+	uint8ArrayToBase64: function(uint8Array) {
+		var binary = '';
+		var len = uint8Array.byteLength;
+		for (var i = 0; i < len; i++) {
+			binary += String.fromCharCode(uint8Array[i]);
+		}
+		return btoa(binary);
+	},
 
 	arrayBufferToBase64: function (buffer) {
-		var binary = '';
-		var bytes = new Uint8Array( buffer );
-		var len = bytes.byteLength;
-		for (var i = 0; i < len; i++) {
-			binary += String.fromCharCode(bytes[i]);
+		if(buffer instanceof ArrayBuffer === false) {
+			throw Error('Expected ans instance of ArrayBuffer, but received ' + buffer.constructor.name);
 		}
-		return btoa( binary );
+		var uint8Array = new Uint8Array( buffer );
+		return Utils.uint8ArrayToBase64(uint8Array);
 	},
 
 	isBase64(str) {

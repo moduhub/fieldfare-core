@@ -32,7 +32,7 @@ export const ChunkingUtils = {
 
     convertObjectToData: function (object) {
         const utf8ArrayBuffer = Utils.strToUtf8Array(JSON.stringify(object));
-		const base64data = Utils.arrayBufferToBase64(utf8ArrayBuffer);
+		const base64data = Utils.uint8ArrayToBase64(utf8ArrayBuffer);
         return base64data;
     },
 
@@ -41,9 +41,12 @@ export const ChunkingUtils = {
     },
 
     generateIdentifierForData: async function (base64data) {
-        const dataBuffer = Utils.base64ToArrayBuffer(base64data);
+        if(!Utils.isBase64(base64data)) {
+            throw Error('Attempt to generate identifier for non-base64 data: ' + JSON.stringify(base64data));
+        }
+        const dataBuffer = Utils.base64ToUint8Array(base64data);
         const hashBuffer = await cryptoManager.digest(dataBuffer);
-        const base64hash = Utils.arrayBufferToBase64(hashBuffer);
+        const base64hash = Utils.uint8ArrayToBase64(hashBuffer);
         return (chunkIdentiferPrefix+base64hash);
     },
 
