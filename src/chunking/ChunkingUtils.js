@@ -30,12 +30,22 @@ export const ChunkingUtils = {
         }
     },
 
+    /**
+     * DEPRECATED
+     * @param {Object} object 
+     * @returns string containing base64 data correspondig to the object
+     */
     convertObjectToData: function (object) {
         const utf8ArrayBuffer = Utils.strToUtf8Array(JSON.stringify(object));
 		const base64data = Utils.uint8ArrayToBase64(utf8ArrayBuffer);
         return base64data;
     },
 
+    /**
+     * DEPRECATED
+     * @param {string} base64data 
+     * @returns js object corresponding to the data
+     */
     convertDataToObject: function (base64data) {
         return JSON.parse(atob(base64data));
     },
@@ -50,6 +60,11 @@ export const ChunkingUtils = {
         return (chunkIdentiferPrefix+base64hash);
     },
 
+    /**
+     * DEPRECATED
+     * @param {string} base64data 
+     * @returns js object corresponding to the data
+     */
     generateIdentifierForObject: async function (object) {
 		const base64data = ChunkingUtils.convertObjectToData(object);
 		const id = await ChunkingUtils.generateIdentifierForData(base64data);
