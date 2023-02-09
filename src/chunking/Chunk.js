@@ -1,7 +1,8 @@
 import { ChunkManager } from "./ChunkManager";
 import { ChunkingUtils } from "./ChunkingUtils";
 import { LocalHost } from "../env/LocalHost";
-
+import { Utils } from "../basic/Utils";
+const util = require('node:util');
 
 export class Chunk {
 
@@ -61,60 +62,87 @@ export class Chunk {
         return this.data;
     }
 
+    /**
+     * Replacer method used to simplify Chunks to their identifiers during
+     * conversion of objects to data using JSON.stringify()
+     */
+    static replacer(key, value) {
+        if(value instanceof Chunk) {
+            return value.id;
+        }
+        return value;
+    }
+
     static async fromObject(object) {
         const newChunk = new Chunk;
         newChunk.local = true;
         newChunk.ownerID = LocalHost.getID();
-        //iterate object searching for Chunk instances, convert them to chunk ids
-        var convertedObject = {};
-        for(const prop in object) {
-            const value = object[prop];
-            if(value instanceof Chunk) {
-                convertedObject[prop] = value.id;
-                //await value.fetch(); //chunk may be remote, must make it local
-            } else {
-                convertedObject[prop] = value;
-            }
-        }
-        // console.log('Original object: ' + JSON.stringify(object));
-        // console.log('Converted object: ' + JSON.stringify(convertedObject));
-        newChunk.data = ChunkingUtils.convertObjectToData(convertedObject);
+        const json = JSON.stringify(object, Chunk.replacer);
+        const utf8ArrayBuffer = Utils.strToUtf8Array(json);
+		newChunk.data = Utils.uint8ArrayToBase64(utf8ArrayBuffer);
         newChunk.id = await ChunkManager.storeChunkContents(newChunk.data);
         return newChunk;
     }
 
     /**
+     * Call the replacer method for every chunk inside an object that is an 
+     * instance of Chunk, replacing the property value in place with the value returned
+     * from the replacer method. The replacer method takes two parameters
+     * (key, value) of each property that isn an instance of Chunk, and the value
+     * returned by teh method is substituted in the object.
+     * @param {Object} object object in which properties will be replaced
+     * @param {Function} replacer the method called for every instance fo Chunk
+     */
+    static async replaceChunks(object, replacer) {
+        for(const key in object) {
+            const value = object[key];
+            if(value instanceof Chunk) {
+                object[key] = await replacer(key, value);
+            } else
+            if(value instanceof Object) {
+                await Chunk.replaceChunks(value, replacer);
+            }
+        }
+    }
+
+    /**
      * Expand chunk to a JavaScript object, following object properties 
      * that are recognized as chunk identifiers and transforming them to 
-     * Chunk objects, unless keepIdentifiers is set, in which case the 
+     * Chunk objects. If depth is equal to zero, the 
      * identifiers are kept as strings in base64 format plus prefix.
-     * @param {integer} depth Depth to which the algoritm iterates down
-     * os object properties expanding chunk identifiers to objects, where
-     * zero will expand only the root object.
-     * @param {boolean} keepIdentifiers setting this to true will convert no
-     * identifer at all, keeping all strings in their original form even if 
-     * they correspond to a chunk identifier.
+     * @param {integer} depth Depth to which the algorithm iterates nested
+     * objects expanding chunk identifiers, where zero will keep all identifiers
+     * in their original form.
      * @returns an Object containing all properties recovered from the chunk data
      */
-    async expand(depth=0, keepIdentifiers=false) {
+    async expand(depth=0) {
         if(this.id === null
         || this.id === undefined) {
             return null;
         }
-        const object = ChunkingUtils.convertDataToObject(await this.fetch());
-        if(!keepIdentifiers) {
-            //iterate properties searching for child chunks
-            for(const prop in object) {
-                const value = object[prop];
+        const base64data = await this.fetch();
+        const json = atob(base64data);
+        var object;
+        if(depth > 0) {
+            var someChunk = false;
+            object = JSON.parse(json, (key, value) => {
                 if(ChunkingUtils.isValidIdentifier(value)) {
-                    const childChunk = Chunk.fromIdentifier(value, this.ownerID);
-                    if(depth > 0) {
-                        object[prop] = await childChunk.expand(depth-1);
-                    } else {
-                        object[prop] = childChunk;
-                    }
+                    const chunk = Chunk.fromIdentifier(value);
+                    someChunk = true;
+                    return chunk;
                 }
-            }
+                return value;
+            });
+            if(someChunk) {
+                await Chunk.replaceChunks(object, async (key, value) => {
+                    if(depth > 1) {
+                        return (await value.expand(depth-1));
+                    }
+                    return value;
+                });
+            }            
+        } else {
+            object = JSON.parse(json);
         }
         return object;
     }
@@ -134,7 +162,11 @@ export class Chunk {
         || type == undefined) {
             throw Error('expandTo failed, type not defined');
         }
-        const rawObject = await this.expand(0, keepIdentifiers);
+        var depth = 1;
+        if(keepIdentifiers) {
+            depth = 0;
+        }
+        const rawObject = await this.expand(depth);
         if(rawObject) {
             if(type.validateParameters) {
                 type.validateParameters(rawObject);
