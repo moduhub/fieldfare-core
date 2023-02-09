@@ -1,22 +1,46 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
-
- */
+// 2023 Adan Kvitschal <adan@moduhub.com>
 
 import { LocalHost } from '../env/LocalHost';
 import { Chunk } from '../chunking/Chunk'
 import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
 
-
+/**
+ * Stores chunks as a list, appending data always in the end.
+ * The list is organized in containers that are chunk themselves,
+ * and can contain one or more chunks of data deppending on the value
+ * of the 'degree' property.
+ */
 export class ChunkList {
 
-	constructor(last, ownerID) {
-		if(last instanceof Chunk === false) {
-			throw Error('list pointer to last is not a valid chunk');
+	constructor(degree, last, ownerID) {
+		if(degree == undefined
+		|| degree == null) {
+			degree = 1;
+		} else {
+			if(Number.isInteger(degree) === false
+			|| degree < 1
+			|| degree > 10) {
+				throw Error('Invalid list degree value');
+			}
 		}
+		/**
+         * Defines how many chunks are stored per container, must be 
+		 * an integer greater than zero.
+         * @type {integer}
+         * @private
+         */
+		this.degree = degree;
+		if(last) {
+			if(last instanceof Chunk === false) {
+				throw Error('list pointer to last is not a valid chunk');
+			}
+		}
+		/**
+         * Chunk that contains the last container in the list
+         * @type {Chunk}
+         * @private
+         */
 		this.last = last;
 		if(ownerID
 		&& ownerID != LocalHost.getID()) {
@@ -37,7 +61,7 @@ export class ChunkList {
 			throw Error('chunk list descriptor is not a valid Chunk');
 		}
 		descriptor = await descriptorChunk.expand();
-		Utils.validateParameters(descriptor, ['type', 'last', 'ownerID']);
+		Utils.validateParameters(descriptor, ['type', 'degree','last', 'ownerID']);
 		if(descriptor.type !== 'list') {
 			throw Error('Descriptor type is not compatible with chunk list');
 		}
@@ -47,7 +71,7 @@ export class ChunkList {
 		if(descriptor.owner instanceof Chunk === false) {
 			throw Error('list descriptor does not contain a valid owner identifier');
 		}
-		return new ChunkList(descriptor.last, descriptor.ownerID);
+		return new ChunkList(descriptor.degree, descriptor.last, descriptor.ownerID);
 	}
 
 	toDescriptor() {
@@ -65,14 +89,15 @@ export class ChunkList {
 	}
 
 	async getNumElements() {
-		if(this.numElements) {
-			return this.numElements;
+		if(this.numElements == undefined) {
+			if(this.last) {
+				const lastContainer = await this.last.expand();
+				this.numElements = lastContainer.index + lastContainer.content.length;
+			} else {
+				this.numElements = 0;
+			}
 		}
-		if(this.last) {
-			const lastContainer = this.last.expand();
-			this.numElements = lastContainer.index;
-		}
-		return 0;
+		return this.numElements;
 	}
 
 	clear() {
@@ -80,15 +105,37 @@ export class ChunkList {
 		this.numElements = 0;
 	}
 
+	/**
+	 * Verify is a chunk is present in the list. A single ocurrence of
+	 * the chunk in the list will cause this method to return true.
+	 * @param {Chunk} element chunk to be found inside the list
+	 * @returns true if the element is located, false otherwise
+	 */
 	async has(element) {
 		if(element instanceof Chunk === false) {
 			throw Error('element not an instance of Chunk');
 		}
 		var iContainer = this.last.expand();
 		while(iContainer) {
-			//logger.debug('iNodeKey: ' + iNodeKey + ' vs ' + key);
-			if(iContainer.content === element) {
-				return true;
+			if(this.degree == 1) {
+				if(iContainer instanceof Chunk === false) {
+					throw Error('Received a non-chunk element inside a list');
+				}
+				if(iContainer.content.id === element.id) {
+					return true;
+				}
+			} else {
+				if(iContainer instanceof Array === false) {
+					throw Error('list element content must be an array if degree > 1');
+				}
+				for(const entry of iContainer.content) {
+					if(entry instanceof Chunk === false) {
+						throw Error('Received a non-chunk element inside a list');
+					}
+					if(entry.id === element.id) {
+						return true;
+					}
+				}
 			}
 			iContainer = iContainer.prev.expand();
 		}
@@ -100,20 +147,68 @@ export class ChunkList {
 			throw Error('Attempt to edit a remote linked list');
 		}
 		const currentNumElements = await this.getNumElements();
-		this.last = await Chunk.fromObject({
-			prev: this.last,
-			index: currentNumElements,
-			content: element
-		});
+		var newContainer;
+		if(this.degree == 1) {
+			newContainer = {
+				prev: this.last,
+				index: currentNumElements,
+				content: element
+			};
+		} else {
+			if(this.last) {
+				const oldContainer = await this.last.expand();
+				//check if element must go into the last
+				if(oldContainer.content.length == this.degree) {
+					newContainer = {
+						prev: this.last,
+						index: currentNumElements,
+						content: [element]
+					};
+				} else {
+					oldContainer.content.push(element);
+					newContainer = oldContainer;
+				}
+			} else {
+				newContainer = {
+					prev: '',
+					index: 0,
+					content: [element]
+				};
+			}
+		}
+		this.last = await Chunk.fromObject(newContainer);
 		this.numElements++;
 		//logger.debug("[HLL append] newListElement: " + JSON.stringify(newListElement));
 	}
 
 	async* [Symbol.asyncIterator]() {
-		var iContainer = this.last.expand();
-		while(iContainer) {
-			yield iContainer.content;
-			iContainer = iContainer.prev.expand();
+		if(this.last) {
+			var iContainer = await this.last.expand(1);
+			while(iContainer) {
+				const content = iContainer.content;
+				if(content instanceof Array) {
+					var i = content.length-1;
+					while(i>=0) {
+						const chunk = content[i--];
+						if(chunk instanceof Chunk === false) {
+							throw Error('Expected a Chunk in list contents, but got ' + chunk.constructor.name);
+							//throw Error('Received an invalid chunk inside an array while iterating a ChunkList: ' + JSON.stringify(chunk));
+						}
+						yield chunk;
+					}
+				} else {
+					if(content instanceof Chunk === false) {
+						throw Error('Expected a Chunk in list contents, but got ' + content.constructor.name);
+						//throw Error('Received an invalid chunk while iterating a ChunkList: ' + JSON.stringify(content));
+					}
+					yield content;
+				}
+				if(iContainer.prev == '') {
+					break;
+				}
+				iContainer = await iContainer.prev.expand(1);
+			}
 		}
 	}
-};
+
+}
