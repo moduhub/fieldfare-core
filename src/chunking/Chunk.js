@@ -44,7 +44,9 @@ export class Chunk {
                 this.data = await ChunkManager.getLocalChunkContents(this.id);
                 this.local = true;
             } catch(error) {
-                if(error.name === 'NOT_FOUND_ERROR') {
+                if(error.name !== 'NOT_FOUND_ERROR') {
+                    throw error;
+                }
                     //logger.log('info', "res.fetch: Not found locally. Owner: " + owner);
                     if(this.ownerID === null
                     || this.ownerID === undefined) {
@@ -56,8 +58,6 @@ export class Chunk {
                     this.data = await ChunkManager.getRemoteChunkContents(this.id, this.ownerID);
                     this.local = false;    
                 }                
-                throw error;
-            }
         }
         return this.data;
     }
