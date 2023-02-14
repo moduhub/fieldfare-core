@@ -1,5 +1,6 @@
 // 2023 Adan Kvitschal <adan@moduhub.com>
 
+import { Chunk } from '../chunking/Chunk';
 import { ChunkingUtils } from '../chunking/ChunkingUtils';
 import { ChunkManager } from '../chunking/ChunkManager';
 import { Utils } from '../basic/Utils';
@@ -28,29 +29,28 @@ export class TreeContainer {
 		this.numElements = 0;
 	}
 
-	static async validateParameters(rawObject) {
-		Utils.validateParameters(rawObject, ['keys', 'children', 'numElements'], ['values']);
-		if(rawObject.keys instanceof Array === false
-		|| rawObject.children instanceof Array === false
-		|| Number.isInteger(rawObject.numElements) === false) {
-			throw Error('one of TreeContainer Chunk parameters has invalid type');
+	static async fromDescriptor(descriptor) {
+		if(descriptor instanceof Chunk) {
+			descriptor = await descriptor.expand(0);
 		}
+		if(descriptor) {
+			Utils.validateParameters(descriptor, ['keys', 'children', 'numElements'], ['values']);
+			if(descriptor.keys instanceof Array === false
+			|| descriptor.children instanceof Array === false
+			|| Number.isInteger(descriptor.numElements) === false) {
+				throw Error('one of TreeContainer Chunk parameters has invalid type');
+			}
+			const newTreeContainer = new TreeContainer;
+			Object.assign(newTreeContainer, descriptor);
+			return newTreeContainer;
+		}
+		return null;
 	}
 
 	static async fromChunkIdentifier(identifier, ownerID) {
-		var newContainer = new TreeContainer();
-		const rawObject = await ChunkManager.getObjectFromIdentifier(identifier, ownerID);
-		if(rawObject === null
-		|| rawObject === undefined) {
-			throw Error('failed to fetch container chunk');
-		}
-		if('elements' in rawObject) { //add translation from HLT 0.0.x format
-			rawObject.keys = rawObject.elements;
-			delete rawObject.elements;
-		}
-		Utils.validateParameters(rawObject, ['keys', 'children', 'numElements'], ['values']);
-		Object.assign(newContainer, rawObject);
-		return newContainer;
+		const descriptor = Chunk.fromIdentifier(identifier, ownerID);
+		const newTreeContainer = await TreeContainer.fromDescriptor(descriptor);
+		return newTreeContainer;
 	}
 
 	isLeaf() {
