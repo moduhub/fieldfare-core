@@ -51,41 +51,40 @@ export class ChunkList {
 		}
 	}
 
-	static async create() {
-		this.last = Chunk.null();
-		this.local = true;
+	static async fromDescriptor(descriptor) {
+		if(descriptor instanceof Chunk) {
+			descriptor = await descriptor.expand();
+		}
+		const newChunkList = new ChunkList();
+		newChunkList.descriptor = descriptor;
+		return newChunkList;
 	}
 
-	static async fromDescriptor(descriptorChunk) {
-		if(descriptor instanceof Chunk === false) {
-			throw Error('chunk list descriptor is not a valid Chunk');
-		}
-		descriptor = await descriptorChunk.expand();
-		Utils.validateParameters(descriptor, ['type', 'degree','last', 'ownerID']);
+    set descriptor(descriptor) {
+		Utils.validateParameters(descriptor, ['type', 'degree'], ['last', 'ownerID']);
 		if(descriptor.type !== 'list') {
 			throw Error('Descriptor type is not compatible with chunk list');
 		}
-		if(descriptor.last instanceof Chunk === false) {
-			throw Error('List descriptor does not contain a valid container pointer');
+		if(descriptor.last) {
+			if(descriptor.last instanceof Chunk === false) {
+				throw Error('List descriptor does not contain a valid container pointer');
+			}
+			this.last = descriptor.last;
 		}
-		if(descriptor.owner instanceof Chunk === false) {
-			throw Error('list descriptor does not contain a valid owner identifier');
+		if(descriptor.owner) {
+			if(descriptor.owner instanceof Chunk === false) {
+				throw Error('list descriptor does not contain a valid owner identifier');
+			}
 		}
-		return new ChunkList(descriptor.degree, descriptor.last, descriptor.ownerID);
-	}
+		this.degree = descriptor.degree;
+    }
 
-	toDescriptor() {
-		var ownerID;
-		if(this.local) {
-			ownerID = LocalHost.getID();
-		} else {
-			ownerID = this.ownerID;
-		}
-		return Chunk.fromObject({
-			type: 'list',
-			last: this.last,
-			owner: ownerID
-		});
+	get descriptor() {
+		return {
+            type: 'set',
+            degree: this.last,
+            root: this.rootChunk
+        };
 	}
 
 	async getNumElements() {

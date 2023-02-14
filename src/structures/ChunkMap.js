@@ -4,40 +4,49 @@ import { ChunkTree } from "./ChunkTree";
 import { TreeContainer } from "./TreeContainer";
 import { TreeBranch } from "./TreeBranch";
 import { Chunk } from '../chunking/Chunk';
+import { Utils } from "../basic/Utils";
 
 
 export class ChunkMap extends ChunkTree {
     
-    constructor(degree=5, root) {
-        if(Number.isInteger(degree) === false
-        || degree < 2
-        || degree > 10) {
-            throw Error('invalid map tree degree: ' + degree);
-        }
-        super(degree, root);
+    constructor(degree) {
+        super(degree);
     }
 
-    /**
-     * Create a new ChunkMap from information contained in this descriptor
-     * @param {Chunk} descriptorChunk chunk containing a valid descriptor of a chunk map
-     * @returns the new ChunkMap
-     */
-    static async fromDescriptor(descriptorChunk) {
-        const descriptor = await descriptorChunk.expand();
-        Utils.validateParameters(descriptor, ['type', 'degree', 'root']);
-        const degree = descriptor.degree;
+    static async fromDescriptor(descriptor) {
+        if(descriptor instanceof Chunk) {
+			descriptor = await descriptor.expand();
+		}
+        const newChunkMap = new ChunkMap;
+        newChunkMap.descriptor = descriptor;
+        return newChunkMap;
+    }
+
+    set descriptor(descriptor) {
+        Utils.validateParameters(descriptor, ['type', 'degree'], ['root']);
         if(descriptor.type !== 'map') {
             throw Error('Unexpected type value');
         }
-        return new ChunkMap(descriptor.degree, descriptor.root);
+        if(Number.isInteger(descriptor.degree) === false
+        || descriptor.degree < 2
+        || descriptor.degree > 10) {
+            throw Error('invalid map tree degree: ' + descriptor.degree);
+        }
+        this.degree = descriptor.degree;
+        if(descriptor.root) {
+            if(descriptor.root instanceof Chunk === false) {
+                throw Error("Descripto contains an invalid root");
+            }
+            this.root = descriptor.root;
+        }
     }
 
-	toDescriptor() {
-		return Chunk.fromObject({
+	get descriptor() {
+		return {
             type: 'map',
             degree: this.degree,
             root: this.rootChunk
-        });
+        };
 	}
 
     async set(key, value) {

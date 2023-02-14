@@ -8,16 +8,35 @@ import { Utils } from "../basic/Utils";
 
 export class ChunkSet extends ChunkTree {
 
+    constructor(degree) {
+        super(degree);
+    }
+
     static async fromDescriptor(descriptor) {
-        Utils.validateParameters(descriptor, ['type', 'degree', 'root']);
+        if(descriptor instanceof Chunk) {
+			descriptor = await descriptor.expand();
+		}
+        const newChunkSet = new ChunkSet;
+        newChunkSet.descriptor = descriptor;
+        return newChunkSet;
+    }
+
+    set descriptor(descriptor) {
+        Utils.validateParameters(descriptor, ['type', 'degree'], ['root']);
         const degree = descriptor.degree;
         if(descriptor.type !== 'set') {
             throw Error('Unexpected type value');
         }
-        return new ChunkSet(descriptor.degree, descriptor.root);
+        this.degree = descriptor.degree;
+        if(descriptor.root) {
+            if(descriptor.root instanceof Chunk === false) {
+                throw Error("Descripto contains an invalid root");
+            }
+            this.root = descriptor.root;
+        }
     }
 
-	toDescriptor() {
+	get descriptor() {
 		return {
             type: 'set',
             degree: this.degree,
