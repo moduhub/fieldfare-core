@@ -53,14 +53,14 @@ export class ChunkSet extends ChunkTree {
             } else {
                 newRootIdentifier = await branch.update();
             }
-            this.rootChunk = await Chunk.fromIdentifier(newRootIdentifier, this.ownerID);
+            this.rootChunk = Chunk.fromIdentifier(newRootIdentifier, this.ownerID);
 		}
 		return this.rootChunk;
 	}
 
     async* [Symbol.asyncIterator]() {
 		if(this.rootChunk) {
-			var rootContainer = await this.rootChunk.expandTo(TreeContainer, true);
+			var rootContainer = await TreeContainer.fromDescriptor(this.rootChunk);
             for await(const identifier of rootContainer.iterator(this.rootChunk.ownerID)) {
                 yield Chunk.fromIdentifier(identifier);;
             }

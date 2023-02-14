@@ -76,13 +76,14 @@ export class ChunkTree {
             throw Error('key is not a valid chunk');
         }
 		if(this.rootChunk) {
-			var iContainer = await this.rootChunk.expandTo(TreeContainer, true);
+			var iContainer = await TreeContainer.fromDescriptor(this.rootChunk);
 			while(iContainer) {
 				const nextContainerIdentifier = iContainer.follow(key.id);
 				if(nextContainerIdentifier === true) {
 					return true;
 				}
-                iContainer = await Chunk.fromIdentifier(nextContainerIdentifier, this.rootChunk.ownerID).expandTo(TreeContainer, true);
+                const containerDescriptor = Chunk.fromIdentifier(nextContainerIdentifier, this.rootChunk.ownerID);
+                iContainer = await TreeContainer.fromDescriptor(containerDescriptor);
 			}
 		}
         return false;
