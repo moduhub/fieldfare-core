@@ -22,8 +22,9 @@ export * from '../../structures/ChunkSet';
 export * from '../../structures/ChunkMap';
 
 export * from '../../versioning/VersionChain';
-export * from '../../versioning/VersionedCollection';
 export * from '../../versioning/VersionStatement';
+export * from '../../versioning/VersionedCollection';
+export * from '../../versioning/AdministeredCollection';
 
 export * from './CommonSetup';
 export * from './WebClientTransceiver';
