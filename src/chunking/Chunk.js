@@ -66,18 +66,16 @@ export class Chunk {
      * Replacer method used to simplify Chunks to their identifiers during
      * conversion of objects to data using JSON.stringify()
      */
-    static replacer(key, value) {
-        if(value instanceof Chunk) {
-            return value.id;
-        }
-        return value;
-    }
-
     static async fromObject(object) {
         const newChunk = new Chunk;
         newChunk.local = true;
         newChunk.ownerID = LocalHost.getID();
-        const json = JSON.stringify(object, Chunk.replacer);
+        const json = JSON.stringify(object, (key, value) => {
+            if(value instanceof Chunk) {
+                return value.id;
+            }
+            return value;
+        });
         const utf8ArrayBuffer = Utils.strToUtf8Array(json);
 		newChunk.data = Utils.uint8ArrayToBase64(utf8ArrayBuffer);
         newChunk.id = await ChunkManager.storeChunkContents(newChunk.data);
