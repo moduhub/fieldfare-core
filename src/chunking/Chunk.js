@@ -38,6 +38,12 @@ export class Chunk {
         return newChunk;
     }
 
+    /**
+     * Get the chunk contents from local or remote source using the identifier
+     * and owner from chunk properties. The contents are also stored inside the chunk
+     * instance for later use and recovered on each successive fetch() call.
+     * @returns the chunk contents in base64 format
+     */
     async fetch() {
         if(this.data === undefined)  {
             try {
@@ -47,24 +53,26 @@ export class Chunk {
                 if(error.name !== 'NOT_FOUND_ERROR') {
                     throw error;
                 }
-                    //logger.log('info', "res.fetch: Not found locally. Owner: " + owner);
-                    if(this.ownerID === null
-                    || this.ownerID === undefined) {
-                        //Owner not know, fail
-                        var error = Error('chunk not found locally, owner unknown: ' + this.id);
-                        error.name = 'NOT_FOUND_ERROR';
-                        throw error;
-                    }
-                    this.data = await ChunkManager.getRemoteChunkContents(this.id, this.ownerID);
-                    this.local = false;    
-                }                
+                //logger.log('info', "res.fetch: Not found locally. Owner: " + owner);
+                if(this.ownerID === null
+                || this.ownerID === undefined) {
+                    //Owner not know, fail
+                    var error = Error('chunk not found locally, owner unknown: ' + this.id);
+                    error.name = 'NOT_FOUND_ERROR';
+                    throw error;
+                }
+                this.data = await ChunkManager.getRemoteChunkContents(this.id, this.ownerID);
+                this.local = false;    
+            }
         }
         return this.data;
     }
 
     /**
-     * Replacer method used to simplify Chunks to their identifiers during
-     * conversion of objects to data using JSON.stringify()
+     * Construct a new Chunk by casting the given  object to a string 
+     * in base64 format and stores the result in the local Chunk managers.
+     * @param {Object} object 
+     * @returns Chunk created from object contents
      */
     static async fromObject(object) {
         const newChunk = new Chunk;
