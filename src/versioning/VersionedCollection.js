@@ -37,8 +37,6 @@ export class VersionedCollection {
          */
 		this.methods = new Map();
 
-		this.methods.set('addAdmin', this.applyAddAdmin.bind(this));
-		this.methods.set('removeAdmin', this.applyRemoveAdmin.bind(this));
 		this.methods.set('createElement', this.applyCreateElement.bind(this));
 		//this.methods.set('deleteElement', this.applyDeleteElement.bind(this));
 		this.versionIdentifier = '';
@@ -79,7 +77,7 @@ export class VersionedCollection {
 		if(versionChunk instanceof Chunk === false) {
 			throw Error('versionChunk not a valid chunk');
 		}
-		const statement = await versionChunk.expandTo(VersionStatement);
+		const statement = await VersionStatement.fromDescritor(versionChunk);
 		const elementsChunk = statement.data.elements;
 		if(elementsChunk instanceof Chunk === false) {
 			throw Error('elements inside versionChunk not a valid chunk');
@@ -102,7 +100,7 @@ export class VersionedCollection {
 		}
 		logger.debug(">> pull changes to version: " + versionIdentifier);
 		this.updateInProgress = versionIdentifier;
-		const versionStatement = await versionChunk.expandTo(VersionStatement);
+		const versionStatement = await VersionStatement.fromDescritor(versionChunk);
 		logger.debug("Received version statement: " + JSON.stringify(versionStatement,null, 2));
 		const localChain = new VersionChain(this.versionIdentifier, LocalHost.getID(), 50);
 		const remoteChain = new VersionChain(versionIdentifier, owner, 50);
@@ -126,7 +124,7 @@ export class VersionedCollection {
 			}
 			try {
 				await this.applyChain(remoteChain);
-				const newElementsChunk = await this.elements.toDescriptor();
+				const newElementsChunk = await Chunk.fromObject(this.elements.descriptor);
 				const expectedState = await remoteChain.getHeadState();
 				// logger.log('info', "state after apply: " + stateKey);
 				// logger.log('info', "expected state: " + expectedState);
@@ -175,7 +173,7 @@ export class VersionedCollection {
 		//Create update message
 		var versionStatement = new VersionStatement();
 		versionStatement.source = LocalHost.getID();
-		const stateChunk = await this.elements.toDescriptor();
+		const stateChunk = await Chunk.fromObject(this.elements.descriptor);
 		versionStatement.data = {
 			prev: this.versionIdentifier,
 			elements: stateChunk,
@@ -188,33 +186,17 @@ export class VersionedCollection {
 			+ "->" + this.versionIdentifier);
 	}
 
+	/**
+	 * Empty implementation of the auth method allows everything
+	 * @param {String} id Identifer of the host being authorized
+	 * @param {boolean} strict strict option
+	 */
 	async auth(id, strict=false) {
-		console.log('auth> ' + JSON.stringify(id));
-		const hostChunk = Chunk.fromIdentifier(id, id);
-		const admins = await this.getElement('admins');
-		console.log(admins);
-		if(admins) {
-			console.log('admins is empty? ' + await admins.isEmpty());
-		}
-		if(admins == undefined
-		|| await admins.isEmpty()) {
-			if(strict) {
-				throw Error('strict auth failed, no admins defined');
-			}
-		} else {
-			console.log('current admins:')
-			for await (const chunk of admins) {
-				console.log('>> ' + chunk.id);
-			}
-			if(await admins.has(hostChunk) === false) {
-				throw Error('not authorized');
-			}
-		}
 		logger.debug('>> ' + id + ' auth OK');
 	}
 
 	async applyCreateElement(issuer, params, merge=false) {
-		logger.debug("applyCreateElement params: " + JSON.stringify(params));
+		// console.log("applyCreateElement params: " + JSON.stringify(params));
 		Utils.validateParameters(params, ['name', 'descriptor']);
 		const descriptor = params.descriptor;
 		// console.log('descriptorChunk: ' + JSON.stringify(descriptorChunk));
@@ -246,7 +228,7 @@ export class VersionedCollection {
 
 	async createElement(name, descriptor) {
 		const params = {name: name, descriptor: descriptor};
-		logger.log('info', "VersionedData.createElement name="+name + ", descriptor="+descriptor);
+		console.log('info', "VersionedData.createElement name="+name + ", descriptor="+descriptor);
 		await this.applyCreateElement(LocalHost.getID(), params);
 		await this.commit({
 			createElement: params
@@ -273,86 +255,9 @@ export class VersionedCollection {
 			|| type == undefined) {
 				throw Error('element type not registered');
 			}
-			return descriptorChunk.expandTo(type);
+			return type.fromDescriptor(descriptor);
 		}
 		return undefined;
-	}
-
-	async applyAddAdmin(issuer, params, merge=false) {
-		logger.debug("applyAddAdmin params: " + JSON.stringify(params));
-		Utils.validateParameters(params, ['id']);
-		const newAdminChunk = Chunk.fromIdentifier(params.id, params.id);
-		const admins = await this.getElement('admins');
-		if(!admins) {
-			throw Error('admins groups does not exist');
-		}
-		logger.log('info', "Current admins: ");
-		for await (const admin of admins) {
-			logger.log('info', '> ' + admin);
-		}
-		//Check if admin was not already present
-		console.log('applyAddAdmin admins: ' + util.inspect(admins));
-		if(await admins.has(newAdminChunk)) {
-			if(merge) {
-				logger.log('info', 'applyAddAdmin successfully MERGED');
-				return;
-			} else {
-				throw Error('applyAddAdmin failed: id already in set');
-			}
-		}
-		//Check auth, non strict
-		await this.auth(issuer, false);
-		//Perform local changes
-		await admins.add(newAdminChunk);
-	}
-
-	async addAdmin(newAdminID) {
-		const params = {id: newAdminID};
-		//newAdmin must be a valid host ID
-		const admins = await this.getElement('admins');
-		if(!admins) {
-			await this.createElement('admins', {
-				type: 'set',
-				degree: 5,
-				root: null
-			});
-		}
-		logger.log('info', "VersionedData.addAdmin ID="+newAdminID);
-		await this.applyAddAdmin(LocalHost.getID(), params);
-		await this.commit({
-			addAdmin: params
-		});
-		await NVD.save(this.uuid, this.versionIdentifier);
-	}
-
-	async applyRemoveAdmin(issuer, params, merge=false) {
-		logger.debug("applyRemoveAdmin params: " + JSON.stringify(params));
-		Utils.validateParameters(params, ['id']);
-		const adminID = params.id;
-		ChunkingUtils.validateIdentifier(adminID);
-		const admins = this.elements.get('admins');
-		if(await admins.has(adminID)===false) {
-			if(merge) {
-				logger.debug('applyRemoveAdmin successfully MERGED');
-				return;
-			} else {
-				throw Error('applyRemoveAdmin failed: id not in set');
-			}
-		}
-		//Check auth, non strict
-		await this.auth(issuer, false);
-		//Perform local changes
-		await admins.remove(adminID);
-	}
-
-	async removeAdmin(adminID) {
-		const params = {id: adminID};
-		logger.log('info', "VersionedData.removeAdmin ID="+adminID);
-		await this.applyRemoveAdmin(LocalHost.getID(), params);
-		await this.commit({
-			removeAdmin: params
-		});
-		await NVD.save(this.uuid, this.versionIdentifier);
 	}
 
 };
