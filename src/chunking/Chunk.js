@@ -145,39 +145,4 @@ export class Chunk {
         return object;
     }
 
-    /**
-     * Expands the chunk in the same way as Chunk.expand(0), but will cast the
-     * resulting object to a specific class type. The methos also searches for
-     * a static method called validateParameters in the given class to perform
-     * any content validation on the object recovered from the chunk.
-     * @param {class} type class to which the resulting object will be cast into
-     * @param {boolean} keepIdentifiers if set, will not expand any property
-     * that matches a Chunk indentifier, keeping them as strings
-     * @returns the resulting object as an instance of given type
-     */
-    async expandTo(type, keepIdentifiers=false) {
-        if(type == null
-        || type == undefined) {
-            throw Error('expandTo failed, type not defined');
-        }
-        var depth = 1;
-        if(keepIdentifiers) {
-            depth = 0;
-        }
-        const rawObject = await this.expand(depth);
-        if(rawObject) {
-            if(type.validateParameters) {
-                type.validateParameters(rawObject);
-            }
-            if(type.fromDescriptor) {
-                return type.fromDescriptor(rawObject);
-            } else {
-                const typedObject = new type;
-                Object.assign(typedObject, rawObject);
-                return typedObject;
-            }
-        }
-		return null;
-    }
-
 }
