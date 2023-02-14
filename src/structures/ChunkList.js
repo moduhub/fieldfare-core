@@ -203,7 +203,7 @@ export class ChunkList {
 					}
 					yield content;
 				}
-				if(iContainer.prev == '') {
+				if(!iContainer.prev) {
 					break;
 				}
 				iContainer = await iContainer.prev.expand(1);
