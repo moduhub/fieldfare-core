@@ -54,13 +54,11 @@ class ChangesIterator {
 export class VersionChain {
 
     constructor(head, owner, maxDepth) {
-
         this.base = '';
         this.head = head;
         this.owner = owner;
         this.maxDepth = maxDepth;
         this.includeBase = true;
-
     }
 
 	getChanges() {
@@ -68,34 +66,25 @@ export class VersionChain {
 	}
 
     async getHeadState() {
-
         if(this.headState === undefined) {
-
             if(this.head === '') {
                 return '';
             }
-
             const headStatement = await VersionStatement.fromResource(this.head, this.owner);
             this.headState = headStatement.data.state;
             return this.headState;
-
         }
-
         return this.headState;
     }
 
 	async* [Symbol.asyncIterator]() {
-
         if(this.head !== '') {
-
             var iVersion = this.head;
-
             while (iVersion !== this.base) {
                 const iUpdateMessage = await VersionStatement.fromResource(iVersion, this.owner);
                 yield [iVersion, iUpdateMessage];
                 iVersion = iUpdateMessage.data.prev;
             }
-
             if(this.includeBase === true
             && this.base !== '') {
                 //include base statement
@@ -106,25 +95,17 @@ export class VersionChain {
     }
 
     static async findCommonVersion(chainA, chainB) {
-
         var depthA = 0;
-
         for await (const [versionA, statementA] of chainA) {
-
             var depthB = 0;
-
             for await (const [versionB, statementB] of chainB) {
-
                 // logger.log('info', "A("+depthA+"): " + versionA);
                 // logger.log('info', "B("+depthB+"): " + versionB);
-
                 if(versionA === versionB) {
                     return versionA;
                 }
                 if(++depthB > chainB.maxDepth) throw Error('chain B depth exceeded');
-
             }
-
             if(++depthA > chainA.maxDepth) throw Error('chain A depth exceeded');
         }
 
@@ -142,30 +123,20 @@ export class VersionChain {
 
     async length(prevVersion) {
         var count = 0;
-
         if(prevVersion === undefined) prevVersion = this.base;
-
         if(this.head !== prevVersion) {
-
             //logger.log('info', "this.head: " + this.head + " prevVersion: " + prevVersion);
-
             for await(const [version, statement] of this) {
-
                 //logger.log('info', "iversion: " + version);
-
                 if(++count>this.maxDepth) throw Error('max depth exceeded');
-
                 if(version == prevVersion) {
                     return count;
                 }
-
                 if(this.includeBase === false
                 && statement.data.prev === prevVersion) {
                     return count;
                 }
-
             }
-
             throw Error('prev version not in chain');
         }
         return count;
