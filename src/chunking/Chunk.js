@@ -95,7 +95,7 @@ export class Chunk {
      * instance of Chunk, replacing the property value in place with the value returned
      * from the replacer method. The replacer method takes two parameters
      * (key, value) of each property that isn an instance of Chunk, and the value
-     * returned by teh method is substituted in the object.
+     * returned by the method is substituted in the object.
      * @param {Object} object object in which properties will be replaced
      * @param {Function} replacer the method called for every instance fo Chunk
      */
