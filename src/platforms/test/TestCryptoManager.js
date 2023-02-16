@@ -12,6 +12,27 @@ export class TestCryptoManager extends WebCryptoManager {
         CryptoManager.singleton(new TestCryptoManager);
     }
 
+    async generateTestKeypair() {
+        const newKeypair = await crypto.subtle.generateKey(
+            {
+                name: "ECDSA",
+                namedCurve: "P-256"
+            },
+            true,
+            ["sign"]
+        );
+        return {
+            publicKey: {
+                index: 0,
+                platformData: newKeypair.publicKey
+            },
+            privateKey: {
+                index: 0,
+                platformData: newKeypair.privateKey
+            }
+        };
+    }
+
     async generateLocalKeypair() {
         const privateKeyJWK = {
             "kty": "EC",
