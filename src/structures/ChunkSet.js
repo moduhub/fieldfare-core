@@ -14,7 +14,7 @@ export class ChunkSet extends ChunkTree {
 
     static async fromDescriptor(descriptor) {
         if(descriptor instanceof Chunk) {
-			descriptor = await descriptor.expand();
+			descriptor = await descriptor.expand(1);
 		}
         const newChunkSet = new ChunkSet;
         newChunkSet.descriptor = descriptor;
@@ -23,16 +23,17 @@ export class ChunkSet extends ChunkTree {
 
     set descriptor(descriptor) {
         Utils.validateParameters(descriptor, ['type', 'degree'], ['root']);
-        const degree = descriptor.degree;
         if(descriptor.type !== 'set') {
             throw Error('Unexpected type value');
         }
         this.degree = descriptor.degree;
         if(descriptor.root) {
             if(descriptor.root instanceof Chunk === false) {
-                throw Error("Descripto contains an invalid root");
+                throw Error("ChunkSet descriptor contains an invalid root: " + JSON.stringify(descriptor.root));
             }
-            this.root = descriptor.root;
+            this.rootChunk = descriptor.root;
+        } else {
+            this.rootChunk = undefined;
         }
     }
 
@@ -61,7 +62,7 @@ export class ChunkSet extends ChunkTree {
             await branch.getToKey(element.id);
             var iContainer = branch.getLastContainer();
             if(branch.containsKey) {
-                throw Error('attempt to add a duplicate and element');
+                throw Error('attempt to add a duplicate element');
             }
    			iContainer.add(element.id);
             const maxElements = this.degree;

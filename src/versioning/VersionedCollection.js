@@ -170,10 +170,9 @@ export class VersionedCollection {
 		//Create update message
 		var versionStatement = new VersionStatement();
 		versionStatement.source = LocalHost.getID();
-		const stateChunk = await Chunk.fromObject(this.elements.descriptor);
 		versionStatement.data = {
 			prev: this.versionIdentifier,
-			elements: stateChunk,
+			elements: await Chunk.fromObject(this.elements.descriptor),
 			changes: await Chunk.fromObject(changes)
 		};
 		await LocalHost.signMessage(versionStatement);
@@ -277,7 +276,7 @@ export class VersionedCollection {
 		const nameChunk = await Chunk.fromObject({name: name});
 		const descriptorChunk = await this.elements.get(nameChunk);
 		if(descriptorChunk) {
-			const descriptor = await descriptorChunk.expand();
+			const descriptor = await descriptorChunk.expand(1);
 			const type = gTypeMap.get(descriptor.type);
 			if(type == null
 			|| type == undefined) {
@@ -286,6 +285,15 @@ export class VersionedCollection {
 			return type.fromDescriptor(descriptor);
 		}
 		return undefined;
+	}
+
+	async updateElement(name, descriptor) {
+		const nameChunk = await Chunk.fromObject({name: name});
+		if(await this.elements.has(nameChunk) === false) {
+			throw Error('attempt to update element that does not exist: ' + name);
+		}
+		const descriptorChunk = await Chunk.fromObject(descriptor);
+		await this.elements.set(nameChunk, descriptorChunk);
 	}
 
 };

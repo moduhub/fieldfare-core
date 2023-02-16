@@ -35,7 +35,7 @@ export class ChunkMap extends ChunkTree {
         this.degree = descriptor.degree;
         if(descriptor.root) {
             if(descriptor.root instanceof Chunk === false) {
-                throw Error("Descriptor contains an invalid root: " + JSON.stringify(descriptor.root));
+                throw Error("ChunkMap descriptor contains an invalid root: " + JSON.stringify(descriptor.root));
             }
             this.rootChunk = descriptor.root;
         } else {

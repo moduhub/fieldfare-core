@@ -6,7 +6,7 @@ import { TreeContainer } from './TreeContainer';
  
 export class ChunkTree {
 
-	constructor(degree=5, root=null, local=true) {
+	constructor(degree=5, root, local=true) {
 		this.degree = degree;
 		this.rootChunk = root;
         this.local = local;
