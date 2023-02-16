@@ -72,17 +72,14 @@ export class VersionedCollection {
 		await methodCallback(issuer, params, merge);
 	}
 
-	async checkout(versionChunk) {
-		// logger.log('info', "REVERTING TO VERSION: "  + version);
-		if(versionChunk instanceof Chunk === false) {
-			throw Error('versionChunk not a valid chunk');
-		}
-		const statement = await VersionStatement.fromDescritor(versionChunk);
+	async checkout(versionIdentifier) {
+		const versionChunk = Chunk.fromIdentifier(versionIdentifier);
+		const statement = await VersionStatement.fromDescriptor(versionChunk);
 		const elementsChunk = statement.data.elements;
 		if(elementsChunk instanceof Chunk === false) {
 			throw Error('elements inside versionChunk not a valid chunk');
 		}
-		this.elements = await ChunkMap.fromDescritor(elementsChunk);
+		this.elements = await ChunkMap.fromDescriptor(elementsChunk);
 		this.versionIdentifier = versionChunk.id;
 	}
 
