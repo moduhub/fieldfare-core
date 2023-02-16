@@ -60,17 +60,21 @@ export const Utils = {
   	},
 
 	uint8ArrayToBase64: function(uint8Array) {
+		if(uint8Array instanceof Uint8Array === false) {
+			throw Error('Expected an instance of Uint8Array, but received ' + buffer.constructor.name);
+		}
 		var binary = '';
 		var len = uint8Array.byteLength;
 		for (var i = 0; i < len; i++) {
 			binary += String.fromCharCode(uint8Array[i]);
 		}
-		return btoa(binary);
+		const base64 = btoa(binary);
+		return base64;
 	},
 
 	arrayBufferToBase64: function (buffer) {
 		if(buffer instanceof ArrayBuffer === false) {
-			throw Error('Expected ans instance of ArrayBuffer, but received ' + buffer.constructor.name);
+			throw Error('Expected an instance of ArrayBuffer, but received ' + buffer.constructor.name);
 		}
 		var uint8Array = new Uint8Array( buffer );
 		return Utils.uint8ArrayToBase64(uint8Array);
