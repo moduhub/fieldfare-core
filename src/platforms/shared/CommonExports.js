@@ -3,6 +3,7 @@ export * from '../../basic/NVD';
 export * from '../../basic/Utils';
 
 export * from '../../env/LocalHost';
+export * from '../../env/HostIdentifier';
 export * from '../../env/Environment';
 export * from '../../env/RemoteHost';
 export * from '../../env/LocalService';
