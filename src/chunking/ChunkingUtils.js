@@ -2,7 +2,7 @@
 import { Utils } from "../basic/Utils";
 import { cryptoManager } from "../basic/CryptoManager";
 
-const chunkIdentiferPrefix = 'd:';
+export const chunkIdentifierPrefix = 'd:';
 
 export const ChunkingUtils = {
     
@@ -14,7 +14,7 @@ export const ChunkingUtils = {
                 if(id.length === 46) {
                     const prefix = id.slice(0,2);
                     const base64part = id.slice(2,46);
-                    if(prefix === chunkIdentiferPrefix
+                    if(prefix === chunkIdentifierPrefix
                     && Utils.isBase64(base64part)) {
                         return true;
                     }
@@ -57,7 +57,7 @@ export const ChunkingUtils = {
         const dataBuffer = Utils.base64ToUint8Array(base64data);
         const hashBuffer = await cryptoManager.digest(dataBuffer);
         const base64hash = Utils.uint8ArrayToBase64(hashBuffer);
-        return (chunkIdentiferPrefix+base64hash);
+        return (chunkIdentifierPrefix+base64hash);
     },
 
     /**

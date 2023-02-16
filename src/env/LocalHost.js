@@ -7,12 +7,12 @@
 
 import { ChunkManager } from '../chunking/ChunkManager';
 import { Chunk } from '../chunking/Chunk';
+import { HostIdentifier } from './HostIdentifier';
 import { cryptoManager } from '../basic/CryptoManager';
 import { Environment } from '../env/Environment';
 import { LocalService } from './LocalService';
 import { RemoteHost } from './RemoteHost';
 import { Message } from '../trx/Message';
-import { Request } from '../trx/Request';
 import { NVD } from '../basic/NVD';
 import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
@@ -48,7 +48,7 @@ export const LocalHost = {
 		const jwkPubKey = await cryptoManager.exportPublicKey(keypair.publicKey);
 		logger.log('jwkPubKey: ' + JSON.stringify(jwkPubKey))
 		const pubKeyChunk = await Chunk.fromObject(jwkPubKey);
-		localHost.id = pubKeyChunk.id;
+		localHost.id = HostIdentifier.fromChunkIdentifier(pubKeyChunk.id);
 		logger.log('info', 'HOST ID: ' + localHost.id);
 		setInterval(async () => {
 			// logger.log('info', "Host is announcing to "
