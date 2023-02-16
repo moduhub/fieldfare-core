@@ -1,5 +1,6 @@
 // 2023 Adan Kvitschal <adan@moduhub.com>
 
+import { Chunk } from '../chunking/Chunk';
 import {logger} from '../basic/Log';
 
 export class VersionStatement {
@@ -12,26 +13,27 @@ export class VersionStatement {
 		};
 	}
 
-	/**
-	 * used by chunk expansion to validate the raw object fields before
-	 * casting into a VersionStatement instance
-	 * @param {*} message message of which parameters will be validated
-	 */
-	static validateParameters(message) {
-		if(!message) {
-			throw Error('message is null');
+	static async fromDescriptor(descriptor) {
+		if(!descriptor) {
+			throw Error('descriptor is null');
 		}
-		if('signature' in message === false
-		|| 'source' in message === false
-		|| 'data' in message === false) {
-			logger.log('info', "Update message validate failed: " + JSON.stringify(message));
-			throw Error('malformed update message');
+		if(descriptor instanceof Chunk) {
+			descriptor = await descriptor.expand(1);
 		}
-		if('prev' in message.data === false
-		|| 'elements' in message.data === false
-		|| 'changes' in message.data === false) {
-			throw Error('malformed update message data');
+		if('signature' in descriptor === false
+		|| 'source' in descriptor === false
+		|| 'data' in descriptor === false) {
+			logger.log('info', "Update descriptor validate failed: " + JSON.stringify(descriptor));
+			throw Error('malformed update descriptor');
 		}
+		if('prev' in descriptor.data === false
+		|| 'elements' in descriptor.data === false
+		|| 'changes' in descriptor.data === false) {
+			throw Error('malformed update descriptor data');
+		}
+		const newStatement = new VersionStatement;
+		Object.assign(newStatement, descriptor);
+		return newStatement;
 	}
 
 	/**
