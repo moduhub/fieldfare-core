@@ -1,12 +1,18 @@
 import {
     ffinit,
+    cryptoManager,
     LocalHost,
+    Chunk,
     ChunkList,
     ChunkSet,
     ChunkMap,
+    VersionStatement,
+    VersionChain,
     VersionedCollection,
     logger
 } from 'fieldfare/test';
+import { HostIdentifier } from '../../src/env/HostIdentifier';
+
 
 var gTestCollection;
 
@@ -22,7 +28,7 @@ test('VersionedCollection elements is a ChunkMap of degree=5', () => {
     expect(gTestCollection.elements.degree).toBe(5);
 });
 
-test('VersionedCollection can add elements', async () => {
+test('VersionedCollection can create elements', async () => {
     const listBefore = await gTestCollection.getElement('list_a');
     const setBefore = await gTestCollection.getElement('set_b');
     const mapBefore = await gTestCollection.getElement('map_c');
@@ -51,4 +57,59 @@ test('VersionedCollection can add elements', async () => {
     expect(mapAfter).toBeInstanceOf(ChunkMap);
     expect(mapAfter.degree).toBe(4);
     return;
+});
+
+test('VersionedCollection produces a valid VersionChain', async () => {
+    const localChain = new VersionChain(gTestCollection.versionIdentifier, LocalHost.getID(), 50);
+    for await (const [identifier, statement] of localChain) {
+        const pubKeyIdentifier = HostIdentifier.toChunkIdentifier(statement.source);
+        const pubKeyChunk = Chunk.fromIdentifier(pubKeyIdentifier, statement.source);
+        const pubKey = await cryptoManager.importPublicKey(await pubKeyChunk.expand(0));
+        const result = await cryptoManager.verifyMessage(statement, pubKey);
+        expect(result).toBe(true);
+    }
+});
+
+test('VersionedCollection version chain contains expected changes', async () => {
+    const localChain = new VersionChain(gTestCollection.versionIdentifier, LocalHost.getID(), 50);
+    const changes = await localChain.getChanges();
+    const changesArray = [];
+    for await (const change of changes) {
+        changesArray.push(change);
+        console.log(change);
+    }
+    expect(changesArray[0].issuer).toBe(LocalHost.getID());
+    expect(changesArray[0].method).toBe('createElement');
+    expect(changesArray[0].params.name).toBe('list_a');
+    expect(changesArray[0].params.descriptor.type).toBe('list');
+    expect(changesArray[0].params.descriptor.degree).toBe(3);
+    
+    expect(changesArray[1].issuer).toBe(LocalHost.getID());
+    expect(changesArray[1].method).toBe('createElement');
+    expect(changesArray[1].params.name).toBe('set_b');
+    expect(changesArray[1].params.descriptor.type).toBe('set');
+    expect(changesArray[1].params.descriptor.degree).toBe(5);
+    
+    expect(changesArray[2].issuer).toBe(LocalHost.getID());
+    expect(changesArray[2].method).toBe('createElement');
+    expect(changesArray[2].params.name).toBe('map_c');
+    expect(changesArray[2].params.descriptor.type).toBe('map');
+    expect(changesArray[2].params.descriptor.degree).toBe(4);
+});
+
+test('VersionedCollection checkouts specific version', async () => {
+    const localChain = new VersionChain(gTestCollection.versionIdentifier, LocalHost.getID(), 50);
+    const versionIdentifiers = [];
+    for await(const [identifier, statement] of localChain) {
+        versionIdentifiers.push(identifier);
+    }
+    await gTestCollection.checkout(versionIdentifiers[1]);
+    const list_a = await gTestCollection.getElement('list_a');
+    const set_b = await gTestCollection.getElement('set_b');
+    const map_c = await gTestCollection.getElement('map_c');
+    expect(list_a).toBeInstanceOf(ChunkList);
+    expect(list_a.degree).toBe(3);
+    expect(set_b).toBeInstanceOf(ChunkSet);
+    expect(set_b.degree).toBe(5);
+    expect(map_c).toBeUndefined();
 });
