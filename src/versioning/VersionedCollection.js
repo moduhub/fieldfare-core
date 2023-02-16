@@ -233,6 +233,37 @@ export class VersionedCollection {
 		await NVD.save(this.uuid, this.versionIdentifier);
 	}
 
+	async applyDeleteElement(issuer, params, merge=false) {
+		// console.log("applyDeleteElement params: " + JSON.stringify(params));
+		Utils.validateParameters(params, ['name']);
+		const nameChunk = await Chunk.fromObject({name: params.name});
+		if(await this.elements.has(nameChunk) === false) {
+			if(merge) {
+				logger.log('info', 'applyDeleteElement successfully MERGED');
+				return;
+			} else {
+				throw Error('applyDeleteElement failed: element does not exist');
+			}
+		}
+		await this.auth(issuer, false);
+		//Perform local changes
+		await this.elements.delete(nameChunk);
+		// console.log('info', "Current elements: ");
+		// for await (const [key, value] of this.elements) {
+		// 	console.log('info', '> ' + JSON.stringify(await key.expand()) + ': ' + JSON.stringify(await value.expand()));
+		// }
+	}
+
+	async deleteElement(name) {
+		const params = {name: name};
+		//console.log('info', "VersionedData.createElement name="+name + ", descriptor="+descriptor);
+		await this.applyDeleteElement(LocalHost.getID(), params);
+		await this.commit({
+			deleteElement: params
+		});
+		await NVD.save(this.uuid, this.versionIdentifier);
+	}
+
 	/**
 	 * Retrieves from the current version of the collection the element identified
 	 * by the given name.
