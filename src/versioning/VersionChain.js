@@ -1,42 +1,44 @@
-
-import {ResourcesManager} from '../chunking/ChunkManager';
-import {VersionStatement} from '../versioning/VersionStatement';
-import {logger} from '../basic/Log';
+import { Chunk } from '../chunking/Chunk';
+import { VersionStatement } from '../versioning/VersionStatement';
 import chalk from 'chalk';
 
+/**
+ * The ChangesIterator allows fecthing the changes inside a VersionChain
+ * in order, along with the issuer of each change.
+ */
 class ChangesIterator {
 
     constructor() {
         this.issuers = [];
-        this.keys = []
+        this.chunks = [];
     }
 
     static async from(chain) {
         var iterator = new ChangesIterator;
         iterator.chain = chain;
         for await(const [version, statement] of chain) {
-            iterator.keys.push(statement.data.changes);
+            iterator.chunks.push(statement.data.changes);
             iterator.issuers.push(statement.source);
         }
-        iterator.keys.reverse();
+        iterator.chunks.reverse();
         iterator.issuers.reverse();
         return iterator;
     }
 
     async* [Symbol.asyncIterator]() {
 
-        const numKeys = this.keys.length;
+        const numChunks = this.chunks.length;
 
-        //logger.log('info', 'ChangesIterator enter, num keys: ' + numKeys);
+        //logger.log('info', 'ChangesIterator enter, num changes: ' + numChunks);
 
-        for(var i=0; i<numKeys; i++) {
+        for(var i=0; i<numChunks; i++) {
 
-            const key = this.keys[i];
+            const chunk = this.chunks[i];
             const issuer = this.issuers[i];
 
-            //logger.log('info', 'Iteration ' + i + '>  key:' + key + ' issuer: ' + issuer);
+            //logger.log('info', 'Iteration ' + i + '>  identifier:' + identifier + ' issuer: ' + issuer);
 
-            const changes = await ResourcesManager.getResourceObject(key, this.chain.owner);
+            const changes = await chunk.expand();
 
 			for(const prop in changes) {
 				const value = changes[prop];
@@ -45,7 +47,11 @@ class ChangesIterator {
                 // + ' from issuer: ' + issuer);
                 // + ' with params: ' + JSON.stringify(value)
 
-                yield [issuer, prop, value]; //issuer:method:params format
+                yield {
+                    issuer: issuer,
+                    method: prop,
+                    params: value
+                };
             }
         }
     }
@@ -78,18 +84,21 @@ export class VersionChain {
     }
 
 	async* [Symbol.asyncIterator]() {
+        console.log("entering VersionChain iterator");
         if(this.head !== '') {
-            var iVersion = this.head;
-            while (iVersion !== this.base) {
-                const iUpdateMessage = await VersionStatement.fromResource(iVersion, this.owner);
-                yield [iVersion, iUpdateMessage];
-                iVersion = iUpdateMessage.data.prev;
+            var iVersionChunk = Chunk.fromIdentifier(this.head);
+            while (iVersionChunk
+                && iVersionChunk.id !== this.base) {
+                const iVersionStatement = await VersionStatement.fromDescriptor(iVersionChunk);
+                yield [iVersionChunk.id, iVersionStatement];
+                iVersionChunk = iVersionStatement.data.prev;
             }
             if(this.includeBase === true
             && this.base !== '') {
                 //include base statement
-                const iUpdateMessage = await VersionStatement.fromResource(this.base, this.owner);
-                yield [this.base, iUpdateMessage];
+                const iVersionChunk = Chunk.fromIdentifier(this.base);
+                const iVersionStatement = await VersionStatement.fromDescriptor(iVersionChunk);
+                yield [this.base, iVersionStatement];
             }
         }
     }
