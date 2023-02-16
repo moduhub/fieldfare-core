@@ -59,6 +59,19 @@ test('VersionedCollection can create elements', async () => {
     return;
 });
 
+test('VersionedCollection can delete elements', async () => {
+    await gTestCollection.deleteElement('list_a');
+    await gTestCollection.deleteElement('set_b');
+    const listAfter = await gTestCollection.getElement('list_a');
+    const setAfter = await gTestCollection.getElement('set_b');
+    const mapAfter = await gTestCollection.getElement('map_c');
+    expect(listAfter).toBeUndefined();
+    expect(setAfter).toBeUndefined();
+    expect(mapAfter).toBeInstanceOf(ChunkMap);
+    expect(mapAfter.degree).toBe(4);
+    return;
+});
+
 test('VersionedCollection produces a valid VersionChain', async () => {
     const localChain = new VersionChain(gTestCollection.versionIdentifier, LocalHost.getID(), 50);
     for await (const [identifier, statement] of localChain) {
@@ -95,6 +108,14 @@ test('VersionedCollection version chain contains expected changes', async () => 
     expect(changesArray[2].params.name).toBe('map_c');
     expect(changesArray[2].params.descriptor.type).toBe('map');
     expect(changesArray[2].params.descriptor.degree).toBe(4);
+
+    expect(changesArray[3].issuer).toBe(LocalHost.getID());
+    expect(changesArray[3].method).toBe('deleteElement');
+    expect(changesArray[3].params.name).toBe('list_a');
+
+    expect(changesArray[4].issuer).toBe(LocalHost.getID());
+    expect(changesArray[4].method).toBe('deleteElement');
+    expect(changesArray[4].params.name).toBe('set_b');
 });
 
 test('VersionedCollection checkouts specific version', async () => {
@@ -103,6 +124,8 @@ test('VersionedCollection checkouts specific version', async () => {
     for await(const [identifier, statement] of localChain) {
         versionIdentifiers.push(identifier);
     }
+    versionIdentifiers.reverse(); //remember versions are in reverse order
+    //Checkout the specific version    
     await gTestCollection.checkout(versionIdentifiers[1]);
     const list_a = await gTestCollection.getElement('list_a');
     const set_b = await gTestCollection.getElement('set_b');
