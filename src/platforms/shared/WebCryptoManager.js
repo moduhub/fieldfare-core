@@ -11,8 +11,8 @@ export class WebCryptoManager extends CryptoManager {
         super();
     }
 
-    importPublicKey(keyData) {
-        const plaformPublicKey = crypto.subtle.importKey(
+    async importPublicKey(keyData) {
+        const plaformPublicKey = await crypto.subtle.importKey(
             'jwk',
             keyData,
             {
@@ -33,21 +33,36 @@ export class WebCryptoManager extends CryptoManager {
     }
 
     async digest(buffer) {
-        return new Uint8Array(await crypto.subtle.digest({ name: 'SHA-256' }, buffer));
+        if(buffer instanceof Uint8Array === false) {
+            throw Error('digest buffer must be a Uint8Array');
+        }
+        const hashBuffer = await crypto.subtle.digest({ name: 'SHA-256' }, buffer);
+        return new Uint8Array(hashBuffer);
     }
 
-    signBuffer(buffer, privateKey) {
-		return crypto.subtle.sign(
+    async signBuffer(buffer, privateKey) {
+        if(buffer instanceof Uint8Array === false) {
+            throw Error('digest buffer must be a Uint8Array');
+        }
+		const signatureBuffer = await crypto.subtle.sign(
 			{
 				name: "ECDSA",
 				hash: {name: "SHA-256"}
 			},
 			privateKey.platformData,
 			buffer);
+        const uint8buffer = new Uint8Array(signatureBuffer);
+        return uint8buffer;
     }
 
-    verifyBuffer(dataBuffer, signatureBuffer, publicKey) {
-        return crypto.subtle.verify(
+    async verifyBuffer(dataBuffer, signatureBuffer, publicKey) {
+        if(dataBuffer instanceof Uint8Array === false) {
+            throw Error('verify dataBuffer must be a Uint8Array');
+        }
+        if(signatureBuffer instanceof Uint8Array === false) {
+            throw Error('verify signatureBuffer must be a Uint8Array');
+        }
+        const result = await crypto.subtle.verify(
             {
                 name: "ECDSA",
                 hash: {name: "SHA-256"}
@@ -55,5 +70,6 @@ export class WebCryptoManager extends CryptoManager {
             publicKey.platformData,
             signatureBuffer,
             dataBuffer);
+        return result;
     }
 }
