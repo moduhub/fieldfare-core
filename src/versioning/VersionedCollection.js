@@ -217,15 +217,15 @@ export class VersionedCollection {
 		//Perform local changes
 		const descriptorChunk = await Chunk.fromObject(descriptor);
 		await this.elements.set(nameChunk, descriptorChunk);
-		console.log('info', "Current elements: ");
-		for await (const [key, value] of this.elements) {
-			console.log('info', '> ' + JSON.stringify(await key.expand()) + ': ' + JSON.stringify(await value.expand()));
-		}
+		// console.log('info', "Current elements: ");
+		// for await (const [key, value] of this.elements) {
+		// 	console.log('info', '> ' + JSON.stringify(await key.expand()) + ': ' + JSON.stringify(await value.expand()));
+		// }
 	}
 
 	async createElement(name, descriptor) {
 		const params = {name: name, descriptor: descriptor};
-		console.log('info', "VersionedData.createElement name="+name + ", descriptor="+descriptor);
+		//console.log('info', "VersionedData.createElement name="+name + ", descriptor="+descriptor);
 		await this.applyCreateElement(LocalHost.getID(), params);
 		await this.commit({
 			createElement: params

@@ -23,7 +23,6 @@ export class ChunkMap extends ChunkTree {
     }
 
     set descriptor(descriptor) {
-        console.log("setting map descriptor: " + JSON.stringify(descriptor));
         Utils.validateParameters(descriptor, ['type', 'degree'], ['root']);
         if(descriptor.type !== 'map') {
             throw Error('Unexpected type value');
