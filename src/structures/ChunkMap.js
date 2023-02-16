@@ -15,7 +15,7 @@ export class ChunkMap extends ChunkTree {
 
     static async fromDescriptor(descriptor) {
         if(descriptor instanceof Chunk) {
-			descriptor = await descriptor.expand();
+			descriptor = await descriptor.expand(1);
 		}
         const newChunkMap = new ChunkMap;
         newChunkMap.descriptor = descriptor;
@@ -23,6 +23,7 @@ export class ChunkMap extends ChunkTree {
     }
 
     set descriptor(descriptor) {
+        console.log("setting map descriptor: " + JSON.stringify(descriptor));
         Utils.validateParameters(descriptor, ['type', 'degree'], ['root']);
         if(descriptor.type !== 'map') {
             throw Error('Unexpected type value');
@@ -35,7 +36,7 @@ export class ChunkMap extends ChunkTree {
         this.degree = descriptor.degree;
         if(descriptor.root) {
             if(descriptor.root instanceof Chunk === false) {
-                throw Error("Descripto contains an invalid root");
+                throw Error("Descriptor contains an invalid root: " + JSON.stringify(descriptor.root));
             }
             this.root = descriptor.root;
         }
