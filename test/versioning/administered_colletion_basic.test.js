@@ -4,9 +4,11 @@ import {
     LocalHost,
     HostIdentifier,
     Chunk,
+    ChunkList,
     ChunkSet,
     ChunkMap,
     AdministeredCollection,
+    VersionStatement,
     logger
 } from 'fieldfare/test';
 
@@ -14,24 +16,64 @@ var gTestCollection;
 
 const addedAdmins = [];
 var keptAdmins;
+var numKeptAdmins;
 const adminKeypairs = [];
 const numAddedAdmins = 20;
 const removedAdmins = [];
 const numRemovedAdmins = 5;
 
+function getRandomHostFromList(hostList) {
+    const selectedHostIndex = Math.floor(Math.random() * hostList.length);
+    const selectedHostIdentifier = hostList[selectedHostIndex];
+    const selectedKeypairIndex = addedAdmins.indexOf(selectedHostIdentifier);
+    const selectedHostPrivateKey = adminKeypairs[selectedKeypairIndex].privateKey;
+    return [selectedHostIdentifier, selectedHostPrivateKey];
+}
+
+async function generateTestComit(hostIdentifier, hostPrivateKey, newElementName) {
+    //Change corresponds to the creation of a new list with the name given by newElementName
+    const changes = {
+        createElement: {
+            name: newElementName,
+            descriptor: {
+                type: 'list',
+                degree: 3
+            }
+        }
+    }
+    //clone current elements and apply changes to it
+    const expectedElements = await ChunkMap.fromDescriptor(gTestCollection.elements.descriptor);
+    const nameChunk = await Chunk.fromObject({name: newElementName});
+    const listDescriptorChunk = await Chunk.fromObject(changes.createElement.descriptor);
+    await expectedElements.set(nameChunk, listDescriptorChunk);
+    const expectedDescriptorChunk = await Chunk.fromObject(expectedElements.descriptor);
+    logger.debug('expectedDescriptorChunk:' + JSON.stringify(expectedDescriptorChunk));
+    //produce the statement
+    const newVersionStatement = new VersionStatement;
+    newVersionStatement.source = hostIdentifier;
+    newVersionStatement.data = {
+        prev: gTestCollection.versionIdentifier,
+        elements: expectedDescriptorChunk,
+        changes: await Chunk.fromObject(changes)
+    };
+    await cryptoManager.signMessage(newVersionStatement, hostPrivateKey);
+    const newVersionChunk = await Chunk.fromObject(newVersionStatement);
+    return newVersionChunk;
+}
+
 beforeAll(async () => {
     logger.disable();
     ffinit.setupLocalHost();
     gTestCollection = new AdministeredCollection;
-    //genarate test data
+    //genarate test hosts profiles
     for(let i=0; i<numAddedAdmins; i++) {
         const iKeypair = await cryptoManager.generateTestKeypair();
         adminKeypairs.push(iKeypair);
         const iPubKeyJWK = await cryptoManager.exportPublicKey(iKeypair.publicKey);
-        console.log('iHost pubkey: ' + JSON.stringify(iPubKeyJWK));
+        //console.log('iHost pubkey: ' + JSON.stringify(iPubKeyJWK));
         const iPubKeyChunk = await Chunk.fromObject(iPubKeyJWK);
         addedAdmins[i] = HostIdentifier.fromChunkIdentifier(iPubKeyChunk.id);
-        console.log('iHost Identifier: ' + addedAdmins[i]);
+        //console.log('iHost Identifier: ' + addedAdmins[i]);
     }
     const removeStep = Math.floor(numAddedAdmins/numRemovedAdmins);
     for(let i=0; i<numRemovedAdmins; i++) {
@@ -39,6 +81,10 @@ beforeAll(async () => {
         removedAdmins[i] = adminToRemove;
     }
     keptAdmins = addedAdmins.filter(element => !removedAdmins.includes(element));
+    numKeptAdmins = keptAdmins.length;
+    // console.log(addedAdmins);
+    // console.log(keptAdmins);
+    // console.log(removedAdmins);
     return;
 });
 
@@ -84,4 +130,26 @@ test('AdministeredCollection can remove admins', async () => {
     }
     expect(numAdmins).toBe(numAddedAdmins-numRemovedAdmins+1);
     return;
+});
+
+test('AdministeredCollection accepts commits from authorized admins', async () => {
+    const [issuer, issuerPrivateKey] = getRandomHostFromList(keptAdmins);
+    const expectedDataName = 'host' + issuer.slice(2,10) + '_data';
+    const testCommit = await generateTestComit(issuer, issuerPrivateKey,expectedDataName);
+    //console.log(JSON.stringify(await testCommit.expand(1), null, 2));
+    await gTestCollection.pull(testCommit.id);
+    const expectedNewList = await gTestCollection.getElement(expectedDataName);
+    expect(expectedNewList).toBeInstanceOf(ChunkList);
+});
+
+test('AdministeredCollection rejects commits from non-authorized admins', async () => {
+    const descriptorBefore = gTestCollection.descriptor;
+    const [issuer, issuerPrivateKey] = getRandomHostFromList(removedAdmins);
+    const expectedDataName = 'host' + issuer.slice(2,10) + '_data';
+    const testCommit = await generateTestComit(issuer, issuerPrivateKey,expectedDataName);
+    await expect(gTestCollection.pull(testCommit.id)).rejects.toBeInstanceOf(Error);
+    const descriptorAfter = gTestCollection.descriptor;
+    const expectedNewList = await gTestCollection.getElement(expectedDataName);
+    expect(expectedNewList).toBeUndefined();
+    expect(descriptorAfter).toEqual(descriptorBefore);
 });
