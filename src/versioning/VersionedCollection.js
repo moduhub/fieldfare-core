@@ -51,25 +51,25 @@ export class VersionedCollection {
 		//just accept remote changes
 		const changes = await chain.getChanges();
 		logger.log('info', "applyChain: changes:" + JSON.stringify(changes));
-		for await (const [issuer, method, params] of changes) {
-			if(method === 'merge') {
+		for await (const change of changes) {
+			if(change.method === 'merge') {
 				const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
 				mergeChain.limit(params.base);
 				await this.applyChain(mergeChain, true);
 			} else {
-				logger.debug('await this.apply('+ issuer + ',' + method + ',' + JSON.stringify(params) + ')');
-				await this.apply(issuer, method, params, merge);
+				logger.debug('await this.apply('+ change.issuer + ',' + change.method + ',' + JSON.stringify(change.params) + ')');
+				await this.apply(change, merge);
 			}
 		}
 	}
 
-	async apply(issuer, methodName, params, merge=false) {
-		const methodCallback = this.methods.get(methodName);
+	async apply(change, merge=false) {
+		const methodCallback = this.methods.get(change.method);
 		if(!methodCallback) {
 			throw Error('apply failed: unknown change method ' + methodName);
 		}
-		if(merge) logger.log('info', '>>MERGE ' + methodName + ' params: ' + JSON.stringify(params));
-		await methodCallback(issuer, params, merge);
+		if(merge) logger.log('info', '>>MERGE ' + change.method + ' params: ' + JSON.stringify(change.params));
+		await methodCallback(change.issuer, change.params, merge);
 	}
 
 	async checkout(versionIdentifier) {
@@ -83,8 +83,8 @@ export class VersionedCollection {
 		this.versionIdentifier = versionChunk.id;
 	}
 
-	async pull(versionChunk) {
-		const versionIdentifier = versionChunk.id;
+	async pull(versionIdentifier, source) {
+		ChunkingUtils.validateIdentifier(versionIdentifier);
 		if(this.updateInProgress === versionIdentifier) {
 			//Already updating to same version, consider success?
 			return;
@@ -97,10 +97,11 @@ export class VersionedCollection {
 		}
 		logger.debug(">> pull changes to version: " + versionIdentifier);
 		this.updateInProgress = versionIdentifier;
-		const versionStatement = await VersionStatement.fromDescritor(versionChunk);
+		const versionChunk = Chunk.fromIdentifier(versionIdentifier, source);
+		const versionStatement = await VersionStatement.fromDescriptor(versionChunk);
 		logger.debug("Received version statement: " + JSON.stringify(versionStatement,null, 2));
 		const localChain = new VersionChain(this.versionIdentifier, LocalHost.getID(), 50);
-		const remoteChain = new VersionChain(versionIdentifier, owner, 50);
+		const remoteChain = new VersionChain(versionIdentifier, source, 50);
 		const commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
 		//Limit to commonVersion, not including
 		localChain.limit(commonVersion, false);
@@ -120,22 +121,24 @@ export class VersionedCollection {
 				await this.checkout(commonVersion);
 			}
 			try {
+				logger.debug("state before apply: " + JSON.stringify(this.elements.descriptor));
 				await this.applyChain(remoteChain);
 				const newElementsChunk = await Chunk.fromObject(this.elements.descriptor);
-				const expectedState = await remoteChain.getHeadState();
-				// logger.log('info', "state after apply: " + stateKey);
-				// logger.log('info', "expected state: " + expectedState);
-				if(newElementsChunk.id !== expectedState) {
+				const expectedState = await remoteChain.getHeadDescriptor();
+				logger.debug("state after apply: " + JSON.stringify(this.elements.descriptor));
+				logger.debug("expected state: " + JSON.stringify(await expectedState.expand(1)));
+				if(newElementsChunk.id !== expectedState.id) {
 					throw Error('state mismatch after remote changes applied');
 				}
 				this.versionIdentifier = remoteChain.head;
 				const localChanges = await localChain.getChanges();
 				//now merge local changes at end of remote chain, if any
 				if(localCommitsAhead > 0) {
-					for await (const [issuer, method, params] of localChanges) {
-						await this.apply(issuer, method, params, true);
+					for await (const change of localChanges) {
+						await this.apply(change.issuer, change.method, change.params, true);
 					}
-					const stateAfterMergeKey = await ResourcesManager.storeResourceObject(await this.getState());
+					const descriptorChunk = await Chunk.fromObject(this.elements.descriptor);
+					const stateAfterMergeKey = descriptorChunk.id;
 					//only commit if changes were not redundant
 					if(stateAfterMergeKey !== expectedState) {
 						await this.commit({
@@ -154,7 +157,7 @@ export class VersionedCollection {
 			} catch (error) {
 				// Recover previous state
 				await this.checkout(localChain.head);
-				throw Error('environment changes apply all failed: ', {cause: error});
+				throw Error('environment changes apply all failed: ' + error, {cause: error});
 			} finally {
 				this.updateInProgress = null;
 			}
