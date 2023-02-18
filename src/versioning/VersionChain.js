@@ -1,5 +1,6 @@
 import { Chunk } from '../chunking/Chunk';
 import { VersionStatement } from '../versioning/VersionStatement';
+import { logger } from '../basic/Log';
 import chalk from 'chalk';
 
 /**
@@ -71,20 +72,20 @@ export class VersionChain {
 		return ChangesIterator.from(this);
 	}
 
-    async getHeadState() {
-        if(this.headState === undefined) {
+    async getHeadDescriptor() {
+        if(this.headDescriptor === undefined) {
             if(this.head === '') {
                 return '';
             }
-            const headStatement = await VersionStatement.fromResource(this.head, this.owner);
-            this.headState = headStatement.data.state;
-            return this.headState;
+            const headStatementChunk = Chunk.fromIdentifier(this.head, this.owner);
+            const headStatement = await VersionStatement.fromDescriptor(headStatementChunk);
+            this.headDescriptor = headStatement.data.elements;
+            return this.headDescriptor;
         }
-        return this.headState;
+        return this.headDescriptor;
     }
 
 	async* [Symbol.asyncIterator]() {
-        console.log("entering VersionChain iterator");
         if(this.head !== '') {
             var iVersionChunk = Chunk.fromIdentifier(this.head);
             while (iVersionChunk
@@ -134,15 +135,13 @@ export class VersionChain {
         var count = 0;
         if(prevVersion === undefined) prevVersion = this.base;
         if(this.head !== prevVersion) {
-            //logger.log('info', "this.head: " + this.head + " prevVersion: " + prevVersion);
             for await(const [version, statement] of this) {
-                //logger.log('info', "iversion: " + version);
                 if(++count>this.maxDepth) throw Error('max depth exceeded');
                 if(version == prevVersion) {
                     return count;
                 }
                 if(this.includeBase === false
-                && statement.data.prev === prevVersion) {
+                && statement.data.prev.id === prevVersion) {
                     return count;
                 }
             }
