@@ -23,21 +23,12 @@ export class NodeCryptoManager extends WebCryptoManager {
                 namedCurve: "P-256"
             },
             true,
-            ["sign"]
+            ['sign', 'verify']
         );
-        logger.debug('New keypair generated: ' + JSON.stringify(newKeypair));
         const publicKey = newKeypair.publicKey;
         const privateKey = newKeypair.privateKey;
         const privateKeyJWK = await crypto.subtle.exportKey("jwk", newKeypair.privateKey);
-        const publicKeyJWK = {
-            kty: "EC",
-            use: "sig",
-            crv: "P-256",
-            kid: privateKeyJWK.kid,
-            x: privateKeyJWK.x,
-            y: privateKeyJWK.y,
-            alg: "ES256"
-        };
+        const publicKeyJWK = await crypto.subtle.exportKey("jwk", newKeypair.publicKey);
         await NVD.save('privateKey', privateKeyJWK);
         await NVD.save('publicKey', publicKeyJWK);
         return {
