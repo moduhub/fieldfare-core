@@ -18,7 +18,7 @@ var gTestCollection;
 
 beforeAll(async () => {
     logger.disable();
-    ffinit.setupLocalHost();
+    await ffinit.setupLocalHost();
     gTestCollection = new VersionedCollection;
     return;
 });

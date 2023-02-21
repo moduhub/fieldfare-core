@@ -30,7 +30,7 @@ jest.setTimeout(30000);
 
 beforeAll(async () => {
     logger.disable();
-    TestCryptoManager.init();
+    await TestCryptoManager.init();
     VolatileChunkManager.init();
     for(var i=0; i<numCreatedElements; i++) {
         const iKeyObject = {

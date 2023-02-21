@@ -27,7 +27,7 @@ const nonExistingChunkIdentifiers = [];
 beforeAll(async () => {
 
     logger.disable();
-    TestCryptoManager.init();
+    await TestCryptoManager.init();
     VolatileChunkManager.init();
 
     for (var i=0; i<numCreatedChunks; i++) {

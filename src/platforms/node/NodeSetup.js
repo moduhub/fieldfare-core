@@ -15,9 +15,9 @@ export * from '../shared/CommonSetup';
 export async function setupLocalHost() {
     LevelNVD.init();
     LevelChunkManager.init();
-    NodeCryptoManager.init();
+    await NodeCryptoManager.init();
     const localKeypair = await cryptoManager.getLocalKeypair();
-    LocalHost.init(localKeypair);
+    await LocalHost.init(localKeypair);
     LocalHost.assignWebportTransceiver('ws', new WebServerTransceiver);
     LocalHost.assignWebportTransceiver('udp', new UDPTransceiver);
 }

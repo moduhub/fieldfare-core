@@ -10,8 +10,8 @@ export * from '../shared/CommonSetup';
 export async function setupLocalHost() {
     TestNVD.init();
     VolatileChunkManager.init();
-    TestCryptoManager.init();
+    await TestCryptoManager.init();
     setupBasicCollectionTypes();
     const localKeypair = await cryptoManager.getLocalKeypair();
-    LocalHost.init(localKeypair);
+    await LocalHost.init(localKeypair);
 }

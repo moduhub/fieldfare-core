@@ -63,7 +63,7 @@ async function generateTestComit(hostIdentifier, hostPrivateKey, newElementName)
 
 beforeAll(async () => {
     logger.disable();
-    ffinit.setupLocalHost();
+    await ffinit.setupLocalHost();
     gTestCollection = new AdministeredCollection;
     //genarate test hosts profiles
     for(let i=0; i<numAddedAdmins; i++) {

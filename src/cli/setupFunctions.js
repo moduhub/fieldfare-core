@@ -9,7 +9,7 @@ import { logger } from '../basic/Log';
 
 export async function init() {
     LevelNVD.init();
-    NodeCryptoManager.init();
+    await NodeCryptoManager.init();
 }
 
 export async function getLocalHostID() {
@@ -20,7 +20,7 @@ export async function getLocalHostID() {
         const hostID = await ChunkingUtils.generateIdentifierForObject(publicKeyJWK);
         return hostID;
     }
-    return '<undefined>'
+    return '<undefined>';
 }
 
 export async function getEnvironmentUUID() {

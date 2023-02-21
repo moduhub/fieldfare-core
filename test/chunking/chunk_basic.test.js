@@ -12,7 +12,7 @@ var gTestPersonChunk;
 beforeAll(async () => {
 
     logger.disable();
-    NodeCryptoManager.init();
+    await NodeCryptoManager.init();
     VolatileChunkManager.init();
 
     //Create Chunk tree
