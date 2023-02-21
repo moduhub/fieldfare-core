@@ -21,7 +21,21 @@ const gTypeMap = new Map;
  */
 export class VersionedCollection {
 
-	constructor() {
+	constructor(uuid) {
+		if(!uuid) {
+			throw Error('VersionedCollection UUID must be informed');
+		}
+		if(!Utils.isUUID(uuid)) {
+			throw Error('invalid UUID');
+		}
+		/**
+         * The versioned Collection UUID helps to uniquely identify the data collection,
+		 * avoiding conflicts in early commits/pull between similar collections. It is also
+		 * used to store the latest data state as NVD in the local host.
+         * @type {string}
+         * @private
+         */		
+		this.uuid = uuid;
 		/**
          * A map of elements under version control, the key is a chunk that expands to an
 		 * object with a name property identifying the elements and the value is a descriptor chunk
@@ -44,6 +58,25 @@ export class VersionedCollection {
 
 	static registerType(typeName, type) {
 		gTypeMap.set(typeName, type);
+	}
+
+	async init() {
+		if(NVD.available() === false) {
+			throw Error('NVD was not initialized');
+		}
+		const latestVersion = await NVD.load(this.uuid);
+		const rootStatement = await VersionStatement.createRoot(this.uuid);
+		const rootChunk = await Chunk.fromObject(rootStatement);
+		const rootVersion = rootChunk.id;
+		if(latestVersion
+		&& latestVersion !== null
+		&& latestVersion !== undefined
+		&& latestVersion !== rootVersion) {
+			await this.checkout(latestVersion);
+		} else {
+			//No data, start from scratch
+			this.versionIdentifier = rootVersion;
+		}
 	}
 
 	async applyChain(chain, merge=false) {

@@ -9,8 +9,8 @@ import { HostIdentifier } from "../env/HostIdentifier";
 
 export class AdministeredCollection extends VersionedCollection {
 
-    constructor() {
-        super();
+    constructor(uuid) {
+        super(uuid);
         this.methods.set('addAdmin', this.applyAddAdmin.bind(this));
         this.methods.set('removeAdmin', this.applyRemoveAdmin.bind(this));
     }

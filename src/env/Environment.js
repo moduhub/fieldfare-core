@@ -18,11 +18,9 @@ import { logger } from '../basic/Log';
 
 export class Environment extends VersionedCollection {
 
-	constructor() {
-		super();
+	constructor(uuid) {
+		super(uuid);
 		this.activeHosts = new Map();
-		this.addSet('services');
-		this.addSet('webports');
 		this.methods.set('addService', this.applyAddService.bind(this));
         this.methods.set('removeService', this.applyRemoveService.bind(this));
 		this.methods.set('addProvider', this.applyAddProvider.bind(this));
@@ -44,29 +42,6 @@ export class Environment extends VersionedCollection {
 				+ ' updated ' + timeDiff + 'ms ago.';
 		}
 		return content;
-	}
-
-	async init(uuid) {
-		this.uuid = uuid;
-		if(NVD.available() === false) {
-			throw Error('NVD was not initialized');
-		}
-		const latestVersion = await NVD.load(uuid);
-		// logger.log('info', "Latest Version: " + latestVersion);
-		const rootStatement = await VersionStatement.createRoot(uuid);
-		const rootChunk = await Chunk.fromObject(rootStatement);
-		const rootVersion = rootChunk.id;
-		// logger.log('info', "Root version: " + JSON.stringify(rootStatement, null, 2)
-		// + '=>' + rootVersion);
-		if(latestVersion
-		&& latestVersion !== null
-		&& latestVersion !== undefined
-		&& latestVersion !== rootVersion) {
-			await this.revertToVersion(latestVersion);
-		} else {
-			//No data, start from scratch
-			this.version = rootVersion;
-		}
 	}
 
 	removeActiveHost(hostid) {
