@@ -5,10 +5,8 @@
  * ISC LICENSE
  */
 
-import { ChunkManager } from '../chunking/ChunkManager';
 import { Chunk } from '../chunking/Chunk';
 import { HostIdentifier } from './HostIdentifier';
-import { cryptoManager } from '../basic/CryptoManager';
 import { Environment } from '../env/Environment';
 import { LocalService } from './LocalService';
 import { RemoteHost } from './RemoteHost';
@@ -16,6 +14,8 @@ import { Message } from '../trx/Message';
 import { NVD } from '../basic/NVD';
 import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
+import { cryptoManager } from '../basic/CryptoManager';
+
 
 export const localHost = {
 	bootChannels: new Set(),
@@ -37,9 +37,6 @@ export const LocalHost = {
 	},
 
 	async init(keypair) {
-		if(ChunkManager.available() === false) {
-			throw Error('Cannot setup ID without a chunk manager');
-		}
 		if(keypair === undefined
 		|| keypair === null) {
 			throw Error('No host private key defined');

@@ -1,8 +1,6 @@
 import { ChunkManager } from "./ChunkManager";
 import { ChunkingUtils } from "./ChunkingUtils";
-import { LocalHost } from "../env/LocalHost";
 import { Utils } from "../basic/Utils";
-const util = require('node:util');
 
 export class Chunk {
 
@@ -77,7 +75,6 @@ export class Chunk {
     static async fromObject(object) {
         const newChunk = new Chunk;
         newChunk.local = true;
-        newChunk.ownerID = LocalHost.getID();
         const json = JSON.stringify(object, (key, value) => {
             if(value instanceof Chunk) {
                 return value.id;

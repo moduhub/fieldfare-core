@@ -1,6 +1,5 @@
 // 2023 Adan Kvitschal <adan@moduhub.com>
 
-import { LocalHost } from '../env/LocalHost';
 import { Chunk } from '../chunking/Chunk'
 import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
@@ -42,8 +41,7 @@ export class ChunkList {
          * @private
          */
 		this.last = last;
-		if(ownerID
-		&& ownerID != LocalHost.getID()) {
+		if(ownerID) {
 			this.local = false;
 			this.ownerID = ownerID;
 		} else {
