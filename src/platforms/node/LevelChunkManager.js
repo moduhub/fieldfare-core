@@ -1,5 +1,6 @@
 
 import { ChunkManager } from '../../chunking/ChunkManager';
+import { ChunkingUtils } from '../../chunking/ChunkingUtils';
 import { logger } from '../../basic/Log';
 
 const { Level } = require('level');
@@ -47,7 +48,7 @@ export class LevelChunkManager extends ChunkManager {
 
     async storeChunkContents(contents) {
         //logger.log('info', "LevelChunkManager storing res: " + contents);
-        const identifier = await ChunkManager.generateIdentifierForData(contents);
+        const identifier = await ChunkingUtils.generateIdentifierForData(contents);
         await this.db.put(identifier, contents);
         return identifier;
     }
