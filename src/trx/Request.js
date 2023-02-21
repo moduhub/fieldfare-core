@@ -1,12 +1,12 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
  */
 
-import {Message} from './Message';
-import {logger} from '../basic/Log';
-
+import { Message } from './Message';
+import { logger } from '../basic/Log';
 
 export class Request extends Message {
 
@@ -65,7 +65,7 @@ export class Request extends Message {
 		return new Promise((resolve, reject) => {
 			this.resolveCallbacks.add( (result) => resolve(result) );
 			this.rejectCallbacks.add( (error) => reject(error) );
-		})
+		});
 	}
 
 };
