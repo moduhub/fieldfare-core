@@ -151,21 +151,22 @@ export class VersionChain {
     }
 
     async print(mergeDepth=0) {
+        console.log('Head version identifier: \'' + this.head + '\'');
         const localChanges = await this.getChanges();
-        for await (const [issuer, method, params] of localChanges) {
+        for await (const change of localChanges) {
             var string;
             var prepend = '';
             for(var i=0; i<mergeDepth; i++) {
                 prepend += ' |';
             }
-            if(method === 'merge') {
-                const mergeChain = new VersionChain(params.head, issuer, 50);
+            if(change.method === 'merge') {
+                const mergeChain = new VersionChain(params.head, change.issuer, 50);
                 mergeChain.limit(params.base);
                 mergeChain.print(mergeDepth+1);
             } else {
-                string = chalk.bold.bgWhite.blue(' ' + method + ' ')
-                    + ' from \'' + issuer
-                    + '\'\n'+ JSON.stringify(params, null, 2);
+                string = chalk.bold.bgWhite.blue(' ' + change.method + ' ')
+                    + ' from \'' + change.issuer
+                    + '\'\n'+ JSON.stringify(change.params, null, 2);
                 string.replace('\n', prepend + '\n');
                 console.log(string);
             }
