@@ -8,15 +8,17 @@
 import { LocalHost } from './LocalHost';
 import { Chunk } from '../chunking/Chunk';
 import { ChunkingUtils } from '../chunking/ChunkingUtils';
-import { VersionedCollection } from '../versioning/VersionedCollection';
+import { AdministeredCollection } from '../versioning/AdministeredCollection';
 import { VersionStatement } from '../versioning/VersionStatement';
 import { ServiceDefinition } from './ServiceDefinition';
 import { NVD } from '../basic/NVD';
 import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
+import { ChunkSet } from '../structures/ChunkSet';
+import { HostIdentifier } from './HostIdentifier';
 
 
-export class Environment extends VersionedCollection {
+export class Environment extends AdministeredCollection {
 
 	constructor(uuid) {
 		super(uuid);
@@ -74,9 +76,9 @@ export class Environment extends VersionedCollection {
 	getSyncedHosts() {
 		var numSyncedHosts = 0;
 		for(const [id, info] of this.activeHosts) {
-			logger.log('info', "this.version: " + this.version
+			logger.log('info', "this.versionIdentifier: " + this.versionIdentifier
 				+ ' - their.version: ' + info.latestVersion);
-			if(info.latestVersion === this.version) {
+			if(info.latestVersion === this.versionIdentifier) {
 				numSyncedHosts++;
 			}
 		}
@@ -189,41 +191,62 @@ export class Environment extends VersionedCollection {
 		logger.log('info', 'applyAddService params: ' + JSON.stringify(params));
 		const definition = params.definition;
 		ServiceDefinition.validate(definition);
-		const services = this.elements.get('services');
-		if(await this.hasService(definition.uuid)) {
+		const definitionChunk = await Chunk.fromObject(definition);
+		const keyChunk = await Chunk.fromObject({
+			uuid: definition.uuid
+		});		
+		const services = await this.getElement('services');
+		if(!services) {
+			throw Error('services ChunkMap does not exist');
+		}
+		if(await services.has(keyChunk)) {
 			if(merge) {
-				const chunkID = await ChunkingUtils.generateIdentifierForObject(definition);
-				if(await services.has(chunkID)) {
+				const previousDefinitionChunk = await services.get(keyChunk);
+				if(previousDefinitionChunk.id === definitionChunk.id) {
 					logger.log('info', 'applyAddService succesfuly MERGED');
 					return;
 				} else {
 					throw Error('applyAddService MERGE FAILED: different service defined with same UUID');
 				}
 			} else {
-				throw Error('service already defined');
+				throw Error('service UUID already assigned');
 			}
 		}
 		await this.auth(issuer);
-		const chunk = await Chunk.fromObject(definition);
-		await services.add(chunk);
-		this.addSet(definition.uuid + '.providers');
+		await services.set(keyChunk, definitionChunk);
+		await this.updateElement('services', services.descriptor);
+		await this.createElement(definition.uuid+'.providers', {
+			type: 'set',
+			degree: 5
+		});
 	}
 
 	async addService(definition) {
 		const params = {definition: definition};
+		const services = await this.getElement('services');
+		if(!services) {
+			await this.createElement('services', {
+				type: 'map',
+				degree: 3
+			});
+		}
 		await this.applyAddService(LocalHost.getID(), params);
 		await this.commit({
 			addService: params
 		});
-		NVD.save(this.uuid, this.version);
+		NVD.save(this.uuid, this.versionIdentifier);
 	}
 
     async applyRemoveService(issuer, params, merge=false) {
         Utils.validateParameters(params, ['uuid']);
 		logger.debug('applyRemoveService params: ' + JSON.stringify(params));
 		const uuid = params.uuid;
-		const services = this.elements.get('services');
-		if(await this.hasService(uuid) === false) {
+		const keyChunk = await Chunk.fromObject({uuid:params.uuid});
+		const services = await this.getElement('services');
+		if(!services) {
+			throw Error('Environment services not defined');
+		}
+		if(await services.has(keyChunk) === false) {
 			if(merge) {
 				logger.log('info', 'applyRemoveService succesfuly MERGED');
 			} else {
@@ -231,9 +254,9 @@ export class Environment extends VersionedCollection {
 			}
 		}
 		await this.auth(issuer);
-		const chunk = await this.getServiceDefinition(uuid);
-		await services.remove(chunk);
-		this.elements.delete(uuid + '.providers');
+		await services.delete(keyChunk);
+		await this.updateElement('services', services.descriptor);
+		await this.deleteElement(uuid+'.providers');
     }
 
     async removeService(uuid) {
@@ -242,7 +265,7 @@ export class Environment extends VersionedCollection {
 		await this.commit({
 			removeService: params
 		});
-		NVD.save(this.uuid, this.version);
+		NVD.save(this.uuid, this.versionIdentifier);
     }
 
 	async getServiceDefinition(uuid) {
@@ -259,28 +282,17 @@ export class Environment extends VersionedCollection {
 	}
 
 	async hasService(uuid) {
-		const services = this.elements.get('services');
-		for await(const chunk of services) {
-			const service = await chunk.expand();
-			// logger.log('info', 'hasService ' + uuid + ' compare with ' + service.uuid);
-			if(service.uuid === uuid) {
-				return true;
+		const services = await this.getElement('services');
+		if(services) {
+			for await(const chunk of services) {
+				const service = await chunk.expand();
+				// logger.log('info', 'hasService ' + uuid + ' compare with ' + service.uuid);
+				if(service.uuid === uuid) {
+					return true;
+				}
 			}
 		}
 		return false;
-	}
-
-	async getProviders(serviceUUID) {
-		if(await this.hasService(serviceUUID) === false) {
-			throw Error('Service ' + serviceUUID + ' is not defined in env ' + this.uuid);
-		}
-		const listName = serviceUUID + '.providers';
-		if(this.elements.has(listName) === false) {
-		    throw Error('Service '+serviceUUID+' providers list does not exist');
-		}
-		const providers = this.elements.get(listName);
-		// logger.log('info', "provider: " + JSON.stringify(provider));
-		return providers;
 	}
 
 	async isProvider(serviceUUID, hostID) {
@@ -297,15 +309,23 @@ export class Environment extends VersionedCollection {
 		Utils.validateParameters(params,
 			['uuid', 'host']);
 		await this.auth(issuer);
-		const providers = await this.getProviders(params.uuid);
-		if(await providers.has(params.host)) {
+		const serviceUUID = params.uuid;
+		const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(params.host);
+		const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
+		const providerListName = serviceUUID + '.providers';
+		const providers = await this.getElement(providerListName);
+		if(!providers) {
+			throw Error(serviceUUID + ' providers ChunkSet does not exist');
+		}
+		if(await providers.has(hostChunk)) {
 			if(merge) {
 				logger.log('info', 'addProvider successfully MERGED');
 			} else {
 				throw Error('provider already in list');
 			}
 		}
-		await providers.add(params.host);
+		await providers.add(hostChunk);
+		await this.updateElement(providerListName, providers.descriptor);
 	}
 
 	async addProvider(serviceUUID, providerID) {
@@ -317,22 +337,28 @@ export class Environment extends VersionedCollection {
 		await this.commit({
 			addProvider: params
 		});
-		await NVD.save(this.uuid, this.version);
+		await NVD.save(this.uuid, this.versionIdentifier);
 	}
 
     async applyRemoveProvider(issuer, params, merge=false) {
         Utils.validateParameters(params,
             ['uuid', 'host']);
+		const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(params.host);
+		const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, params.host);
         await this.auth(issuer);
-        const providers = await this.getProviders(params.uuid);
-        if(await providers.has(params.host) === false) {
+        const providers = await this.getElement(params.uuid+'.providers');
+        if(!providers) {
+			throw Error('Service '+params.uuid+' providers is not defined');
+		}
+		if(await providers.has(hostChunk) === false) {
             if(merge) {
                 logger.log('info', 'addProvider successfully MERGED');
             } else {
                 throw Error('provider not in list');
             }
         }
-        await providers.remove(params.host);
+        await providers.delete(hostChunk);
+		await this.updateElement(params.uuid+'.providers', providers.descriptor);
     }
 
 	async removeProvider(serviceUUID, providerID) {
@@ -344,29 +370,34 @@ export class Environment extends VersionedCollection {
         await this.commit({
             removeProvider: params
         });
-        await NVD.save(this.uuid, this.version);
+        await NVD.save(this.uuid, this.versionIdentifier);
 	}
 
 	async getWebports(hostID) {
 		var hostWebports = [];
-		const envWebports = this.elements.get('webports');
-		for await(const chunk of envWebports) {
-            //logger.debug('[ENV] getWebports>chunk.key: '+ chunk.key);
-			const webport = await chunk.expand();
-			// logger.log('info', 'webport info: ' + JSON.stringify(webport));
-			if(webport.hostid === hostID) {
-				hostWebports.push(webport);
+		const envWebports = await this.getElement('webports');
+		if(envWebports) {
+			for await(const chunk of envWebports) {
+				//logger.debug('[ENV] getWebports>chunk.key: '+ chunk.key);
+				const webport = await chunk.expand();
+				// logger.log('info', 'webport info: ' + JSON.stringify(webport));
+				if(webport.hostid === hostID) {
+					hostWebports.push(webport);
+				}
 			}
-        }
+		}
 		return hostWebports;
 	}
 
 	async applyAddWebport(issuer, params, merge=false) {
 		Utils.validateParameters(params, ['hostid', 'protocol', 'address', 'port']);
 		await this.auth(issuer);
-		const webports = this.elements.get('webports');
-		const chunk = await Chunk.fromObject(params);
-		if(await webports.has(chunk)) {
+		const webportChunk = await Chunk.fromObject(params);
+		const webports = await this.getElement('webports');
+		if(!webports) {
+			throw Error('webports ChunkSet does not exist');
+		}
+		if(await webports.has(webportChunk)) {
 			//Exact same information already present
 			if(merge) {
 				logger.log('info', 'addWebport successfully MERGED');
@@ -375,25 +406,36 @@ export class Environment extends VersionedCollection {
 				throw Error('webport already defined');
 			}
 		}
-		await webports.add(chunk);
+		await webports.add(webportChunk);
+		this.updateElement('webports', webports.descriptor);
 	}
 
 	async addWebport(info) {
+		const webports = await this.getElement('webports');
+		if(!webports) {
+			await this.createElement('webports', {
+				type: 'set',
+				degree: 5
+			});
+		}
 		await this.applyAddWebport(LocalHost.getID(), info);
 		await this.commit({
 			addWebport: info
 		});
-		NVD.save(this.uuid, this.version);
+		NVD.save(this.uuid, this.versionIdentifier);
 	}
 
     async applyRemoveWebport(issuer, params, merge=false) {
-        const chunk = params;
-        if(chunk instanceof Chunk === false) {
+        const webportChunk = params;
+        if(webportChunk instanceof Chunk === false) {
 			throw Error('applyRemoveWebport params must be a Chunk object');
 		}
         await this.auth(issuer);
-        const webports = this.elements.get('webports');
-        if(await webports.has(chunk) === false) {
+        const webports = await this.getElement('webports');
+		if(!webports) {
+			throw Error('webports ChunkSet does not exist');
+		}
+        if(await webports.has(webportChunk) === false) {
             if(merge) {
                 logger.debug('removeWebport successfully MERGED');
                 return;
@@ -401,15 +443,16 @@ export class Environment extends VersionedCollection {
                 throw Error('webport does not exist');
             }
         }
-        await webports.remove(chunk);
+        await webports.delete(webportChunk);
+		this.updateElement('webports', webports.descriptor);
     }
 
-    async removeWebport(chunk) {
-        await this.applyRemoveWebport(LocalHost.getID(), chunk);
+    async removeWebport(webportChunk) {
+        await this.applyRemoveWebport(LocalHost.getID(), webportChunk);
         await this.commit({
-            removeWebport: chunk
+            removeWebport: webportChunk
         });
-        NVD.save(this.uuid, this.version);
+        NVD.save(this.uuid, this.versionIdentifier);
     }
 
 };
