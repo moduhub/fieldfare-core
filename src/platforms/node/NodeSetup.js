@@ -8,6 +8,7 @@ import { NodeCryptoManager } from './NodeCryptoManager';
 import { NVD } from '../../basic/NVD';
 import { logger } from '../../basic/Log';
 import { cryptoManager } from '../../basic/CryptoManager';
+import { setupBasicCollectionTypes } from './NodeSetup';
 
 
 export * from '../shared/CommonSetup';
@@ -16,6 +17,7 @@ export async function setupLocalHost() {
     LevelNVD.init();
     LevelChunkManager.init();
     await NodeCryptoManager.init();
+    setupBasicCollectionTypes();
     const localKeypair = await cryptoManager.getLocalKeypair();
     await LocalHost.init(localKeypair);
     LocalHost.assignWebportTransceiver('ws', new WebServerTransceiver);
