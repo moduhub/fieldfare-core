@@ -8,9 +8,6 @@ import { NodeCryptoManager } from '../platforms/node/NodeCryptoManager';
 import { logger } from '../basic/Log';
 
 export async function init() {
-    if(global.crypto === undefined) {
-        global.crypto = require('crypto').webcrypto;
-    }
     LevelNVD.init();
     NodeCryptoManager.init();
 }

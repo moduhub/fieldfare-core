@@ -1,5 +1,6 @@
 import { WebCryptoManager } from "../shared/WebCryptoManager";
 import { CryptoManager } from "../../basic/CryptoManager";
+import { webcrypto } from "node:crypto";
 
 /**
  * A crypto manager to be used in test enviroments, it used a fixed
@@ -7,9 +8,11 @@ import { CryptoManager } from "../../basic/CryptoManager";
  */
 export class TestCryptoManager extends WebCryptoManager {
 
-    static init() {
-        global.crypto = require('node:crypto').webcrypto;
+    static async init() {
+        const nodeCrypto = await import('crypto');
+        global.crypto = nodeCrypto.webcrypto;
         CryptoManager.singleton(new TestCryptoManager);
+        return;
     }
 
     async generateTestKeypair() {

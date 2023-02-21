@@ -10,8 +10,9 @@ import {logger} from '../../basic/Log'
  */
 export class NodeCryptoManager extends WebCryptoManager {
 
-    static init() {
-        global.crypto = require('node:crypto').webcrypto;
+    static async init() {
+        const nodeCrypto = await import('crypto');
+        global.crypto = nodeCrypto.webcrypto;
         CryptoManager.singleton(new NodeCryptoManager);
     }
 

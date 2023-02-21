@@ -9,7 +9,6 @@ import { VersionChain } from './VersionChain';
 import { NVD } from '../basic/NVD';
 import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
-const util = require('node:util');
 
 const gTypeMap = new Map;
 
