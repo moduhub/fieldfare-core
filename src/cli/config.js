@@ -4,7 +4,7 @@ import arg from 'arg';
 import fs from 'fs';
 
 import { LocalHost } from '../env/LocalHost';
-import { ChunkManager } from '../chunk/ChunkManager';
+import { HostIdentifier } from '../platforms/node/NodeExports';
 import { VersionChain } from '../versioning/VersionChain';
 import { Utils } from '../basic/Utils';
 import { ffinit } from '../platforms/node/NodeExports';
@@ -36,12 +36,11 @@ const inputHostID = {
             return true;
         }
 
-        if (Utils.isBase64(value)
-        && value.length === 44) {
+        if (HostIdentifier.isValid(value)) {
             return true;
         }
 
-        return 'Please enter a valid Host ID in base64 format';
+        return 'Please enter a valid Host Identifier in \'h:base64\' format';
     },
     filter(value) {
         if(value === 'this') {
@@ -114,7 +113,7 @@ function parseArgumentsIntoOptions(rawArgs) {
     };
 }
 
-async function selectHostMenu(hostIDs) {
+async function selectHostMenu(hostArray) {
     const menu = {
       type: 'list',
       name: 'choice',
@@ -127,8 +126,8 @@ async function selectHostMenu(hostIDs) {
           return value;
       }
     };
-    for await (const id of hostIDs) {
-        menu.choices.push(id);
+    for (const hostIdentifier of hostArray) {
+        menu.choices.push(hostIdentifier);
     }
     menu.choices.push('Back');
     const {choice} = await inquirer.prompt(menu);
@@ -143,12 +142,20 @@ async function adminsMenu() {
       choices: ['Add new', 'Remove one', 'Back'],
     };
     console.log('__________ Environment Admins configuration __________');
-    var adminList = []
-    const envAdmins = await env.elements.get('admins');
-    for await (const admin of envAdmins) {
-        adminList.push(admin);
+    var adminArray = []
+    const envAdmins = await env.getElement('admins');
+    if(envAdmins) {
+        for await (const chunk of envAdmins) {
+            const adminID = HostIdentifier.fromChunkIdentifier(chunk.id);
+            adminArray.push(adminID);
+        }
     }
-    console.table(adminList);
+    if(adminArray.length > 0) {
+        console.table(adminArray);
+    } else {
+        console.log('<no admins defined>');
+        menu.choices = menu.choices.filter(value => value != 'Remove one');
+    }
     const {action} = await inquirer.prompt(menu);
     switch (action) {
         case 'Add new': {
@@ -164,7 +171,7 @@ async function adminsMenu() {
         } break;
 
         case 'Remove one': {
-            const hostid = await selectHostMenu(envAdmins);
+            const hostid = await selectHostMenu(adminArray);
             if(hostid !== '') {
                 try {
                     await env.removeAdmin(hostid);
@@ -181,7 +188,7 @@ async function adminsMenu() {
 
 }
 
-async function selectServiceMenu() {
+async function selectServiceMenu(servicesArray) {
     const menu = {
       type: 'list',
       name: 'choice',
@@ -195,16 +202,24 @@ async function selectServiceMenu() {
           return parts[1].slice(0,-1);
       }
     };
-    var servicesList = []
-    const services = await env.elements.get('services');
-    for await (const chunk of services) {
-        const definition = await chunk.expand();
-        menu.choices.push(definition.name + ' (uuid: ' + definition.uuid + ')');
+    for await (const serviceDefinition of servicesArray) {
+        menu.choices.push(serviceDefinition.name + ' (uuid: ' + serviceDefinition.uuid + ')');
     }
     menu.choices.push('Back');
     console.log(title('__________ Service Providers configuration __________'));
     const {choice} = await inquirer.prompt(menu);
     return choice;
+}
+
+async function getServicesArray() {
+    const servicesArray = [];
+    const services = await env.getElement('services');
+    if(services) {
+        for await (const [keyChunk, valueChunk] of services) {
+            servicesArray.push(await valueChunk.expand());
+        }
+    }
+    return servicesArray;
 }
 
 async function servicesMenu() {
@@ -215,15 +230,12 @@ async function servicesMenu() {
       choices: ['Add new', 'Remove one', 'Back'],
     };
     console.log(title('__________ Environment Services configuration __________'));
-    var servicesList = []
-    const services = await env.elements.get('services');
-    for await (const chunk of services) {
-        servicesList.push(await chunk.expand());
-    }
-    if(servicesList.length > 0) {
-        console.table(servicesList);
+    const servicesArray = await getServicesArray();
+    if(servicesArray.length > 0) {
+        console.table(servicesArray);
     } else {
         console.log('<no services defined>');
+        menu.choices = menu.choices.filter(value => value !== 'Remove one');
     }
     const {action} = await inquirer.prompt(menu);
     switch (action) {
@@ -268,7 +280,7 @@ async function servicesMenu() {
             servicesMenu();
         } break;
         case 'Remove one': {
-            const uuid = await selectServiceMenu(services);
+            const uuid = await selectServiceMenu(servicesArray);
             const {confirm} = await inquirer.prompt({
                 type: 'confirm',
                 name: 'confirm',
@@ -298,15 +310,18 @@ async function providersMenu(serviceUUID) {
         choices: ['Add', 'Remove', 'Back']
     }
     console.log(title('__________ Service <'+serviceUUID+'> Providers configuration __________'));
-    var providersList = [];
-    const providers = await env.getProviders(serviceUUID);
-    for await(const provider of providers) {
-        providersList.push(provider);
+    var providersArray = [];
+    const providers = await env.getElement(serviceUUID+'.providers');
+    if(providers) {
+        for await(const providerChunk of providers) {
+            providersArray.push(HostIdentifier.fromChunkIdentifier(providerChunk.id));
+        }
     }
-    if(providersList.length > 0) {
-        console.table(providersList);
+    if(providersArray.length > 0) {
+        console.table(providersArray);
     } else {
         console.log('<No providers defined>');
+        menu.choices = menu.choices.filter(value => value !== 'Remove');
     }
     const {action} = await inquirer.prompt(menu);
     switch(action) {
@@ -322,7 +337,7 @@ async function providersMenu(serviceUUID) {
             providersMenu(serviceUUID);
         }break;
         case 'Remove': {
-            const hostid = await selectHostMenu(providers);
+            const hostid = await selectHostMenu(providersArray);
             if(hostid != '') {
                 try {
                     await env.removeProvider(serviceUUID, hostid);
@@ -372,15 +387,18 @@ async function webportsMenu() {
     }
     console.log(title('__________ Enviroment Webports configuration __________'));
     var list = [];
-    const webports = env.elements.get('webports');
-    for await(const chunk of webports) {
-        const webport = await chunk.expand();
-        list.push(webport);
+    const webports = await env.getElement('webports');
+    if(webports) {
+        for await(const chunk of webports) {
+            const webport = await chunk.expand();
+            list.push(webport);
+        }
     }
     if(list.length > 0) {
         console.table(list);
     } else {
         console.log('<No webports defined>');
+        menu.choices = menu.choices.filter(value => value !== 'Remove');
     }
     const {action} = await inquirer.prompt(menu);
     switch(action) {
@@ -453,7 +471,8 @@ async function mainMenu() {
             servicesMenu();
             break;
         case 'Providers':
-            const serviceUUID = await selectServiceMenu();
+            const servicesArray = await getServicesArray();
+            const serviceUUID = await selectServiceMenu(servicesArray);
             if(serviceUUID !== '') {
                 providersMenu(serviceUUID);
             } else {
@@ -475,8 +494,8 @@ export async function main(args) {
     try {
         await ffinit.setupLocalHost();
         env = await ffinit.setupEnvironment();
-        const envWebports = env.elements.get('webports');
-        if(await envWebports.isEmpty()) {
+        const envWebports = await env.getElement('webports');
+        if(!envWebports) {
             const bootWebports = await ffinit.getBootWebports();
             for(const webport of bootWebports) {
                 try {
@@ -499,34 +518,43 @@ export async function main(args) {
         } break;
 
         case 'getChanges': {
-            const localChain = new VersionChain(env.version, LocalHost.getID(), 50);
+            const localChain = new VersionChain(env.versionIdentifier, LocalHost.getID(), 50);
             await localChain.print();
             process.exit(0);
         } break;
 
         case 'getAdmins': {
             console.log(">>getAdmins from " + env.uuid);
-            const envAdmins = env.elements.get('admins');
-            for await (const admin of envAdmins) {
-                console.log(">> " + admin);
+            const envAdmins = await env.getElement('admins');
+            if(!envAdmins) {
+                console.log('<no admins defined>');
+            } else {
+                var count = 0;
+                for await (const admin of envAdmins) {
+                    console.log("[" + count++ +"]: " + admin);
+                }
             }
             process.exit(0);
         } break;
 
         case 'getProviders': {
             console.log('>>getProviders of service ' + options.uuid + ' from env ' + envUUID);
-            const providers = env.elements.get(options.uuid + '.providers');
-            for await (const hostid of providers) {
-                console.log(">> " + hostid);
+            const providers = await env.getElement(options.uuid + '.providers');
+            if(providers) {
+                for await (const hostid of providers) {
+                    console.log(">> " + hostid);
+                }
             }
             process.exit(0);
         } break;
 
         case 'getWebports': {
-            const webports = await env.elements.get('webports');
-            for await (const chunk of webports) {
-                const webport = await chunk.expand();
-                console.log(JSON.stringify(webport));
+            const webports = await env.getElements('webports');
+            if(webports) {
+                for await (const chunk of webports) {
+                    const webport = await chunk.expand();
+                    console.log(JSON.stringify(webport));
+                }
             }
             process.exit(0);
         } break;
