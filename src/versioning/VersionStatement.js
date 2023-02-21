@@ -1,7 +1,7 @@
 // 2023 Adan Kvitschal <adan@moduhub.com>
 
 import { Chunk } from '../chunking/Chunk';
-import {logger} from '../basic/Log';
+import { logger } from '../basic/Log';
 
 export class VersionStatement {
 
@@ -18,6 +18,9 @@ export class VersionStatement {
 			throw Error('descriptor is null');
 		}
 		if(descriptor instanceof Chunk) {
+			if(!descriptor.id) {
+				throw Error('VersionStatement descriptor chunk identifier  is \'' + JSON.stringify(descriptor.id) + '\'');
+			}
 			descriptor = await descriptor.expand(1);
 		}
 		if('signature' in descriptor === false
@@ -46,7 +49,7 @@ export class VersionStatement {
 		rootStatement.data = {
 			prev: '',
 			state: '',
-			changes: await ResourcesManager.storeResourceObject({uuid:uuid})
+			changes: await Chunk.fromObject({uuid:uuid})
 		};
 		return rootStatement;
 	}
