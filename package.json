@@ -11,7 +11,9 @@
   "scripts": {
     "start": "node test/Environment/EnvTestHost1.js",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest",
-    "debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
+    "coverage": "jest --collectCoverage --",
+    "debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand",
+    "snapshot": "npx ffrun src/env/services/Snapshot.js"
   },
   "repository": {
     "type": "git",
