@@ -6,6 +6,7 @@ import {
     ChunkList,
     ChunkSet,
     ChunkMap,
+    Collection,
     VersionStatement,
     VersionChain,
     VersionedCollection,
@@ -19,12 +20,35 @@ var gTestCollection;
 beforeAll(async () => {
     logger.disable();
     await ffinit.setupLocalHost();
-    gTestCollection = new VersionedCollection;
     return;
 });
 
 afterAll(() => {
     ffinit.terminate();
+});
+
+describe('VersionedCollection constructor', function() {
+    test('throws with undefined UUID', () => {
+        expect(()=>{gTestCollection = new VersionedCollection()}).toThrow();
+    });
+    test('throws with invalid UUID', () => {
+        expect(()=>{gTestCollection = new VersionedCollection('342804aa-b8b8-4b06-87x9-922ba8e7c0db')}).toThrow();
+    });
+    test('succeeds with valid UUID', () => {
+        expect(()=>{gTestCollection = new VersionedCollection('342804aa-b8b8-4b06-87c9-922ba8e7c0db')}).not.toThrow();
+        expect(gTestCollection).toBeInstanceOf(VersionedCollection);
+    });
+});
+
+describe('VersionedCollection instance', function() {
+    test('to be instance of Collection', () => {
+        expect(gTestCollection).toBeInstanceOf(Collection);
+    });
+    describe('properties', function() {
+        test('to have an uuid', () => {
+            expect(gTestCollection).toHaveProperty('uuid');
+        });
+    });
 });
 
 test('VersionedCollection elements is a ChunkMap of degree=5', () => {
@@ -93,7 +117,7 @@ test('VersionedCollection version chain contains expected changes', async () => 
     const changesArray = [];
     for await (const change of changes) {
         changesArray.push(change);
-        console.log(change);
+        //console.log(change);
     }
     expect(changesArray[0].issuer).toBe(LocalHost.getID());
     expect(changesArray[0].method).toBe('createElement');
@@ -129,7 +153,7 @@ test('VersionedCollection checkouts specific version', async () => {
         versionIdentifiers.push(identifier);
     }
     versionIdentifiers.reverse(); //remember versions are in reverse order
-    //Checkout the specific version    
+    //Checkout the specific version
     await gTestCollection.checkout(versionIdentifiers[1]);
     const list_a = await gTestCollection.getElement('list_a');
     const set_b = await gTestCollection.getElement('set_b');

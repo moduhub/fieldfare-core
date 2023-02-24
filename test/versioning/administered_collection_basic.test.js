@@ -7,6 +7,8 @@ import {
     ChunkList,
     ChunkSet,
     ChunkMap,
+    Collection,
+    VersionedCollection,
     AdministeredCollection,
     VersionStatement,
     logger
@@ -64,7 +66,6 @@ async function generateTestComit(hostIdentifier, hostPrivateKey, newElementName)
 beforeAll(async () => {
     logger.disable();
     await ffinit.setupLocalHost();
-    gTestCollection = new AdministeredCollection;
     //genarate test hosts profiles
     for(let i=0; i<numAddedAdmins; i++) {
         const iKeypair = await cryptoManager.generateTestKeypair();
@@ -91,6 +92,34 @@ beforeAll(async () => {
 afterAll(() => {
     ffinit.terminate();
 });
+
+describe('AdministeredCollection constructor', function() {
+    test('throws with undefined UUID', () => {
+        expect(()=>{gTestCollection = new AdministeredCollection()}).toThrow();
+    });
+    test('throws with invalid UUID', () => {
+        expect(()=>{gTestCollection = new AdministeredCollection('342804aa-b8b8-4b06-87x9-922ba8e7c0db')}).toThrow();
+    });
+    test('succeeds with valid UUID', () => {
+        expect(()=>{gTestCollection = new AdministeredCollection('342804aa-b8b8-4b06-87c9-922ba8e7c0db')}).not.toThrow();
+        expect(gTestCollection).toBeInstanceOf(AdministeredCollection);
+    });
+});
+
+describe('AdministeredCollection instance', function() {
+    test('to be instance of Collection', async () => {
+        expect(gTestCollection).toBeInstanceOf(Collection);
+    });
+    test('to be instance of VersionedCollection', async () => {
+        expect(gTestCollection).toBeInstanceOf(VersionedCollection);
+    });
+    describe('properties', function() {
+        test('to have an uuid', async () => {
+            expect(gTestCollection).toHaveProperty('uuid');
+        });
+    });
+});
+
 
 test('AdministeredCollection LocalHost can add itself as an admin', async () => {
     const adminsBefore = await gTestCollection.getElement('admins');
