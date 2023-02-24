@@ -21,6 +21,10 @@ export async function setupEnvironment() {
     return env;
 }
 
+export function terminate() {
+    LocalHost.terminate();
+}
+
 export function setupBasicCollectionTypes() {
     Collection.registerType('list', ChunkList);
     Collection.registerType('set', ChunkSet);

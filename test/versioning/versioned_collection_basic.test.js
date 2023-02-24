@@ -23,6 +23,10 @@ beforeAll(async () => {
     return;
 });
 
+afterAll(() => {
+    ffinit.terminate();
+});
+
 test('VersionedCollection elements is a ChunkMap of degree=5', () => {
     expect(gTestCollection.elements).toBeInstanceOf(ChunkMap);
     expect(gTestCollection.elements.degree).toBe(5);

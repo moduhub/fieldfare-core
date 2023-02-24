@@ -47,7 +47,7 @@ export const LocalHost = {
 		const pubKeyChunk = await Chunk.fromObject(jwkPubKey);
 		localHost.id = HostIdentifier.fromChunkIdentifier(pubKeyChunk.id);
 		logger.log('info', 'HOST ID: ' + localHost.id);
-		setInterval(async () => {
+		localHost.announceInterval = setInterval(async () => {
 			// logger.log('info', "Host is announcing to "
 			// 	+ localHost.remoteHosts.size + " remote hosts and "
 			// 	+ localHost.bootChannels.size + ' boot channels');
@@ -70,6 +70,9 @@ export const LocalHost = {
 		}, 10000);
 	},
 
+	terminate() {
+		clearInterval(localHost.announceInterval);
+	},
 
 	/**
 	 * Joining the environment means fetching all the services that are assigned to
@@ -94,7 +97,7 @@ export const LocalHost = {
 		for(const serviceUUID of serviceArray) {
 			const newService = await LocalService.implement(serviceUUID, environment);
 			localHost.services.set(serviceUUID, newService);
-        }
+		}
 		//Serve assigned webports
 		const servedWebports = await environment.getWebports(LocalHost.getID());
 		for(const webport of servedWebports) {

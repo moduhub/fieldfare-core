@@ -88,6 +88,10 @@ beforeAll(async () => {
     return;
 });
 
+afterAll(() => {
+    ffinit.terminate();
+});
+
 test('AdministeredCollection LocalHost can add itself as an admin', async () => {
     const adminsBefore = await gTestCollection.getElement('admins');
     expect(adminsBefore).toBeUndefined();
