@@ -1,59 +1,62 @@
 
 import { ServiceDescriptor } from './ServiceDescriptor';
 import { Message } from '../trx/Message';
-import { NVD } from '../basic/NVD';
 import { ChunkingUtils } from '../chunking/ChunkingUtils';
+import { Collection } from '../structures/Collection';
+import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
 
+const gServiceImplementations = new Map;
 
 export class LocalService {
 
-    constructor() {
-        this.methods = new Map();
+    constructor(environment) {
         this.numRequests = 0;
         this.numErrors = 0;
         this.pendingRequests = [];
+        this.environment = environment;
     }
 
-    static fromDefinition(definition) {
-        var newService = new LocalService();
-        newService.definition = definition;
-        ServiceDefinition.buildData(definition, newService);
-        logger.log('info', 'definition.data: ' + JSON.stringify(definition));
-        return newService;
+    /**
+     * Register a class that implements the service assigned to the given UUID
+     * @param {string} uuid UUIDv4 of the service
+     * @param {Object} implementation Class that implements the service methods
+     */
+    static registerImplementation(uuid, implementation) {
+        gServiceImplementations.set(uuid, implementation);
     }
 
-    updateState() {
-        var newState = new Object;
-        for(const prop in this.data) {
-
-            logger.log('info', "data.name: " + prop);
-            logger.log('info', "stateId: " + this.data[prop].getState());
-            newState[prop] = this.data[prop].getState();
+    /**
+     * Construct service instance and validate it against the information contained in
+     * environment descriptor assigned to the same UUID
+     * @param {String} uuid UUIDv4 of the service to be implemented
+     * @param {Environment} environment Environment in which the service will be offered
+     * @returns The new service instance
+     */
+    static async implement(uuid, environment) {
+        logger.debug('Implementing ' + JSON.stringify(uuid));
+        if(Utils.isUUID(uuid) === false) {
+            throw Error('Invalid UUID');
         }
-        if(this.prevState !== newState) {
-            const uuid = this.definition.uuid;
-            logger.log('info', "Storing service state " + uuid + '->' + JSON.stringify(newState, null, 2));
-            NVD.save(uuid, newState);
-            this.prevState = newState;
+        const implementation = gServiceImplementations.get(uuid);
+        if(!implementation) {
+            throw Error('Service '+uuid+' local implementation not found');
         }
-        return newState;
-    }
-
-    setState(state) {
-        // logger.log('info', "Service " + this.definition.name + "setState()");
-        for(const prop in state) {
-            // logger.log('info', "entry state: " + state[prop]);
-            if(prop in this.data === false) {
-                throw Error('state data mismatch');
+        //validate implementation methods against environment service descriptor
+        const serviceDescriptor = await environment.getServiceDescriptor(uuid);
+        if(!serviceDescriptor) {
+            throw Error('Environment descriptor for UUID ' + uuid + ' does not exist');
+        }
+        for(const method of serviceDescriptor.methods) {
+            if(implementation.prototype[method] instanceof Function === false) {
+                throw Error('Implementation is missing a method: ' + method);
             }
-            const entryState = state[prop];
-            this.data[prop].setState(entryState);
         }
-    }
-
-    assignMethod(name, callback) {
-        this.methods.set(name, callback);
+        //create service data
+        const serviceInstance = new implementation(environment);
+        serviceInstance.collection = new Collection(serviceDescriptor.uuid);
+        await serviceInstance.collection.init();
+        return serviceInstance;
     }
 
     async pushRequest(remoteHost, request) {
@@ -83,7 +86,7 @@ export class LocalService {
             hash: await ChunkingUtils.generateIdentifierForObject(request.data),
             status: 'done'
         };
-        logger.log('info', 'Service UUID: ' + this.definition.uuid
+        logger.log('info', 'Service UUID: ' + this.uuid
             + ' received payload:' + JSON.stringify(request.data));
         for(const prop in request.data) {
             const callback = this.methods.get(prop);
