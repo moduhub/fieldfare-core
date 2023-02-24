@@ -52,4 +52,5 @@ Thumbs.db
 /nbproject/private/
 /nvd
 /chunk
+/coverage
 /package-lock.json
