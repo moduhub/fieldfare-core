@@ -8,7 +8,7 @@ export * from '../../env/Environment';
 export * from '../../env/RemoteHost';
 export * from '../../env/LocalService';
 export * from '../../env/RemoteService';
-export * from '../../env/ServiceDefinition';
+export * from '../../env/ServiceDescriptor';
 
 export * from '../../trx/Message';
 export * from '../../trx/Request';

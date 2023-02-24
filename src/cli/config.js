@@ -202,8 +202,8 @@ async function selectServiceMenu(servicesArray) {
           return parts[1].slice(0,-1);
       }
     };
-    for await (const serviceDefinition of servicesArray) {
-        menu.choices.push(serviceDefinition.name + ' (uuid: ' + serviceDefinition.uuid + ')');
+    for await (const serviceDescriptor of servicesArray) {
+        menu.choices.push(serviceDescriptor.name + ' (uuid: ' + serviceDescriptor.uuid + ')');
     }
     menu.choices.push('Back');
     console.log(title('__________ Service Providers configuration __________'));
@@ -513,6 +513,7 @@ export async function main(args) {
 
     switch(options.operation) {
 
+        case undefined:
         case 'menu': {
             await mainMenu();
         } break;

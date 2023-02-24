@@ -1,5 +1,5 @@
 
-import { ServiceDefinition } from './ServiceDefinition';
+import { ServiceDescriptor } from './ServiceDescriptor';
 import { Message } from '../trx/Message';
 import { NVD } from '../basic/NVD';
 import { ChunkingUtils } from '../chunking/ChunkingUtils';
