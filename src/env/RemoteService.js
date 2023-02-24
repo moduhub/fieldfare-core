@@ -1,6 +1,6 @@
 
 import { LocalHost } from './LocalHost';
-import { ServiceDefinition } from './ServiceDefinition';
+import { ServiceDescriptor } from './ServiceDescriptor';
 import { ChunkingUtils } from '../chunking/ChunkingUtils';
 import { Request } from '../trx/Request';
 import { logger } from '../basic/Log';
@@ -43,7 +43,7 @@ export class RemoteService {
             };
         }
         //Assign service data elements
-        ServiceDefinition.buildData(definition, newService);
+        ServiceDescriptor.buildData(definition, newService);
         return newService;
     }
 
