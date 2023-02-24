@@ -13,14 +13,11 @@ export async function setEnvironmentUUID(uuid) {
 
 export async function setupEnvironment() {
 	const envUUID = await NVD.load('envUUID');
+    if(!envUUID) {
+        throw Error('Environemnt UUID not defined, please check your setup');;
+    }
     const env = new Environment(envUUID);
     await env.init();
-	LocalHost.addEnvironment(env);
-    //Serve webports
-    const servedWebports = await env.getWebports(LocalHost.getID());
-    for(const webport of servedWebports) {
-        LocalHost.serveWebport(webport);
-    }
     return env;
 }
 

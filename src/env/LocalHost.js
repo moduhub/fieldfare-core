@@ -70,33 +70,37 @@ export const LocalHost = {
 		}, 10000);
 	},
 
-	addEnvironment(env) {
-		if(env === null
-		|| env === undefined
-		|| env instanceof Environment === false) {
+
+	/**
+	 * Joining the environment means fetching all the services that are assigned to
+	 * this host identifier and implementing them by searching the local implementations
+	 * registered by LocalService.registerImplementation()
+	 * - If any implementation is missing, the process will fail by throwing an Error
+	 * @param {Environment} environment Environment to be joined
+	 */
+	async join(environment) {
+		if(environment === null
+		|| environment === undefined
+		|| environment instanceof Environment === false) {
 			throw Error('Invalid environment object');
 		}
-		if(localHost.environments.has(env) === false) {
-			localHost.environments.add(env);
-			logger.debug('New env registered: ' + env.uuid);
-		} else {
-			logger.warn('Env already registered ' + env.uuid);
+		if(localHost.environments.has(environment)) {
+			throw Error('Environment already joined before ' + environment.uuid);
 		}
-	},
-
-	async setupService(definition) {
-		var newService = LocalService.fromDefinition(definition);
-		//Register service under host mapping
-		localHost.services.set(definition.uuid, newService);
-		//recover last service state
-        const stateKey = definition.uuid;
-        const serviceState = await NVD.load(stateKey);
-		if(serviceState) {
-			newService.setState(serviceState);
-		} else {
-            logger.log('info', "Service state is null, localHost can be a first setup");
+		logger.debug('Joining new environment: ' + environment.uuid);
+		//Implement Local Services
+		const serviceArray = await environment.getServicesForHost(localHost.id);
+		logger.debug('List of services assigned to host: ' + JSON.stringify(serviceArray));
+		for(const serviceUUID of serviceArray) {
+			const newService = await LocalService.implement(serviceUUID, environment);
+			localHost.services.set(serviceUUID, newService);
         }
-		return newService;
+		//Serve assigned webports
+		const servedWebports = await environment.getWebports(LocalHost.getID());
+		for(const webport of servedWebports) {
+			LocalHost.serveWebport(webport);
+		}
+		localHost.environments.add(environment);
 	},
 
 	getLocalService(uuid) {
