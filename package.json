@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/moduhub/fieldfare"
+    "url": "git+https://github.com/moduhub/fieldfare.git"
   },
   "keywords": [
     "backend, framework, distributed, version-control"
@@ -57,5 +57,13 @@
     "@babel/preset-env": "^7.18.6",
     "cross-env": "^7.0.3",
     "jest": "^28.1.1"
+  },
+  "bugs": {
+    "url": "https://github.com/moduhub/fieldfare/issues"
+  },
+  "homepage": "https://github.com/moduhub/fieldfare#readme",
+  "directories": {
+    "doc": "doc",
+    "test": "test"
   }
 }
