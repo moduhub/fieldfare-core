@@ -10,7 +10,7 @@ import { Chunk } from '../chunking/Chunk';
 import { ChunkingUtils } from '../chunking/ChunkingUtils';
 import { AdministeredCollection } from '../versioning/AdministeredCollection';
 import { VersionStatement } from '../versioning/VersionStatement';
-import { ServiceDefinition } from './ServiceDefinition';
+import { ServiceDescriptor } from './ServiceDescriptor';
 import { NVD } from '../basic/NVD';
 import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
@@ -170,19 +170,21 @@ export class Environment extends AdministeredCollection {
 		return newProviders;
 	}
 
-	async getServicesForHost(hostid) {
+	async getServicesForHost(hostIdentifier) {
 		var list = [];
-		const services = this.elements.get('services');
-		for await(const chunk of services) {
-			const definition = chunk.expand();
-			// logger.info('iteration - definition: ' + JSON.stringify(definition));
-			const providerListName = definition.uuid + '.providers';
-			const providers = this.elements.get(providerListName);
-			if(await providers.has(hostid)) {
-				list.push(definition);
+		const services = await this.getElement('services');
+		if(services) {
+			for await(const [keyChunk, valueChunk] of services) {
+				const {uuid} = await keyChunk.expand();
+				const providerListName = uuid + '.providers';
+				const providers = await this.getElement(providerListName);
+				const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
+				const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier);
+				if(await providers.has(hostChunk)) {
+					list.push(uuid);
+				}
 			}
 		}
-		// logger.info('getServicesForHost return with list: ' + JSON.stringify(list));
 		return list;
 	}
 
@@ -190,7 +192,7 @@ export class Environment extends AdministeredCollection {
 		Utils.validateParameters(params, ['definition']);
 		logger.log('info', 'applyAddService params: ' + JSON.stringify(params));
 		const definition = params.definition;
-		ServiceDefinition.validate(definition);
+		ServiceDescriptor.validate(definition);
 		const definitionChunk = await Chunk.fromObject(definition);
 		const keyChunk = await Chunk.fromObject({
 			uuid: definition.uuid
@@ -268,17 +270,15 @@ export class Environment extends AdministeredCollection {
 		NVD.save(this.uuid, this.versionIdentifier);
     }
 
-	async getServiceDefinition(uuid) {
-		var definition;
-		const services = this.elements.get('services');
-		for await(const chunk of services) {
-			const service = await chunk.expand();
-			//logger.log('info', JSON.stringify(service));
-			if(service.uuid === uuid) {
-				return service;
-			}
+	async getServiceDescriptor(uuid) {
+		const services = await this.getElement('services');
+		if(services) {
+			const keyChunk = await Chunk.fromObject({uuid:uuid});
+			const descriptorChunk = await services.get(keyChunk);
+			const descriptor = descriptorChunk.expand(1);
+			return descriptor;
 		}
-		throw Error('service definition not found in env');
+		return undefined;
 	}
 
 	async hasService(uuid) {
