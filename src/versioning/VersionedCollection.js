@@ -9,8 +9,7 @@ import { VersionChain } from './VersionChain';
 import { NVD } from '../basic/NVD';
 import { Utils } from '../basic/Utils';
 import { logger } from '../basic/Log';
-
-const gTypeMap = new Map;
+import { Collection } from '../structures/Collection';
 
 /**
  * Represents a group of elements that can be altered
@@ -19,30 +18,10 @@ const gTypeMap = new Map;
  * them with all other hosts in the admin group, that may accept or
  * reject the changes based on a shared set of rules.
  */
-export class VersionedCollection {
+export class VersionedCollection extends Collection {
 
 	constructor(uuid) {
-		if(!uuid) {
-			throw Error('VersionedCollection UUID must be informed');
-		}
-		if(!Utils.isUUID(uuid)) {
-			throw Error('invalid UUID');
-		}
-		/**
-         * The versioned Collection UUID helps to uniquely identify the data collection,
-		 * avoiding conflicts in early commits/pull between similar collections. It is also
-		 * used to store the latest data state as NVD in the local host.
-         * @type {string}
-         * @private
-         */		
-		this.uuid = uuid;
-		/**
-         * A map of elements under version control, the key is a chunk that expands to an
-		 * object with a name property identifying the elements and the value is a descriptor chunk
-         * @type {ChunkMap}
-         * @private
-         */
-		this.elements = new ChunkMap(5);
+		super(uuid);
 		/**
          * List of methods that can alter the contents of the elements under version control
          * @type {Map}
@@ -54,10 +33,6 @@ export class VersionedCollection {
 		//this.methods.set('deleteElement', this.applyDeleteElement.bind(this));
 		this.versionIdentifier = '';
 		this.versionBlacklist = new Set();
-	}
-
-	static registerType(typeName, type) {
-		gTypeMap.set(typeName, type);
 	}
 
 	async init() {
@@ -235,9 +210,9 @@ export class VersionedCollection {
 		if('type' in descriptor == false) {
 			throw Error('missing type in element descriptor');
 		}
-		if(gTypeMap.has(descriptor.type) === false) {
-			throw Error('element type not registered');
-		}
+		// if(gTypeMap.has(descriptor.type) === false) {
+		// 	throw Error('element type not registered');
+		// }
 		const nameChunk = await Chunk.fromObject({name: params.name});
 		if(await this.elements.has(nameChunk)) {
 			if(merge) {
@@ -296,39 +271,6 @@ export class VersionedCollection {
 			deleteElement: params
 		});
 		await NVD.save(this.uuid, this.versionIdentifier);
-	}
-
-	/**
-	 * Retrieves from the current version of the collection the element identified
-	 * by the given name.
-	 * The element type must be registered previously using the registerType method.
-	 * @param {string} name name identifier of the object to be retrived
-	 * @param {string} version version of the collection from which the object will
-	 * be retrieved, defaults to lastest.
-	 * @return the element as an instance of the class given by its descriptor
-	 */
-	async getElement(name) {
-		const nameChunk = await Chunk.fromObject({name: name});
-		const descriptorChunk = await this.elements.get(nameChunk);
-		if(descriptorChunk) {
-			const descriptor = await descriptorChunk.expand(1);
-			const type = gTypeMap.get(descriptor.type);
-			if(type == null
-			|| type == undefined) {
-				throw Error('element type not registered');
-			}
-			return type.fromDescriptor(descriptor);
-		}
-		return undefined;
-	}
-
-	async updateElement(name, descriptor) {
-		const nameChunk = await Chunk.fromObject({name: name});
-		if(await this.elements.has(nameChunk) === false) {
-			throw Error('attempt to update element that does not exist: ' + name);
-		}
-		const descriptorChunk = await Chunk.fromObject(descriptor);
-		await this.elements.set(nameChunk, descriptorChunk);
 	}
 
 };

@@ -18,6 +18,7 @@ export * from '../../chunking/Chunk';
 export * from '../../chunking/ChunkingUtils';
 export * from '../../chunking/VolatileChunkManager';
 
+export * from '../../structures/Collection';
 export * from '../../structures/ChunkList';
 export * from '../../structures/ChunkSet';
 export * from '../../structures/ChunkMap';

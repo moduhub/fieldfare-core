@@ -4,8 +4,8 @@ import {NVD} from '../../basic/NVD';
 import { ChunkList } from './CommonExports';
 import { ChunkSet } from './CommonExports';
 import { ChunkMap } from './CommonExports';
-import { VersionedCollection } from './CommonExports';
-import {logger} from '../../basic/Log';
+import { Collection } from './CommonExports';
+
 
 export async function setEnvironmentUUID(uuid) {
 	await NVD.save('envUUID', uuid);
@@ -25,7 +25,7 @@ export async function setupEnvironment() {
 }
 
 export function setupBasicCollectionTypes() {
-    VersionedCollection.registerType('list', ChunkList);
-    VersionedCollection.registerType('set', ChunkSet);
-    VersionedCollection.registerType('map', ChunkMap);
+    Collection.registerType('list', ChunkList);
+    Collection.registerType('set', ChunkSet);
+    Collection.registerType('map', ChunkMap);
 }
