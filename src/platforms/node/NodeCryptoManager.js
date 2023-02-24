@@ -2,6 +2,7 @@ import { WebCryptoManager } from "../shared/WebCryptoManager";
 import { CryptoManager } from "../../basic/CryptoManager";
 import {NVD} from '../../basic/NVD';
 import {logger} from '../../basic/Log'
+import nodeCrypto from 'crypto';
 
 /**
  * The Node Crypto manager inherits from the WebCryptoManager
@@ -11,7 +12,6 @@ import {logger} from '../../basic/Log'
 export class NodeCryptoManager extends WebCryptoManager {
 
     static async init() {
-        const nodeCrypto = await import('crypto');
         global.crypto = nodeCrypto.webcrypto;
         CryptoManager.singleton(new NodeCryptoManager);
     }
@@ -52,7 +52,7 @@ export class NodeCryptoManager extends WebCryptoManager {
         || privateKeyJWK === null) {
             return this.generateLocalKeypair();
         }
-        logger.debug('privateKeyJWK: ' + JSON.stringify(privateKeyJWK));
+        // logger.debug('privateKeyJWK: ' + JSON.stringify(privateKeyJWK));
         const privateKey = await crypto.subtle.importKey(
             'jwk',
             privateKeyJWK,
