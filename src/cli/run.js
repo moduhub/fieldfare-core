@@ -2,7 +2,7 @@ import fs from 'fs';
 import arg from 'arg';
 import path from 'path';
 import {LocalHost} from '../env/LocalHost';
-import {ffinit} from '../platforms/node/NodeExports';
+import {ffinit, LocalService} from '../platforms/node/NodeExports';
 import {logger} from '../basic/Log'
 import {dashboard} from './dashboard';
 import chalk from 'chalk';
@@ -42,20 +42,21 @@ export async function main(args) {
     try {
         await ffinit.setupLocalHost();
         env = await ffinit.setupEnvironment();
-        const envWebports = env.elements.get('webports');
-        if(await envWebports.isEmpty()) {
-            const bootWebports = await ffinit.getBootWebports();
-            for(const webport of bootWebports) {
-                try {
-                    await LocalHost.connectWebport(webport);
-                    break;
-                } catch (error) {
-                    logger.error("Cannot reach " + webport.address + " at port " + webport.port + ' cause: ' + error);
-                }
-            }
-        }
+        // const envWebports = env.elements.get('webports');
+        // if(await envWebports.isEmpty()) {
+        //     const bootWebports = await ffinit.getBootWebports();
+        //     for(const webport of bootWebports) {
+        //         try {
+        //             await LocalHost.connectWebport(webport);
+        //             break;
+        //         } catch (error) {
+        //             logger.error("Cannot reach " + webport.address + " at port " + webport.port + ' cause: ' + error);
+        //         }
+        //     }
+        // }
     } catch (error) {
         logger.error('Fieldfare initialization failed: ' + error);
+        console.log(error.stack);
         process.exit(0);
     }
     if(options.dashboard) {
@@ -69,16 +70,17 @@ export async function main(args) {
     if(options.daemon) {
         logger.disable();
     }
+    //Fetch service implementations
     if(options.path !== '') {
         const fullpath = path.join(process.cwd(), options.path);
         try {
-            if(fs.existsSync(fullpath)) {
-                logger.info("Loading service from path " + fullpath);
-                const {setup} = await import(fullpath);
-                await setup(env);
-            } else {
+            if(!fs.existsSync(fullpath)) {
                 throw Error('File not found');
             }
+            logger.info("Loading service implementation from path " + fullpath);
+            const {uuid, implementation} = await import(fullpath);
+            LocalService.registerImplementation(uuid, implementation);
+            logger.info("Service " + uuid + " successfully installed");
         } catch (error) {
             logger.error(chalk.red("Failed to setup service module at \'" + options.path + '\': ' + error.stack));
             process.exit(1);
@@ -86,5 +88,6 @@ export async function main(args) {
     } else {
         logger.log('info', "No service defined, running environment basics only");
     }
-
+    logger.log('Joining environment ' + env.uuid);
+    await LocalHost.join(env);
 }
