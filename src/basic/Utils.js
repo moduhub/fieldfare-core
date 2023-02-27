@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 
+import {bytesToBase64, base64ToBytes} from './base64';
 
 export const Utils = {
 
@@ -34,15 +35,7 @@ export const Utils = {
 			.join('');
 	},
 
-	base64ToUint8Array: function (base64) {
-		var binary_string = atob(base64);
-		var len = binary_string.length;
-		var bytes = new Uint8Array(len);
-		for (var i = 0; i < len; i++) {
-			bytes[i] = binary_string.charCodeAt(i);
-		}
-		return bytes;
-	},
+	base64ToUint8Array: base64ToBytes,
 
 	base64ToArrayBuffer: function (base64) {
 		const uint8Array = Utils.base64ToUint8Array(base64);
@@ -59,18 +52,7 @@ export const Utils = {
 	  return result.toUpperCase();
   	},
 
-	uint8ArrayToBase64: function(uint8Array) {
-		if(uint8Array instanceof Uint8Array === false) {
-			throw Error('Expected an instance of Uint8Array, but received ' + buffer.constructor.name);
-		}
-		var binary = '';
-		var len = uint8Array.byteLength;
-		for (var i = 0; i < len; i++) {
-			binary += String.fromCharCode(uint8Array[i]);
-		}
-		const base64 = btoa(binary);
-		return base64;
-	},
+	uint8ArrayToBase64: bytesToBase64,
 
 	arrayBufferToBase64: function (buffer) {
 		if(buffer instanceof ArrayBuffer === false) {
@@ -88,11 +70,8 @@ export const Utils = {
 		if (str ==='' || str.trim() ==='') {
 			return false;
 		}
-		try {
-			return btoa(atob(str)) == str;
-		} catch (err) {
-			return false;
-		}
+		var base64regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
+		return base64regex.test(str);
 	},
 
 	validateParameters(params, mandatory, optional=[]) {
