@@ -4,7 +4,7 @@ import {Utils} from '../basic/Utils';
 export class ServiceDescriptor {
 
     static validate(descriptor) {
-        Utils.validateParameters(descriptor, ['uuid', 'name', 'methods', 'data']);
+        Utils.validateParameters(descriptor, ['uuid', 'name', 'methods', 'collection']);
         if(Utils.isUUID(descriptor.uuid) == false) {
             throw Error('service descriptor uuid invalid');
         }
@@ -15,8 +15,8 @@ export class ServiceDescriptor {
         if(descriptor.methods instanceof Array === false) {
             throw Error('descriptor methods must be an array');
         }
-        if(descriptor.data instanceof Array === false) {
-            throw Error('descriptor methods must be an array');
+        if(descriptor.collection instanceof Array === false) {
+            throw Error('descriptor collection must be an array');
         }
     }
     
