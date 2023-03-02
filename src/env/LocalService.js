@@ -83,6 +83,12 @@ export class LocalService {
     }
 
     async pushRequest(remoteHost, request) {
+        if(!remoteHost) {
+            throw Error('remote host is undefined');
+        }
+        if(!request) {
+            throw Error('request is undefined');
+        }
         const newRequest = {
             remoteHost: remoteHost,
             request: request
@@ -104,7 +110,11 @@ export class LocalService {
     }
 
     async treatRequest(remoteHost, request) {
+        console.log(request);
         this.numRequests++;
+        if(!request.data) {
+            throw Error('request contains no data');
+        }
         var responseData = {
             hash: await ChunkingUtils.generateIdentifierForObject(request.data),
             status: 'done'
@@ -112,12 +122,16 @@ export class LocalService {
         logger.log('info', 'Service UUID: ' + this.uuid
             + ' received payload:' + JSON.stringify(request.data));
         for(const prop in request.data) {
-            const callback = this.methods.get(prop);
-            if(callback
-            && callback !== null
-            && callback !== undefined) {
+            const methodImplementation = this[prop];
+            if(methodImplementation
+            && methodImplementation !== null
+            && methodImplementation !== undefined) {
+                if(!(methodImplementation instanceof Function)
+                && !(methodImplementation instanceof AsyncFunction)) {
+                    throw Error('mathod name not a valid function: ' + prop);
+                }
                 try {
-                    responseData.result = await callback(remoteHost, request.data[prop].params);
+                    responseData.result = await methodImplementation(remoteHost, request.data[prop]);
                 } catch (error) {
                     responseData.status = 'error';
                     responseData.error = error;
@@ -125,7 +139,7 @@ export class LocalService {
                 }
             } else {
                 responseData.status = 'error';
-                responseData.error = ('undefined method ' + prop);
+                responseData.error = ('undefined method: ' + prop);
                 this.numErrors++;
                 break;
             }
