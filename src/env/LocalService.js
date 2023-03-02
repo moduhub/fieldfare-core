@@ -23,6 +23,16 @@ export class LocalService {
      * @param {Object} implementation Class that implements the service methods
      */
     static registerImplementation(uuid, implementation) {
+        if(!Utils.isUUID(uuid)) {
+            throw Error('Invalid UUID');
+        }
+        const testInstance = new implementation;
+        if(!(testInstance instanceof LocalService)) {
+            throw Error('Invalid service implementation');
+        }
+        if(gServiceImplementations.has(uuid)) {
+            throw Error('Attempt to register duplicate uuid');
+        }
         gServiceImplementations.set(uuid, implementation);
     }
 
@@ -36,7 +46,7 @@ export class LocalService {
     static async implement(uuid, environment) {
         logger.debug('Implementing ' + JSON.stringify(uuid));
         if(Utils.isUUID(uuid) === false) {
-            throw Error('Invalid UUID');
+            throw Error('Invalid UUID: ' + JSON.stringify(uuid));
         }
         const implementation = gServiceImplementations.get(uuid);
         if(!implementation) {
@@ -45,7 +55,7 @@ export class LocalService {
         //validate implementation methods against environment service descriptor
         const serviceDescriptor = await environment.getServiceDescriptor(uuid);
         if(!serviceDescriptor) {
-            throw Error('Environment descriptor for UUID ' + uuid + ' does not exist');
+            throw Error('Environment did not define service: ' + uuid);
         }
         for(const method of serviceDescriptor.methods) {
             if(implementation.prototype[method] instanceof Function === false) {
@@ -56,6 +66,19 @@ export class LocalService {
         const serviceInstance = new implementation(environment);
         serviceInstance.collection = new Collection(serviceDescriptor.uuid);
         await serviceInstance.collection.init();
+        for await (const definedElement of serviceDescriptor.collection) {
+            const localElement = await serviceInstance.collection.getElement(definedElement.name);
+            if(localElement) {
+                const localElementDescriptor = localElement.descriptor;
+                for(const prop in definedElement.descriptor) {
+                    if(!localElementDescriptor.hasOwnProperty(prop)) {
+                        throw Error('mismatch between privous service state and environment provided descriptor');
+                    }
+                }
+            } else {
+                await serviceInstance.collection.createElement(definedElement.name, definedElement.descriptor);
+            }
+        }
         return serviceInstance;
     }
 
