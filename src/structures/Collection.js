@@ -75,6 +75,16 @@ export class Collection {
         await NVD.save(this.uuid, this.elements.descriptor);
 	}
 
+	static async expandDescriptor(descriptorChunk) {
+		const descriptor = await descriptorChunk.expand(1);
+		const type = gTypeMap.get(descriptor.type);
+		if(type == null
+		|| type == undefined) {
+			throw Error('element type not registered');
+		}
+		return type.fromDescriptor(descriptor);
+	}
+
 	/**
 	 * Retrieves from the the collection the element identified by the given name.
 	 * The element type must be registered previously using the registerType method.
@@ -85,15 +95,20 @@ export class Collection {
 		const nameChunk = await Chunk.fromObject({name: name});
 		const descriptorChunk = await this.elements.get(nameChunk);
 		if(descriptorChunk) {
-			const descriptor = await descriptorChunk.expand(1);
-			const type = gTypeMap.get(descriptor.type);
-			if(type == null
-			|| type == undefined) {
-				throw Error('element type not registered');
-			}
-			return type.fromDescriptor(descriptor);
+			return Collection.expandDescriptor(descriptorChunk);
 		}
 		return undefined;
+	}
+
+	/**
+	 * Iterates collection elements and returns their names and
+	 * type expanded values
+	 */
+	async* [Symbol.asyncIterator]() {
+		for await (const [keyChunk, valueChunk] of this.elements) {
+			const nameObject = await keyChunk.expand();
+			yield [nameObject.name, await Collection.expandDescriptor(valueChunk)];
+		}
 	}
 
 }
