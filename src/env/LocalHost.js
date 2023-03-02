@@ -77,8 +77,10 @@ export const LocalHost = {
 	/**
 	 * Joining the environment means fetching all the services that are assigned to
 	 * this host identifier and implementing them by searching the local implementations
-	 * registered by LocalService.registerImplementation()
-	 * - If any implementation is missing, the process will fail by throwing an Error
+	 * registered by LocalService.registerImplementation().
+	 * If any implementation is missing, the process will fail by throwing an Error.
+	 * The host will also iopen any webport assigned to its Identifier if the webport
+	 * implementation is defined locally.
 	 * @param {Environment} environment Environment to be joined
 	 */
 	async join(environment) {
