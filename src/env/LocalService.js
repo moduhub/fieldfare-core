@@ -23,11 +23,11 @@ export class LocalService {
     }
 
     /**
-     * Register a class that implements the service assigned to the given UUID
+     * Check implementation uuid and class for validity
      * @param {string} uuid UUIDv4 of the service
-     * @param {Object} implementation Class that implements the service methods
+     * @param {Object} implementation Class that implements a LocalService
      */
-    static registerImplementation(uuid, implementation) {
+    static validateImplementation(uuid, implementation) {
         if(!Utils.isUUID(uuid)) {
             throw Error('Invalid UUID');
         }
@@ -38,6 +38,15 @@ export class LocalService {
         if(gServiceImplementations.has(uuid)) {
             throw Error('Attempt to register duplicate uuid');
         }
+    }
+
+    /**
+     * Register a class that implements the service assigned to the given UUID
+     * @param {string} uuid UUIDv4 of the service
+     * @param {Object} implementation Class that implements the service methods
+     */
+    static registerImplementation(uuid, implementation) {
+        LocalService.validateImplementation(uuid, implementation);
         gServiceImplementations.set(uuid, implementation);
     }
 
