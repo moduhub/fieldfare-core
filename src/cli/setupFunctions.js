@@ -50,39 +50,79 @@ export async function setEnvironmentUUID(uuid) {
 
 }
 
+export async function getServiceImplementations() {
+    const implementationsJSON = await NVD.load('implementations');
+    if(implementationsJSON) {
+        return JSON.parse(implementationsJSON);
+    } else {
+        return undefined;
+    }
+}
+
+export async function validateServiceImplementation(filepath) {
+    const {uuid, implementation} = await import('file:' + filepath);
+    LocalService.validateImplementation(uuid, implementation);
+}
+
+export async function addServiceImplementation(filepath) {
+    const implementationsJSON = await NVD.load('implementations');
+    var implementations;
+    if(implementationsJSON === null
+    || implementationsJSON === undefined) {
+        implementations = [];
+    } else {
+        implementations = JSON.parse(implementationsJSON);
+    }
+    if(implementations.includes(filepath)) {
+        throw Error('Implementation already defined');
+    }
+    implementations.push(filepath);
+    await NVD.save('implementations', JSON.stringify(implementations));
+}
+
+export async function removeServiceImplementation(index) {
+    const implementationsJSON = await NVD.load('implementations');
+    var implementations;
+    if(implementationsJSON === null
+    || implementationsJSON === undefined) {
+        implementations = [];
+    } else {
+        implementations = JSON.parse(implementationsJSON);
+    }
+    if(index < 0 || index >= implementations.length) {
+        throw Error('Implementation index out of range');
+    }
+    implementations.splice(index, 1);
+    await NVD.save('implementations', JSON.stringify(implementations));
+}
+
+export async function removeAllServiceImplementations() {
+    await NVD.save('implementations', '[]');
+}
+
 export async function getBootWebports() {
-
     const webportsJSON = await NVD.load('bootWebports');
-
     if(webportsJSON) {
         return JSON.parse(webportsJSON);
     } else {
         return undefined;
     }
-
 }
 
 export async function addBootWebport(newWebportData) {
-
     const webportsJSON = await NVD.load('bootWebports');
-
     var webports;
-
     if(webportsJSON === null
     || webportsJSON === undefined) {
         webports = [];
     } else {
         webports = JSON.parse(webportsJSON);
     }
-
     if(webports.includes(newWebportData)) {
         throw Error('Webport already defined');
     }
-
     webports.push(newWebportData);
-
     await NVD.save('bootWebports', JSON.stringify(webports));
-
 }
 
 export async function removeBootWebport(index) {
@@ -95,7 +135,7 @@ export async function removeBootWebport(index) {
     || webportsJSON === undefined) {
         webports = [];
     } else {
-        webports = JSON.parse(webportsJSON);
+        webports = webportsJSON;
     }
 
     webports.splice(index, 1);

@@ -80,19 +80,35 @@ const inputServiceMethod = {
     message: 'Enter a new method name, leave blank to proceed to next step: '
 };
 
-const inputServiceElementType = {
+const inputCollectionElementName = {
+    type: 'input',
+    name: 'elementName',
+    message: 'Enter element name, leave blank to end: '
+};
+
+const inputCollectionElementType = {
     type: 'list',
-    name: 'dataType',
+    name: 'elementType',
     message: 'Choose new element type: ',
     choices: ['list', 'set', 'map', 'geofield']
 };
 
-const inputServiceElementName = {
+const inputCollectionElementDegree = {
     type: 'input',
-    name: 'dataName',
-    message: 'Enter element name, leave blank to end: '
+    name: 'degree',
+    message: 'Enter the element degree (number of element per node): ',
+    validate(value) {
+        const intValue = parseInt(value);
+        if(intValue < 1
+        || intValue > 10) {
+            return 'Please enter a number between 1 and 10';
+        }
+        return true;
+    },
+    filter(value) {
+        return parseInt(value);
+    }
 };
-
 
 function parseArgumentsIntoOptions(rawArgs) {
     const args = arg(
@@ -253,7 +269,7 @@ async function servicesMenu() {
                     uuid: uuid,
                     name: serviceName,
                     methods: [],
-                    data: []
+                    collection: []
                 };
                 while (true) {
                     const {methodName} = await inquirer.prompt(inputServiceMethod);
@@ -261,12 +277,16 @@ async function servicesMenu() {
                     definition.methods.push(methodName);
                 }
                 while (true) {
-                    const {dataName} = await inquirer.prompt(inputServiceElementName);
-                    if(dataName === '') break;
-                    const {dataType} = await inquirer.prompt(inputServiceElementType);
-                    definition.data.push({
-                        name: dataName,
-                        type: dataType
+                    const {elementName} = await inquirer.prompt(inputCollectionElementName);
+                    if(elementName === '') break;
+                    const {elementType} = await inquirer.prompt(inputCollectionElementType);
+                    const {degree} = await inquirer.prompt(inputCollectionElementDegree);
+                    definition.collection.push({
+                        name: elementName,
+                        descriptor: {
+                            type: elementType,
+                            degree: degree
+                        }
                     });
                 }
                 console.log("Please review the data entered: ");

@@ -1,10 +1,17 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
+
 import fs from 'fs';
 import arg from 'arg';
-import path from 'path';
-import {LocalHost} from '../env/LocalHost';
-import {ffinit, LocalService} from '../platforms/node/NodeExports';
-import {logger} from '../basic/Log'
-import {dashboard} from './dashboard';
+import {NVD} from '../basic/NVD.js';
+import {LocalHost} from '../env/LocalHost.js';
+import {ffinit, LocalService} from '../platforms/node/NodeExports.js';
+import {logger} from '../basic/Log.js'
+import {dashboard} from './dashboard.js';
 import chalk from 'chalk';
 
 var env;
@@ -70,20 +77,23 @@ export async function main(args) {
     if(options.daemon) {
         logger.disable();
     }
-    //Fetch service implementations
-    if(options.path !== '') {
-        const fullpath = path.join(process.cwd(), options.path);
-        try {
-            if(!fs.existsSync(fullpath)) {
-                throw Error('File not found');
+    //Fetch service implementations from NVD
+    const implementationFilesJSON = await NVD.load('implementations');
+    const implementationFiles = JSON.parse(implementationFilesJSON);
+    if(implementationFiles) {
+        for (const filepath of implementationFiles) {
+            logger.info("Loading service implementation from " + filepath);
+            try {
+                if(!fs.existsSync(filepath)) {
+                    throw Error('Service directory not found');
+                }
+                const {uuid, implementation} = await import('file:' + filepath);
+                LocalService.registerImplementation(uuid, implementation);
+                logger.info("Service " + uuid + " successfully installed");
+            } catch (error) {
+                logger.error(chalk.red("Failed to setup service module at \'" + options.path + '\': ' + error.stack));
+                process.exit(1);
             }
-            logger.info("Loading service implementation from path " + fullpath);
-            const {uuid, implementation} = await import(fullpath);
-            LocalService.registerImplementation(uuid, implementation);
-            logger.info("Service " + uuid + " successfully installed");
-        } catch (error) {
-            logger.error(chalk.red("Failed to setup service module at \'" + options.path + '\': ' + error.stack));
-            process.exit(1);
         }
     } else {
         logger.log('info', "No service defined, running environment basics only");

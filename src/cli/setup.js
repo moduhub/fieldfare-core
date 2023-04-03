@@ -1,16 +1,22 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
 import inquirer from 'inquirer';
-
-import * as actions from './setupFunctions'
-
-import {Utils} from '../basic/Utils';
+import inquirerFileTreeSelection from 'inquirer-file-tree-selection-prompt';
+import path from 'path';
+import chalk from 'chalk';
+import * as actions from './setupFunctions.js';
 
 import {
     inputWebport,
-    inputUUID
-} from './menuCommon';
-import { cryptoManager } from '../basic/CryptoManager';
-
+    inputUUID,
+    inputIndexBetween
+} from './menuCommon.js';
+import { cryptoManager } from '../basic/CryptoManager.js';
 
 async function environmentMenu() {
 
@@ -53,64 +59,120 @@ async function environmentMenu() {
     }
 }
 
-async function localHostMenu() {
+async function implementationsMenu() {
+    const prompt = {
+        type: 'list',
+        name: 'action',
+        message: 'Choose one action: ',
+        choices: ['Add Implementation', 'Remove Implementation', 'Remove All', 'Back'],
+    };
+    console.log("__________ Local Service Implementations __________");
+    const implementations = await actions.getServiceImplementations();
+    if(implementations && implementations.length > 0) {
+        console.table(implementations);
+    } else {
+        console.log(" <No implementations registered>");
+    }
+    const answer = await inquirer.prompt(prompt);
+    switch(answer.action) {
+        case 'Add Implementation': {
+            inquirer.registerPrompt('file-tree-selection', inquirerFileTreeSelection);
+            const fileChoice = await inquirer.prompt([
+                {
+                  type: 'file-tree-selection',
+                  name: 'file'
+                }
+              ]
+            );
+            const fullpath = path.normalize(fileChoice.file);
+            console.log(fullpath);
+            try {
+                await actions.validateServiceImplementation(fullpath);
+                await actions.addServiceImplementation(fullpath);
+            } catch (error) {
+                console.log(chalk.red("Failed to add new implementation: " + error));
+            }
+            implementationsMenu();
+        } break;
+        case 'Remove Implementation': {
+            if(implementations && implementations.length > 0) {
+                var index=0;
+                if(implementations.length > 1) {
+                    index = await inquirer.prompt(inputIndexBetween(0, implementations.length-1));
+                }
+                const {confirm} = await inquirer.prompt({
+                    type: 'confirm',
+                    name: 'confirm',
+                    message: "Are you sure you want to unregister this implementation?"
+                });
+                if(confirm) {
+                    await actions.removeServiceImplementation(index);
+                }
+            }
+            implementationsMenu();
+        } break;
+        case 'Remove All': {
+            if(implementations && implementations.length > 0) {
+                const {confirm} = await inquirer.prompt({
+                    type: 'confirm',
+                    name: 'confirm',
+                    message: "Are you sure you want to unregister all service implementations?"
+                });
+                if(confirm) {
+                    await actions.removeAllServiceImplementations();
+                }
+            }
+            implementationsMenu();
+        } break;
+        default:
+        case 'Back': {
+            mainMenu();
+        } break;
+    }
+}
 
+async function localHostMenu() {
     const prompt = {
       type: 'list',
       name: 'action',
       message: 'Choose one action: ',
       choices: ['Generate Private Key', 'Import Private Key', 'Back'],
     };
-
     console.log("__________ Local Host Configuration __________");
     console.log("| Current Host ID: " + await actions.getLocalHostID());
-
     const answer = await inquirer.prompt(prompt);
-
     switch(answer.action) {
         case 'Generate Private Key': {
-
             const {confirm} = await inquirer.prompt({
                 type: 'confirm',
                 name: 'confirm',
                 message: "Are you sure you want to drop previous key pair?"
             });
-
             if(confirm) {
                 await cryptoManager.generateLocalKeypair();
             }
-
             localHostMenu();
-
         } break;
-
         default:
             mainMenu();
     }
-
 }
 
 async function bootWebportsMenu() {
-
     const prompt = {
       type: 'list',
       name: 'action',
       message: 'Choose one action: ',
       choices: ['Add Webport', 'Remove Webport', 'Remove All', 'Back'],
     };
-
     console.log("__________ Boot Webports Configuration __________");
-
     const webports = await actions.getBootWebports();
-
     if(webports) {
         console.table(webports);
     } else {
         console.log(" <No boot webports defined>");
     }
-
     const answer = await inquirer.prompt(prompt);
-
     switch(answer.action) {
         case 'Add Webport':
             const answers = await inquirer.prompt(inputWebport);
@@ -120,34 +182,13 @@ async function bootWebportsMenu() {
             break;
 
         case 'Remove Webport': {
-            if(webports
-            && webports.length > 0) {
+            if(webports && webports.length > 0) {
                 var index = 0;
                 if(webports.length > 1) {
-                    const answer = await inquirer.prompt({
-                        type: 'input',
-                        name: 'index',
-                        validate(value) {
-                            if(value !== undefined
-                            && value !== null
-                            && value !== '') {
-                                const number = parseInt(value);
-                                if(value >= 0
-                                && value < webports.length) {
-                                    return true;
-                                }
-                            }
-
-                            return "Enter an index between (including) 0 and " + (webports.length-1);
-                        }
-                    });
-                    index = parseInt(answer.index);
-                }
-
+                    index = await inquirer.prompt(inputIndexBetween(0, webports.length-1));
+                }           
                 const webportToRemove = webports[index];
-
                 console.table(webportToRemove);
-
                 const {confirm} = await inquirer.prompt({
                     type: 'confirm',
                     name: 'confirm',
@@ -189,7 +230,7 @@ function mainMenu() {
       type: 'list',
       name: 'submenu',
       message: 'Choose one module to configure: ',
-      choices: ['Local Host', 'Environment', 'Boot Webports', 'Exit'],
+      choices: ['Local Host', 'Environment', 'Service Implementations', 'Boot Webports', 'Exit'],
     };
 
     console.log('--- Fieldfare Host configuration ---');
@@ -202,6 +243,10 @@ function mainMenu() {
 
             case 'Environment':
                 environmentMenu();
+                break;
+
+            case 'Service Implementations':
+                implementationsMenu();
                 break;
 
             case 'Boot Webports':
