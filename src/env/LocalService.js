@@ -72,7 +72,8 @@ export class LocalService {
             throw Error('Environment did not define service: ' + uuid);
         }
         for(const method of serviceDescriptor.methods) {
-            if(implementation.prototype[method] instanceof Function === false) {
+            if(implementation.prototype[method] instanceof Function === false
+            && implementation.prototype[method] instanceof AsyncFunction === false) {
                 throw Error('Implementation is missing a method: ' + method);
             }
         }
