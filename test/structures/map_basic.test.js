@@ -6,6 +6,8 @@ import {
     logger
 } from 'fieldfare/test';
 
+import {jest} from '@jest/globals';
+
 const numCreatedElements = 100;
 const numNonExistingKeys = Math.floor(numCreatedElements/5);
 const numRemovedKeys = Math.floor(numCreatedElements/5);

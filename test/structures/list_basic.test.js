@@ -6,6 +6,8 @@ import {
     logger
 } from 'fieldfare/test';
 
+import {jest} from '@jest/globals';
+
 const numCreatedChunks = 100;
 
 const createdChunks = [];

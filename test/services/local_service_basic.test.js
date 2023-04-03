@@ -1,7 +1,7 @@
 import {
     ffinit,
     cryptoManager,
-    LocalHost,
+    HostIdentifier,
     RemoteHost,
     Message,
     LocalService,
@@ -12,7 +12,8 @@ import {
     Chunk,
     logger
 } from 'fieldfare/test';
-import { HostIdentifier } from '../../src/env/HostIdentifier';
+
+import {jest} from '@jest/globals';
 
 const gTestEnvironment = new Environment('c7a89589-b875-4b1b-a757-3a59d2e86c8e');
 var gTestService;
