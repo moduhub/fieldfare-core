@@ -53,6 +53,9 @@ export class Collection {
 	}
 
 	async createElement(name, descriptor) {
+		if(!descriptor) {
+			throw Error('descriptor must be informed');
+		}
         if(gTypeMap.has(descriptor.type) === false) {
             throw Error('unsupported element type');
         }
