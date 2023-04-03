@@ -30,7 +30,10 @@ export const localHost = {
 
 
 export const LocalHost = {
-
+	/**
+	 * Get the host identifier of the local host
+	 * @returns {string} Host Identifier
+	 */
 	getID() {
 		return localHost.id;
 	},

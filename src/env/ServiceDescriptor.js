@@ -9,6 +9,11 @@ import {Utils} from '../basic/Utils.js';
 
 export class ServiceDescriptor {
 
+    /**
+     * Verify service descriptor fields, throw error on any
+     * invalid, surplus or missing information.
+     * @param {Object} descriptor The service descriptor to be validated
+     */
     static validate(descriptor) {
         Utils.validateParameters(descriptor, ['uuid', 'name', 'methods', 'collection']);
         if(Utils.isUUID(descriptor.uuid) == false) {
