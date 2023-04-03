@@ -1,17 +1,17 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
  */
 
-import { LocalHost } from '../env/LocalHost';
-import { ChunkManager } from '../chunking/ChunkManager';
-import { RemoteService } from './RemoteService';
-import { Message } from '../trx/Message';
-import { Utils } from '../basic/Utils';
-import { logger } from '../basic/Log';
-import { cryptoManager } from '../basic/CryptoManager';
-
+import { LocalHost } from '../env/LocalHost.js';
+import { ChunkManager } from '../chunking/ChunkManager.js';
+import { RemoteService } from './RemoteService.js';
+import { Message } from '../trx/Message.js';
+import { Utils } from '../basic/Utils.js';
+import { logger } from '../basic/Log.js';
+import { cryptoManager } from '../basic/CryptoManager.js';
 
 export class RemoteHost {
 

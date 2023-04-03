@@ -1,4 +1,11 @@
-import { LocalService } from '../LocalService';
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
+
+import { LocalService } from '../LocalService.js';
 
 export {SnapshotService as implementation};
 

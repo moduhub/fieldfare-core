@@ -1,20 +1,19 @@
 /**
  * Fieldfare: Backend framework for distributed networks
  *
- * Copyright 2021-2022 Adan Kvitschal
+ * Copyright 2021-2023 Adan Kvitschal
  * ISC LICENSE
  */
 
-import { Chunk } from '../chunking/Chunk';
-import { HostIdentifier } from './HostIdentifier';
-import { Environment } from '../env/Environment';
-import { LocalService } from './LocalService';
-import { RemoteHost } from './RemoteHost';
-import { Message } from '../trx/Message';
-import { NVD } from '../basic/NVD';
-import { Utils } from '../basic/Utils';
-import { logger } from '../basic/Log';
-import { cryptoManager } from '../basic/CryptoManager';
+import { Chunk } from '../chunking/Chunk.js';
+import { HostIdentifier } from './HostIdentifier.js';
+import { Environment } from '../env/Environment.js';
+import { LocalService } from './LocalService.js';
+import { RemoteHost } from './RemoteHost.js';
+import { Message } from '../trx/Message.js';
+import { Utils } from '../basic/Utils.js';
+import { logger } from '../basic/Log.js';
+import { cryptoManager } from '../basic/CryptoManager.js';
 
 
 export const localHost = {

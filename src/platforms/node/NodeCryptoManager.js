@@ -1,7 +1,13 @@
-import { WebCryptoManager } from "../shared/WebCryptoManager";
-import { CryptoManager } from "../../basic/CryptoManager";
-import {NVD} from '../../basic/NVD';
-import {logger} from '../../basic/Log'
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
+
+import { WebCryptoManager } from "../shared/WebCryptoManager.js";
+import { CryptoManager } from "../../basic/CryptoManager.js";
+import {NVD} from '../../basic/NVD.js';
 import nodeCrypto from 'crypto';
 
 /**

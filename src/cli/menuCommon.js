@@ -1,5 +1,11 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import {Utils} from '../basic/Utils';
+import {Utils} from '../basic/Utils.js';
 
 import {v4 as uuidv4 } from 'uuid';
 
@@ -57,3 +63,29 @@ export const inputWebport = [
         }
     }
 ];
+
+export const inputIndexBetween = (min, max) => {
+    if(min===max) {
+        return min;
+    } else {
+        return {
+            type: 'input',
+            name: 'index',
+            validate(value) {
+                if(value !== undefined
+                && value !== null
+                && value !== '') {
+                    const number = parseInt(value);
+                    if(value >= min
+                    && value <= max) {
+                        return true;
+                    }
+                }
+                return "Enter an index between (including) " + min + " and " + max;
+            },
+            filter(value) {
+                return parseInt(value);
+            }
+        };
+    }
+}

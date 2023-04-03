@@ -1,5 +1,12 @@
-import { WebCryptoManager } from "../shared/WebCryptoManager";
-import { CryptoManager } from "../../basic/CryptoManager";
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
+
+import { WebCryptoManager } from "../shared/WebCryptoManager.js";
+import { CryptoManager } from "../../basic/CryptoManager.js";
 import nodeCrypto from 'crypto';
 
 /**

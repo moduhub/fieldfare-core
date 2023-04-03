@@ -1,10 +1,15 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import { ServiceDescriptor } from './ServiceDescriptor';
-import { Message } from '../trx/Message';
-import { ChunkingUtils } from '../chunking/ChunkingUtils';
-import { Collection } from '../structures/Collection';
-import { Utils } from '../basic/Utils';
-import { logger } from '../basic/Log';
+import { Message } from '../trx/Message.js';
+import { ChunkingUtils } from '../chunking/ChunkingUtils.js';
+import { Collection } from '../structures/Collection.js';
+import { Utils } from '../basic/Utils.js';
+import { logger } from '../basic/Log.js';
 
 const gServiceImplementations = new Map;
 

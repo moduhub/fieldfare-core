@@ -1,11 +1,17 @@
-import { VersionedCollection } from "./VersionedCollection";
-import { LocalHost } from "../env/LocalHost";
-import { Chunk } from "../chunking/Chunk";
-import { Utils } from "../basic/Utils";
-import { NVD } from "../basic/NVD";
-import { logger } from "../basic/Log";
-import { HostIdentifier } from "../env/HostIdentifier";
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
+import { VersionedCollection } from "./VersionedCollection.js";
+import { LocalHost } from "../env/LocalHost.js";
+import { Chunk } from "../chunking/Chunk.js";
+import { Utils } from "../basic/Utils.js";
+import { NVD } from "../basic/NVD.js";
+import { logger } from "../basic/Log.js";
+import { HostIdentifier } from "../env/HostIdentifier.js";
 
 export class AdministeredCollection extends VersionedCollection {
 

@@ -1,15 +1,20 @@
-// 2023 Adan Kvitschal <adan@moduhub.com>
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import { LocalHost } from '../env/LocalHost';
-import { Chunk } from '../chunking/Chunk';
-import { ChunkingUtils } from '../chunking/ChunkingUtils';
-import { ChunkMap } from '../structures/ChunkMap';
-import { VersionStatement } from './VersionStatement';
-import { VersionChain } from './VersionChain';
-import { NVD } from '../basic/NVD';
-import { Utils } from '../basic/Utils';
-import { logger } from '../basic/Log';
-import { Collection } from '../structures/Collection';
+import { LocalHost } from '../env/LocalHost.js';
+import { Chunk } from '../chunking/Chunk.js';
+import { ChunkingUtils } from '../chunking/ChunkingUtils.js';
+import { ChunkMap } from '../structures/ChunkMap.js';
+import { VersionStatement } from './VersionStatement.js';
+import { VersionChain } from './VersionChain.js';
+import { NVD } from '../basic/NVD.js';
+import { Utils } from '../basic/Utils.js';
+import { logger } from '../basic/Log.js';
+import { Collection } from '../structures/Collection.js';
 
 /**
  * Represents a group of elements that can be altered

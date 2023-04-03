@@ -1,11 +1,17 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-export * from '../shared/CommonExports';
+export * from '../shared/CommonExports.js';
 
-export * from '../shared/WebClientTransceiver';
+export * from '../shared/WebClientTransceiver.js';
 
-export * from './BrowserCryptoManager';
+export * from './BrowserCryptoManager.js';
 
-export * from './IndexedDBNVD';
-export * from './IndexedDBChunkManager';
+export * from './IndexedDBNVD.js';
+export * from './IndexedDBChunkManager.js';
 
-export * as ffinit from './BrowserSetup';
+export * as ffinit from './BrowserSetup.js';

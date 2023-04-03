@@ -1,7 +1,12 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import {IndexedDBBase} from './IndexedDBBase';
-import {NVD} from '../../basic/NVD';
-
+import {IndexedDBBase} from './IndexedDBBase.js';
+import {NVD} from '../../basic/NVD.js';
 
 export class IndexedDBNVD {
 

@@ -1,7 +1,13 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import { ChunkManager } from './ChunkManager';
-import { ChunkingUtils } from './CommonExports';
-import { logger } from '../basic/Log';
+import { ChunkManager } from './ChunkManager.js';
+import { ChunkingUtils } from './CommonExports.js';
+import { logger } from '../basic/Log.js';
 
 const { Level } = require('level');
 

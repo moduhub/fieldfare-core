@@ -1,11 +1,18 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import { ChunkingUtils } from '../chunking/ChunkingUtils';
-import { LevelNVD } from '../platforms/node/LevelNVD';
-import { NVD } from '../basic/NVD';
-import { Utils } from '../basic/Utils';
-import { cryptoManager } from '../basic/CryptoManager';
-import { NodeCryptoManager } from '../platforms/node/NodeCryptoManager';
-import { logger } from '../basic/Log';
+import { ChunkingUtils } from '../chunking/ChunkingUtils.js';
+import { LevelNVD } from '../platforms/node/LevelNVD.js';
+import { NVD } from '../basic/NVD.js';
+import { Utils } from '../basic/Utils.js';
+import { cryptoManager } from '../basic/CryptoManager.js';
+import { NodeCryptoManager } from '../platforms/node/NodeCryptoManager.js';
+import { LocalService } from '../env/LocalService.js';
+import { logger } from '../basic/Log.js';
 
 export async function init() {
     LevelNVD.init();

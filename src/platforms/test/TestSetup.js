@@ -1,9 +1,16 @@
-import { LocalHost } from '../../env/LocalHost';
-import { TestNVD } from './TestNVD';
-import { TestCryptoManager } from './TestCryptoManager';
-import { VolatileChunkManager } from './TestExports';
-import { cryptoManager } from '../../basic/CryptoManager';
-import { setupBasicCollectionTypes } from '../shared/CommonSetup';
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
+
+import { LocalHost } from '../../env/LocalHost.js';
+import { TestNVD } from './TestNVD.js';
+import { TestCryptoManager } from './TestCryptoManager.js';
+import { VolatileChunkManager } from './TestExports.js';
+import { cryptoManager } from '../../basic/CryptoManager.js';
+import { setupBasicCollectionTypes } from '../shared/CommonSetup.js';
 
 export * from '../shared/CommonSetup';
 

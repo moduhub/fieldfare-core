@@ -5,7 +5,6 @@
  * ISC LICENSE
  */
 
-
 export class Message {
 
 	constructor(service, data) {

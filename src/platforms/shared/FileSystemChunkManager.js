@@ -1,6 +1,12 @@
-import { ChunkManager } from '../../chunking/ChunkManager';
-import { ChunkingUtils } from './CommonExports';
-import { logger } from '../../basic/Log';
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
+
+import { ChunkManager } from '../../chunking/ChunkManager.js';
+import { logger } from '../../basic/Log.js';
 
 export class FileSystemChunkManager extends ChunkManager {
 

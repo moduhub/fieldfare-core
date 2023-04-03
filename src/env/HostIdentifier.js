@@ -1,6 +1,12 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import { chunkIdentifierPrefix, ChunkingUtils } from "../chunking/ChunkingUtils";
-import { Utils } from "../basic/Utils";
+import { chunkIdentifierPrefix, ChunkingUtils } from "../chunking/ChunkingUtils.js";
+import { Utils } from "../basic/Utils.js";
 
 const hostIdentifierPrefix = 'h:';
 

@@ -1,5 +1,11 @@
-import {Utils} from '../basic/Utils';
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
+import {Utils} from '../basic/Utils.js';
 
 export class ServiceDescriptor {
 

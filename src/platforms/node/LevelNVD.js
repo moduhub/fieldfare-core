@@ -1,7 +1,12 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-const { Level } = require('level');
-
-import {NVD} from '../../basic/NVD'
+import { Level } from 'level';
+import { NVD } from '../../basic/NVD.js'
 
 export class LevelNVD {
 

@@ -1,14 +1,14 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
  */
 
-const dgram = require('dgram');
+import dgram from 'dgram';
 
-import {Transceiver} from '../../trx/Transceiver';
-import {Utils} from '../../basic/Utils';
-import {logger} from '../../basic/Log';
+import {Transceiver} from '../../trx/Transceiver.js';
+import {logger} from '../../basic/Log.js';
 
 const minUDPPort = 10000;
 const maxUDPPort = 60000;

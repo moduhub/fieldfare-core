@@ -1,17 +1,21 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import { LocalHost } from '../../env/LocalHost'
-import { LevelChunkManager } from './LevelChunkManager';
-import { LevelNVD } from './LevelNVD';
-import { WebServerTransceiver } from './WebServerTransceiver';
-import { UDPTransceiver } from './UDPTransceiver';
-import { NodeCryptoManager } from './NodeCryptoManager';
-import { NVD } from '../../basic/NVD';
-import { logger } from '../../basic/Log';
-import { cryptoManager } from '../../basic/CryptoManager';
-import { setupBasicCollectionTypes } from './NodeSetup';
+import { LocalHost } from '../../env/LocalHost.js'
+import { LevelChunkManager } from './LevelChunkManager.js';
+import { LevelNVD } from './LevelNVD.js';
+import { WebServerTransceiver } from './WebServerTransceiver.js';
+import { UDPTransceiver } from './UDPTransceiver.js';
+import { NodeCryptoManager } from './NodeCryptoManager.js';
+import { NVD } from '../../basic/NVD.js';
+import { cryptoManager } from '../../basic/CryptoManager.js';
+import { setupBasicCollectionTypes } from './NodeSetup.js';
 
-
-export * from '../shared/CommonSetup';
+export * from '../shared/CommonSetup.js';
 
 export async function setupLocalHost() {
     LevelNVD.init();

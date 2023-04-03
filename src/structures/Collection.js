@@ -1,10 +1,16 @@
-import { Chunk } from "../chunking/Chunk";
-import { ChunkMap } from "./ChunkMap";
-import { NVD } from "../basic/NVD";
-import { Utils } from "../basic/Utils";
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
+import { Chunk } from "../chunking/Chunk.js";
+import { ChunkMap } from "./ChunkMap.js";
+import { NVD } from "../basic/NVD.js";
+import { Utils } from "../basic/Utils.js";
 
-const gTypeMap = new Map;
+export const gTypeMap = new Map;
 
 export class Collection {
 

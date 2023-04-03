@@ -1,6 +1,13 @@
-import { Chunk } from '../chunking/Chunk';
-import { Utils } from './Utils';
-import { logger } from './Log';
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
+
+import { Chunk } from '../chunking/Chunk.js';
+import { Utils } from './Utils.js';
+import { logger } from './Log.js';
 
 export var cryptoManager;
 

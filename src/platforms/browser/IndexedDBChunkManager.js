@@ -1,8 +1,13 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import { ChunkManager } from '../../chunking/ChunkManager';
-import { ChunkingUtils } from './BrowserExports';
-import { IndexedDBBase } from './IndexedDBBase';
-
+import { ChunkManager } from '../../chunking/ChunkManager.js';
+import { ChunkingUtils } from './BrowserExports.js';
+import { IndexedDBBase } from './IndexedDBBase.js';
 
 export class IndexedDBResourcesManager extends ChunkManager {
 

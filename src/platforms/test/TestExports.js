@@ -1,9 +1,16 @@
-export * from '../shared/CommonExports';
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-export * from './TestCryptoManager';
+export * from '../shared/CommonExports.js';
 
-export * from './TestNVD';
+export * from './TestCryptoManager.js';
 
-export * from '../../basic/CryptoManager';
+export * from './TestNVD.js';
 
-export * as ffinit from './TestSetup';
+export * from '../../basic/CryptoManager.js';
+
+export * as ffinit from './TestSetup.js';

@@ -1,8 +1,13 @@
-// 2023 Adan Kvitschal <adan@moduhub.com>
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import { Chunk } from '../chunking/Chunk';
-import { TreeBranch } from './TreeBranch';
-import { TreeContainer } from './TreeContainer';
+import { Chunk } from '../chunking/Chunk.js';
+import { TreeBranch } from './TreeBranch.js';
+import { TreeContainer } from './TreeContainer.js';
  
 export class ChunkTree {
 

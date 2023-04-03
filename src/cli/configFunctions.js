@@ -1,5 +1,11 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import {logger} from '../basic/Log'
+import {logger} from '../basic/Log.js'
 
 export async function addServedWebport(options) {
 

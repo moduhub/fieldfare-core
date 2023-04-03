@@ -5,7 +5,6 @@
  * ISC LICENSE
  */
 
-
 export class Transceiver {
 
 	constructor() {

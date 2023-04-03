@@ -5,8 +5,8 @@
  * ISC LICENSE
  */
 
-import { Message } from './Message';
-import { logger } from '../basic/Log';
+import { Message } from './Message.js';
+import { logger } from '../basic/Log.js';
 
 export class Request extends Message {
 

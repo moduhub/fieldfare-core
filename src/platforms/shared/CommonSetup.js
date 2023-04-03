@@ -1,10 +1,17 @@
-import {LocalHost} from '../../env/LocalHost';
-import {Environment} from '../../env/Environment';
-import {NVD} from '../../basic/NVD';
-import { ChunkList } from './CommonExports';
-import { ChunkSet } from './CommonExports';
-import { ChunkMap } from './CommonExports';
-import { Collection } from './CommonExports';
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
+
+import {LocalHost} from '../../env/LocalHost.js';
+import {Environment} from '../../env/Environment.js';
+import {NVD} from '../../basic/NVD.js';
+import { ChunkList } from './CommonExports.js';
+import { ChunkSet } from './CommonExports.js';
+import { ChunkMap } from './CommonExports.js';
+import { Collection } from './CommonExports.js';
 
 
 export async function setEnvironmentUUID(uuid) {

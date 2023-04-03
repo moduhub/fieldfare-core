@@ -1,12 +1,18 @@
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import {LocalHost} from '../../env/LocalHost';
-import {BrowserCryptoManager} from './BrowserCryptoManager';
-import {VolatileChunkManager} from '../../chunking/VolatileChunkManager';
-import {IndexedDBChunkManager} from './IndexedDBChunkManager';
-import {IndexedDBNVD} from './IndexedDBNVD';
-import {WebClientTransceiver} from '../shared/WebClientTransceiver';
-import {logger} from '../../basic/Log';
-import {cryptoManager} from '../../basic/CryptoManager';
+import {LocalHost} from '../../env/LocalHost.js';
+import {BrowserCryptoManager} from './BrowserCryptoManager.js';
+import {VolatileChunkManager} from '../../chunking/VolatileChunkManager.js';
+import {IndexedDBChunkManager} from './IndexedDBChunkManager.js';
+import {IndexedDBNVD} from './IndexedDBNVD.js';
+import {WebClientTransceiver} from '../shared/WebClientTransceiver.js';
+import {logger} from '../../basic/Log.js';
+import {cryptoManager} from '../../basic/CryptoManager.js';
 
 export * from '../shared/CommonSetup.js';
 

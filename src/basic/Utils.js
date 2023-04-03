@@ -5,7 +5,7 @@
  * ISC LICENSE
  */
 
-import {bytesToBase64, base64ToBytes} from './base64';
+import {bytesToBase64, base64ToBytes} from './base64.js';
 
 export const Utils = {
 

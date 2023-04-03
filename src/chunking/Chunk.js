@@ -1,6 +1,13 @@
-import { ChunkManager } from "./ChunkManager";
-import { ChunkingUtils } from "./ChunkingUtils";
-import { Utils } from "../basic/Utils";
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
+
+import { ChunkManager } from "./ChunkManager.js";
+import { ChunkingUtils } from "./ChunkingUtils.js";
+import { Utils } from "../basic/Utils.js";
 
 export class Chunk {
 

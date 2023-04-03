@@ -1,32 +1,39 @@
-export * from '../../basic/Log';
-export * from '../../basic/NVD';
-export * from '../../basic/Utils';
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-export * from '../../env/LocalHost';
-export * from '../../env/HostIdentifier';
-export * from '../../env/Environment';
-export * from '../../env/RemoteHost';
-export * from '../../env/LocalService';
-export * from '../../env/RemoteService';
-export * from '../../env/ServiceDescriptor';
+export * from '../../basic/Log.js';
+export * from '../../basic/NVD.js';
+export * from '../../basic/Utils.js';
 
-export * from '../../trx/Message';
-export * from '../../trx/Request';
-export * from '../../trx/Transceiver';
+export * from '../../env/LocalHost.js';
+export * from '../../env/HostIdentifier.js';
+export * from '../../env/Environment.js';
+export * from '../../env/RemoteHost.js';
+export * from '../../env/LocalService.js';
+export * from '../../env/RemoteService.js';
+export * from '../../env/ServiceDescriptor.js';
 
-export * from '../../chunking/Chunk';
-export * from '../../chunking/ChunkingUtils';
-export * from '../../chunking/VolatileChunkManager';
+export * from '../../trx/Message.js';
+export * from '../../trx/Request.js';
+export * from '../../trx/Transceiver.js';
 
-export * from '../../structures/Collection';
-export * from '../../structures/ChunkList';
-export * from '../../structures/ChunkSet';
-export * from '../../structures/ChunkMap';
+export * from '../../chunking/Chunk.js';
+export * from '../../chunking/ChunkingUtils.js';
+export * from '../../chunking/VolatileChunkManager.js';
 
-export * from '../../versioning/VersionChain';
-export * from '../../versioning/VersionStatement';
-export * from '../../versioning/VersionedCollection';
-export * from '../../versioning/AdministeredCollection';
+export * from '../../structures/Collection.js';
+export * from '../../structures/ChunkList.js';
+export * from '../../structures/ChunkSet.js';
+export * from '../../structures/ChunkMap.js';
 
-export * from './CommonSetup';
-export * from './WebClientTransceiver';
+export * from '../../versioning/VersionChain.js';
+export * from '../../versioning/VersionStatement.js';
+export * from '../../versioning/VersionedCollection.js';
+export * from '../../versioning/AdministeredCollection.js';
+
+export * from './CommonSetup.js';
+export * from './WebClientTransceiver.js';

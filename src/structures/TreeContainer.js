@@ -1,9 +1,13 @@
-// 2023 Adan Kvitschal <adan@moduhub.com>
+/**
+ * Fieldfare: Backend framework for distributed networks
+ *
+ * Copyright 2021-2023 Adan Kvitschal
+ * ISC LICENSE
+ */
 
-import { Chunk } from '../chunking/Chunk';
-import { ChunkingUtils } from '../chunking/ChunkingUtils';
-import { ChunkManager } from '../chunking/ChunkManager';
-import { Utils } from '../basic/Utils';
+import { Chunk } from '../chunking/Chunk.js';
+import { ChunkingUtils } from '../chunking/ChunkingUtils.js';
+import { Utils } from '../basic/Utils.js';
 
 /**
  * TreeContainer class is the basic building block for any HashLinked Tree strucutre,
