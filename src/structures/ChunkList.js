@@ -68,10 +68,7 @@ export class ChunkList {
 			throw Error('Descriptor type is not compatible with chunk list');
 		}
 		if(descriptor.last) {
-			if(descriptor.last instanceof Chunk === false) {
-				throw Error('List descriptor does not contain a valid container pointer');
-			}
-			this.last = descriptor.last;
+			this.last = Chunk.fromIdentifier(descriptor.last);
 		}
 		if(descriptor.owner) {
 			if(descriptor.owner instanceof Chunk === false) {
@@ -84,8 +81,8 @@ export class ChunkList {
 	get descriptor() {
 		return {
             type: 'set',
-            degree: this.last,
-            root: this.rootChunk
+            degree: this.degree,
+            root: this.last?.id
         };
 	}
 

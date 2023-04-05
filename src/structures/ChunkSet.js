@@ -33,10 +33,7 @@ export class ChunkSet extends ChunkTree {
         }
         this.degree = descriptor.degree;
         if(descriptor.root) {
-            if(descriptor.root instanceof Chunk === false) {
-                throw Error("ChunkSet descriptor contains an invalid root: " + JSON.stringify(descriptor.root));
-            }
-            this.rootChunk = descriptor.root;
+            this.rootChunk = Chunk.fromIdentifier(descriptor.root);
         } else {
             this.rootChunk = undefined;
         }
@@ -46,7 +43,7 @@ export class ChunkSet extends ChunkTree {
 		return {
             type: 'set',
             degree: this.degree,
-            root: this.rootChunk
+            root: this.rootChunk?.id
         };
 	}
 

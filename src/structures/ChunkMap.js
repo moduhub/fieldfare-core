@@ -19,7 +19,7 @@ export class ChunkMap extends ChunkTree {
 
     static async fromDescriptor(descriptor) {
         if(descriptor instanceof Chunk) {
-			descriptor = await descriptor.expand(1);
+			descriptor = await descriptor.expand(0);
 		}
         const newChunkMap = new ChunkMap;
         newChunkMap.descriptor = descriptor;
@@ -38,10 +38,7 @@ export class ChunkMap extends ChunkTree {
         }
         this.degree = descriptor.degree;
         if(descriptor.root) {
-            if(descriptor.root instanceof Chunk === false) {
-                throw Error("ChunkMap descriptor contains an invalid root: " + JSON.stringify(descriptor.root));
-            }
-            this.rootChunk = descriptor.root;
+            this.rootChunk = Chunk.fromIdentifier(descriptor.root);
         } else {
             this.rootChunk = undefined;
         }
@@ -51,7 +48,7 @@ export class ChunkMap extends ChunkTree {
 		return {
             type: 'map',
             degree: this.degree,
-            root: this.rootChunk
+            root: this.rootChunk?.id
         };
 	}
 

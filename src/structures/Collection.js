@@ -85,7 +85,7 @@ export class Collection {
 	}
 
 	static async expandDescriptor(descriptorChunk) {
-		const descriptor = await descriptorChunk.expand(1);
+		const descriptor = await descriptorChunk.expand(0);
 		const type = gTypeMap.get(descriptor.type);
 		if(type == null
 		|| type == undefined) {
