@@ -89,9 +89,15 @@ async function implementationsMenu() {
               ]
             );
             const fullpath = path.normalize(fileChoice.file);
-            console.log(fullpath);
             try {
-                await actions.validateServiceImplementation(fullpath);
+                const newImplentation = await actions.validateServiceImplementation(fullpath);
+                console.log('new uuid: ' + newImplentation.uuid);
+                for(const {uuid} of implementations) {
+                    console.log('previous implentation uuid: ' + uuid);
+                    if(newImplentation.uuid === uuid) {
+                        throw Error('Implementation with UUID ' + uuid + ' already registered');
+                    }
+                }
                 await actions.addServiceImplementation(fullpath);
             } catch (error) {
                 console.log(chalk.red("Failed to add new implementation: " + error));
