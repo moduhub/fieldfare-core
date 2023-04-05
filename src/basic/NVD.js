@@ -42,4 +42,11 @@ export class NVD {
         return nvd.save(key, value);
     }
 
+    static delete(key) {
+        if(nvd===undefined) {
+            throw Error('NVD not initialized');
+        }
+        return nvd.delete(key);
+    }
+
 }

@@ -40,4 +40,11 @@ export class LevelNVD {
         return object;
     }
 
+
+    async delete(key) {
+        if(!key) {
+            throw Error('Attempt to delete NVD with an invalid key: ' + JSON.stringify(key));
+        }
+        await this.db.del(key);
+    }
 };
