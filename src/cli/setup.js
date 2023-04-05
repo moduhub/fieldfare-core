@@ -100,14 +100,16 @@ async function implementationsMenu() {
         } break;
         case 'Remove Implementation': {
             if(implementations && implementations.length > 0) {
-                var index=0;
+                let index=0;
                 if(implementations.length > 1) {
-                    index = await inquirer.prompt(inputIndexBetween(0, implementations.length-1));
+                    index = (await inquirer.prompt(inputIndexBetween(0, implementations.length-1))).index;
                 }
+                console.log('Index: ' + index);
                 const {confirm} = await inquirer.prompt({
                     type: 'confirm',
                     name: 'confirm',
-                    message: "Are you sure you want to unregister this implementation?"
+                    message: "Are you sure you want to unregister the implementation from file "
+                        + implementations[index].filename + "?"
                 });
                 if(confirm) {
                     await actions.removeServiceImplementation(index);
