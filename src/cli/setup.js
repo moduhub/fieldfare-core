@@ -64,7 +64,11 @@ async function implementationsMenu() {
         type: 'list',
         name: 'action',
         message: 'Choose one action: ',
-        choices: ['Add Implementation', 'Remove Implementation', 'Remove All', 'Back'],
+        choices: [  'Add Implementation',
+                    'Remove Implementation',
+                    'Remove All',
+                    'Wipe Service Data',
+                    'Back'],
     };
     console.log("__________ Local Service Implementations __________");
     const implementations = await actions.getServiceImplementations();
@@ -121,6 +125,26 @@ async function implementationsMenu() {
                 if(confirm) {
                     await actions.removeAllServiceImplementations();
                 }
+            }
+            implementationsMenu();
+        } break;
+        case 'Wipe Service Data': {
+            if(implementations && implementations.length > 0) {
+                let index = 0;
+                if(implementations.length > 1) {
+                    index = (await inquirer.prompt(inputIndexBetween(0, implementations.length-1))).index;
+                }
+                console.log(index);
+                const {confirm} = await inquirer.prompt({
+                    type: 'confirm',
+                    name: 'confirm',
+                    message: "Are you sure you want to wipe all LOCAL data assigned to collection " + implementations[index].uuid + "?"
+                });
+                if(confirm) {
+                    await actions.wipeServiceData(implementations[index].uuid);
+                }
+            } else {
+                console.log('No services implemented');
             }
             implementationsMenu();
         } break;
