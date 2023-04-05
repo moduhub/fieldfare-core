@@ -52,16 +52,22 @@ export async function setEnvironmentUUID(uuid) {
 
 export async function getServiceImplementations() {
     const implementationsJSON = await NVD.load('implementations');
+    let implementations;
     if(implementationsJSON) {
-        return JSON.parse(implementationsJSON);
-    } else {
-        return undefined;
+        implementations = [];
+        const filenames = JSON.parse(implementationsJSON);
+        for(const filename of filenames) {
+            const {uuid, implementation} = await import('file:' + filename);
+            implementations.push({uuid, filename});
+        }
     }
+    return implementations;
 }
 
 export async function validateServiceImplementation(filepath) {
     const {uuid, implementation} = await import('file:' + filepath);
     LocalService.validateImplementation(uuid, implementation);
+    return {uuid, implementation};
 }
 
 export async function addServiceImplementation(filepath) {
@@ -99,6 +105,10 @@ export async function removeServiceImplementation(index) {
 export async function removeAllServiceImplementations() {
     await NVD.save('implementations', '[]');
 }
+
+export async function wipeServiceData(uuid) {
+    await NVD.delete(uuid);
+}	
 
 export async function getBootWebports() {
     const webportsJSON = await NVD.load('bootWebports');
