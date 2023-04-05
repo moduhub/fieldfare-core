@@ -84,16 +84,17 @@ export class LocalService {
         for await (const definedElement of serviceDescriptor.collection) {
             const localElement = await serviceInstance.collection.getElement(definedElement.name);
             if(localElement) {
-                const localElementDescriptor = localElement.descriptor;
                 for(const prop in definedElement.descriptor) {
-                    if(!localElementDescriptor.hasOwnProperty(prop)) {
-                        throw Error('mismatch between privous service state and environment provided descriptor');
+                    if(localElement.descriptor.hasOwnProperty(prop) === false
+                    || localElement.descriptor[prop] !== definedElement.descriptor[prop]) {
+                        throw Error('mismatch between previous service state and environment provided descriptor');
                     }
                 }
             } else {
                 await serviceInstance.collection.createElement(definedElement.name, definedElement.descriptor);
             }
         }
+        logger.debug('Service ' + JSON.stringify(uuid) + ' implemented successfully');
         return serviceInstance;
     }
 
