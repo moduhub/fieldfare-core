@@ -19,12 +19,12 @@ export class Environment extends AdministeredCollection {
 	constructor(uuid) {
 		super(uuid);
 		this.activeHosts = new Map();
-		this.methods.set('addService', this.applyAddService.bind(this));
-        this.methods.set('removeService', this.applyRemoveService.bind(this));
-		this.methods.set('addProvider', this.applyAddProvider.bind(this));
-        this.methods.set('removeProvider', this.applyRemoveProvider.bind(this));
-		this.methods.set('addWebport', this.applyAddWebport.bind(this));
-        this.methods.set('removeWebport', this.applyRemoveWebport.bind(this));
+		this.allowedChanges - new Set([
+			'addAdmin', 'removeAdmin',
+			'addService', 'removeService',
+			'addProvider', 'removeProvider',
+			'addWebport', 'removeWebport'
+		]);
 		//report periodically
 		// setInterval(() => {
 		//	logger.info(this.report());
@@ -184,55 +184,46 @@ export class Environment extends AdministeredCollection {
 		return list;
 	}
 
-	async applyAddService(issuer, params, merge=false) {
-		Utils.validateParameters(params, ['definition']);
-		logger.log('info', 'applyAddService params: ' + JSON.stringify(params));
-		const definition = params.definition;
-		ServiceDescriptor.validate(definition);
-		const definitionChunk = await Chunk.fromObject(definition);
-		const keyChunk = await Chunk.fromObject({
-			uuid: definition.uuid
-		});		
-		const services = await this.getElement('services');
-		if(!services) {
-			throw Error('services ChunkMap does not exist');
-		}
-		if(await services.has(keyChunk)) {
-			if(merge) {
-				const previousDefinitionChunk = await services.get(keyChunk);
-				if(previousDefinitionChunk.id === definitionChunk.id) {
-					logger.log('info', 'applyAddService succesfuly MERGED');
-					return;
-				} else {
-					throw Error('applyAddService MERGE FAILED: different service defined with same UUID');
-				}
-			} else {
-				throw Error('service UUID already assigned');
-			}
-		}
-		await this.auth(issuer);
-		await services.set(keyChunk, definitionChunk);
-		await this.updateElement('services', services.descriptor);
-		await this.createElement(definition.uuid+'.providers', {
-			type: 'set',
-			degree: 5
-		});
+	async defaultAuth(issuer) {
+		return await this.isAdmin(issuer);
 	}
 
-	async addService(definition) {
-		const params = {definition: definition};
-		const services = await this.getElement('services');
-		if(!services) {
-			await this.createElement('services', {
-				type: 'map',
-				degree: 3
-			});
-		}
-		await this.applyAddService(LocalHost.getID(), params);
-		await this.commit({
-			addService: params
-		});
-		NVD.save(this.uuid, this.versionIdentifier);
+	addService(definition) {
+		return new Change('addService', arguments)
+			.auth(this.defaultAuth)
+			.action(async () => {
+				ServiceDescriptor.validate(definition);
+				const definitionChunk = await Chunk.fromObject(definition);
+				const keyChunk = await Chunk.fromObject({
+					uuid: definition.uuid
+				});
+				let services = await this.getElement('services');
+				if(!services) {
+					services = await this.createElement('services', {
+						type: 'map',
+						degree: 3
+					});
+				}
+				if(await services.has(keyChunk)) {
+					if(merge) {
+						const previousDefinitionChunk = await services.get(keyChunk);
+						if(previousDefinitionChunk.id === definitionChunk.id) {
+							logger.log('info', 'applyAddService succesfuly MERGED');
+							return;
+						} else {
+							throw Error('applyAddService MERGE FAILED: different service defined with same UUID');
+						}
+					} else {
+						throw Error('service UUID already assigned');
+					}
+				}
+				await services.set(keyChunk, definitionChunk);
+				await this.updateElement('services', services.descriptor);
+				await this.createElement(definition.uuid+'.providers', {
+					type: 'set',
+					degree: 5
+				})
+			})
 	}
 
     async applyRemoveService(issuer, params, merge=false) {

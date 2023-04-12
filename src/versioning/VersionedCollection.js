@@ -34,7 +34,7 @@ export class VersionedCollection extends Collection {
 		 * Name of the methods that can be used to alter the collection elements 'legally'.
 		 * Any remote call to a method outside this set will be blocked.
 		 * @type {Set<string, CollectionMethod>}
-         */
+		 */
 		this.allowedChanges = new Set([
 			'createElement', 'deleteElement'
 		]);
@@ -228,85 +228,18 @@ export class VersionedCollection extends Collection {
 			+ "->" + this.versionIdentifier);
 	}
 
-	/**
-	 * Empty implementation of the auth method allows everything
-	 * @param {String} id Identifer of the host being authorized
-	 * @param {boolean} strict strict option
-	 */
-	async auth(id, strict=false) {
-		logger.debug('>> ' + id + ' auth OK');
-	}
-
-	async applyCreateElement(issuer, params, merge=false) {
-		// console.log("applyCreateElement params: " + JSON.stringify(params));
-		Utils.validateParameters(params, ['name', 'descriptor']);
-		const descriptor = params.descriptor;
-		// console.log('descriptorChunk: ' + JSON.stringify(descriptorChunk));
-		// console.log('descriptor: ' + JSON.stringify(descriptor));
-		if('type' in descriptor == false) {
-			throw Error('missing type in element descriptor');
-		}
-		// if(gTypeMap.has(descriptor.type) === false) {
-		// 	throw Error('element type not registered');
-		// }
-		const nameChunk = await Chunk.fromObject({name: params.name});
-		if(await this.elements.has(nameChunk)) {
-			if(merge) {
-				logger.log('info', 'applyCreateElement successfully MERGED');
-				return;
-			} else {
-				throw Error('applyCreateElement failed: name already exists');
-			}
-		}
-		await this.auth(issuer, false);
-		//Perform local changes
-		const descriptorChunk = await Chunk.fromObject(descriptor);
-		await this.elements.set(nameChunk, descriptorChunk);
-		// console.log('info', "Current elements: ");
-		// for await (const [key, value] of this.elements) {
-		// 	console.log('info', '> ' + JSON.stringify(await key.expand()) + ': ' + JSON.stringify(await value.expand()));
-		// }
-	}
-
-	async createElement(name, descriptor) {
-		const params = {name: name, descriptor: descriptor};
-		//console.log('info', "VersionedData.createElement name="+name + ", descriptor="+descriptor);
-		await this.applyCreateElement(LocalHost.getID(), params);
-		await this.commit({
-			createElement: params
-		});
-		await NVD.save(this.uuid, this.versionIdentifier);
-	}
-
-	async applyDeleteElement(issuer, params, merge=false) {
-		// console.log("applyDeleteElement params: " + JSON.stringify(params));
-		Utils.validateParameters(params, ['name']);
-		const nameChunk = await Chunk.fromObject({name: params.name});
-		if(await this.elements.has(nameChunk) === false) {
-			if(merge) {
-				logger.log('info', 'applyDeleteElement successfully MERGED');
-				return;
-			} else {
-				throw Error('applyDeleteElement failed: element does not exist');
-			}
-		}
-		await this.auth(issuer, false);
-		//Perform local changes
-		await this.elements.delete(nameChunk);
-		// console.log('info', "Current elements: ");
-		// for await (const [key, value] of this.elements) {
-		// 	console.log('info', '> ' + JSON.stringify(await key.expand()) + ': ' + JSON.stringify(await value.expand()));
-		// }
-	}
-
-	async deleteElement(name) {
-		const params = {name: name};
-		//console.log('info', "VersionedData.createElement name="+name + ", descriptor="+descriptor);
-		await this.applyDeleteElement(LocalHost.getID(), params);
-		await this.commit({
-			deleteElement: params
-		});
-		await NVD.save(this.uuid, this.versionIdentifier);
+	createElement(name, descriptor) {
+		return new Change('createElement', arguments)
+			.setAction(async () => {
+				await super.createElement(name, descriptor);
+			})
+			.setMergePolicy(async () => {
+				if(await this.hasElement(name)) {
+					logger.log('info', 'createElement merge policy: element already exists, skipping');
+					return false;
+				}
+				return true;
+			})
 	}
 
 };

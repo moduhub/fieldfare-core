@@ -21,24 +21,26 @@ export class AdministeredCollection extends VersionedCollection {
         this.methods.set('removeAdmin', this.applyRemoveAdmin.bind(this));
     }
 
-    async auth(hostIdentifier, strict=false) {
+    async isAdmin(hostIdentifier) {
 		const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
 		const hostChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
 		const admins = await this.getElement('admins');
-		// console.log(admins);
-		// if(admins) {
-		// 	console.log('admins is empty? ' + await admins.isEmpty());
-		// }
-		if(admins == undefined
-		|| await admins.isEmpty()) {
-			if(strict) {
-				throw Error('strict auth failed, no admins defined');
-			}
-		} else {
-			if(await admins.has(hostChunk) === false) {
-				throw Error('not authorized');
-			}
+		if(!admins
+		|| await admins.isEmpty()
+		|| await admins.has(hostChunk)) {
+			return true;
 		}
+		return false;
+	}
+
+	createElement(name, descriptor) {
+		return super.createElement(name, descriptor)
+			.setAuth((issuer) => {
+				if(name == 'admins') {
+					return false;
+				}
+				return this.isAdmin(issuer);
+			});
 	}
 
 	async applyAddAdmin(issuer, params, merge=false) {
