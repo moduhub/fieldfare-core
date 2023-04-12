@@ -9,6 +9,7 @@ import { Chunk } from "../chunking/Chunk.js";
 import { ChunkMap } from "./ChunkMap.js";
 import { NVD } from "../basic/NVD.js";
 import { Utils } from "../basic/Utils.js";
+import { EventEmitter } from '../basic/EventEmitter.js';
 
 export const gTypeMap = new Map;
 
@@ -43,13 +44,21 @@ export class Collection {
 		gTypeMap.set(typeName, type);
 	}
 
+	get state() {
+		return this.elements.descriptor;
+	}
+
+	set state(state) {
+		this.elements.descriptor = state;
+	}
+
     async init() {
 		if(NVD.available() === false) {
 			throw Error('NVD was not initialized');
 		}
-		const descriptor = await NVD.load(this.uuid);
-		if(descriptor) {
-            this.elements.descriptor = descriptor;
+		const state = await NVD.load(this.uuid);
+		if(state) {
+            this.state = state;
         }
 	}
 
@@ -63,6 +72,7 @@ export class Collection {
         const nameChunk = await Chunk.fromObject({name: name});
         const descriptorChunk = await Chunk.fromObject(descriptor);
         await this.elements.set(nameChunk, descriptorChunk);
+		await NVD.save(this.uuid, this.state);
 		this.events.emit('elementCreated', name);
 		this.events.emit(name + '.created', Collection.expandDescriptor(descriptor));
 		this.events.emit('change');
@@ -71,6 +81,7 @@ export class Collection {
 	async deleteElement(name) {
         const nameChunk = await Chunk.fromObject({name: name});
         await this.elements.delete(nameChunk);
+		await NVD.save(this.uuid, this.state);
 		this.events.emit('elementDeleted', name);
 		this.events.emit('change');
 	}
@@ -85,6 +96,7 @@ export class Collection {
 		}
 		const descriptorChunk = await Chunk.fromObject(descriptor);
 		await this.elements.set(nameChunk, descriptorChunk);
+        await NVD.save(this.uuid, this.state);
 		this.events.emit('elementUpdated', name);
 		this.events.emit(name + '.change', Collection.expandDescriptor(descriptor));
 		this.events.emit('change');
