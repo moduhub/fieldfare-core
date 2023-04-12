@@ -154,16 +154,12 @@ export class VersionedCollection extends Collection {
 					throw Error('state mismatch after remote changes applied');
 				}
 				this.versionIdentifier = remoteChain.head;
-				const localChanges = await localChain.getChanges();
 				//now merge local changes at end of remote chain, if any
 				if(localCommitsAhead > 0) {
-					for await (const change of localChanges) {
-						await this.apply(change.issuer, change.method, change.params, true);
-					}
+					this.applyChain(localChain, true);
 					const descriptorChunk = await Chunk.fromObject(this.elements.descriptor);
-					const stateAfterMergeKey = descriptorChunk.id;
 					//only commit if changes were not redundant
-					if(stateAfterMergeKey !== expectedState) {
+					if(descriptorChunk.id !== expectedState) {
 						await this.commit({
 							merge: {
 								head: localChain.head,
@@ -173,7 +169,7 @@ export class VersionedCollection extends Collection {
 					}
 				}
 				//Save changes permanently
-				await NVD.save(this.uuid, this.versionIdentifier);
+				await NVD.save(this.uuid, this.state);
 				// Reset blacklist
 				this.versionBlacklist.clear();
 				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.versionIdentifier);
