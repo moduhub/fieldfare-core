@@ -9,7 +9,7 @@ import { ChunkManager } from '../../chunking/ChunkManager.js';
 import { ChunkingUtils } from './BrowserExports.js';
 import { IndexedDBBase } from './IndexedDBBase.js';
 
-export class IndexedDBResourcesManager extends ChunkManager {
+export class IndexedDBChunkManager extends ChunkManager {
 
     constructor() {
         super();
