@@ -179,7 +179,7 @@ export class ChunkList {
 		//logger.debug("[HLL append] newListElement: " + JSON.stringify(newListElement));
 	}
 
-	async* [Symbol.asyncIterator]() {
+	async* chunks() {
 		if(this.last) {
 			var iContainer = await this.last.expand(1);
 			while(iContainer) {
@@ -206,6 +206,12 @@ export class ChunkList {
 				}
 				iContainer = await iContainer.prev.expand(1);
 			}
+		}
+	}
+
+	async *expandedChunks(depth=0) {
+		for (const chunk of this.chunks()) {
+			yield await chunk.expand(depth);
 		}
 	}
 
