@@ -95,6 +95,10 @@ export class VersionedCollection extends Collection {
 		return change;
 	}
 
+	/**
+	 * Force update to a given version, discarding any local changes.
+	 * @param {string} versionIdentifier 
+	 */
 	async checkout(versionIdentifier) {
 		const versionChunk = Chunk.fromIdentifier(versionIdentifier);
 		const statement = await VersionStatement.fromDescriptor(versionChunk);
@@ -106,6 +110,12 @@ export class VersionedCollection extends Collection {
 		this.versionIdentifier = versionChunk.id;
 	}
 
+	/**
+	 * Update to a given version, fetching changes from a given source host.
+	 * @param {string} versionIdentifier 
+	 * @param {HostIdentifier} source 
+	 * @returns 
+	 */
 	async pull(versionIdentifier, source) {
 		ChunkingUtils.validateIdentifier(versionIdentifier);
 		if(this.updateInProgress === versionIdentifier) {
@@ -188,6 +198,9 @@ export class VersionedCollection extends Collection {
 		}
 	}
 
+	/**
+	 * Execute a set of changes and create a new version.
+	 */
 	async commit(changes) {
 		if(changes instanceof Array === false) {
 			changes = [changes];
