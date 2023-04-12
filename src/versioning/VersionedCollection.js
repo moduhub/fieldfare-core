@@ -15,6 +15,7 @@ import { NVD } from '../basic/NVD.js';
 import { Utils } from '../basic/Utils.js';
 import { logger } from '../basic/Log.js';
 import { Collection } from '../structures/Collection.js';
+import { Change } from './Change.js';
 
 /**
  * Represents a group of elements that can be altered
@@ -192,13 +193,24 @@ export class VersionedCollection extends Collection {
 	}
 
 	async commit(changes) {
-		//Create update message
+		if(changes instanceof Array === false) {
+			changes = [changes];
+		}
+		const changeDescriptors = [];
+		for(const change of changes) {
+			if(change instanceof Change === false) {
+				throw Error('Invalid change');
+			}
+			change.setIssuer(LocalHost.getID());
+			await change.execute();
+			changeDescriptors.push(change.descriptor);
+		}
 		var versionStatement = new VersionStatement();
 		versionStatement.source = LocalHost.getID();
 		versionStatement.data = {
 			prev: this.versionIdentifier,
 			elements: await Chunk.fromObject(this.elements.descriptor),
-			changes: await Chunk.fromObject(changes)
+			changes: await Chunk.fromObject(changeDescriptors)
 		};
 		await LocalHost.signMessage(versionStatement);
 		const versionChunk = await Chunk.fromObject(versionStatement);
