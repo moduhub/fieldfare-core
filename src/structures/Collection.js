@@ -71,6 +71,9 @@ export class Collection {
         }
         const nameChunk = await Chunk.fromObject({name: name});
         const descriptorChunk = await Chunk.fromObject(descriptor);
+		if(await this.elements.has(nameChunk)) {
+			throw Error('createElement failed: element already exists');
+		}
         await this.elements.set(nameChunk, descriptorChunk);
 		await NVD.save(this.uuid, this.state);
 		this.events.emit('elementCreated', name);
@@ -80,6 +83,9 @@ export class Collection {
 
 	async deleteElement(name) {
         const nameChunk = await Chunk.fromObject({name: name});
+		if(await this.elements.has(nameChunk) === false) {
+			throw Error('deleteElement failed: element does not exist');
+		}
         await this.elements.delete(nameChunk);
 		await NVD.save(this.uuid, this.state);
 		this.events.emit('elementDeleted', name);
