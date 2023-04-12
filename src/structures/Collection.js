@@ -36,6 +36,7 @@ export class Collection {
          * @private
          */
 		this.elements = new ChunkMap(5);        
+		this.events = new EventEmitter;
     }
 
 	static registerType(typeName, type) {
@@ -62,13 +63,16 @@ export class Collection {
         const nameChunk = await Chunk.fromObject({name: name});
         const descriptorChunk = await Chunk.fromObject(descriptor);
         await this.elements.set(nameChunk, descriptorChunk);
-		await NVD.save(this.uuid, this.elements.descriptor);
+		this.events.emit('elementCreated', name);
+		this.events.emit(name + '.created', Collection.expandDescriptor(descriptor));
+		this.events.emit('change');
 	}
 
 	async deleteElement(name) {
         const nameChunk = await Chunk.fromObject({name: name});
         await this.elements.delete(nameChunk);
-		await NVD.save(this.uuid, this.elements.descriptor);
+		this.events.emit('elementDeleted', name);
+		this.events.emit('change');
 	}
 
 	async updateElement(name, descriptor) {
@@ -81,7 +85,9 @@ export class Collection {
 		}
 		const descriptorChunk = await Chunk.fromObject(descriptor);
 		await this.elements.set(nameChunk, descriptorChunk);
-        await NVD.save(this.uuid, this.elements.descriptor);
+		this.events.emit('elementUpdated', name);
+		this.events.emit(name + '.change', Collection.expandDescriptor(descriptor));
+		this.events.emit('change');
 	}
 
 	static async expandDescriptor(descriptorChunk) {
