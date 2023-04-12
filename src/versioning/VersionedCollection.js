@@ -27,36 +27,24 @@ export class VersionedCollection extends Collection {
 
 	constructor(uuid) {
 		super(uuid);
-		/**
-         * List of methods that can alter the contents of the elements under version control
-         * @type {Map}
-         * @private
-         */
-		this.methods = new Map();
-
-		this.methods.set('createElement', this.applyCreateElement.bind(this));
-		//this.methods.set('deleteElement', this.applyDeleteElement.bind(this));
 		this.versionIdentifier = '';
-		this.versionBlacklist = new Set();
+		this.versionBlacklist = new Set();	
+		/**
+		 * Name of the methods that can be used to alter the collection elements 'legally'.
+		 * Any remote call to a method outside this set will be blocked.
+		 * @type {Set<string, CollectionMethod>}
+         */
+		this.allowedChanges = new Set([
+			'createElement', 'deleteElement'
+		]);
 	}
 
-	async init() {
-		if(NVD.available() === false) {
-			throw Error('NVD was not initialized');
-		}
-		const latestVersion = await NVD.load(this.uuid);
-		const rootStatement = await VersionStatement.createRoot(this.uuid);
-		const rootChunk = await Chunk.fromObject(rootStatement);
-		const rootVersion = rootChunk.id;
-		if(latestVersion
-		&& latestVersion !== null
-		&& latestVersion !== undefined
-		&& latestVersion !== rootVersion) {
-			await this.checkout(latestVersion);
-		} else {
-			//No data, start from scratch
-			this.versionIdentifier = rootVersion;
-		}
+	get state() {
+		return this.versionIdentifier;
+	}
+
+	set state(state) {
+		this.versionIdentifier = state;
 	}
 
 	async applyChain(chain, merge=false) {
