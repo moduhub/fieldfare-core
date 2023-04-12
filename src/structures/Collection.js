@@ -109,6 +109,11 @@ export class Collection {
 		return undefined;
 	}
 
+	async hasElement(name) {
+		const nameChunk = await Chunk.fromObject({name: name});
+		return await this.elements.has(nameChunk);
+	}
+
 	/**
 	 * Iterates collection elements and returns their names and
 	 * type expanded values
