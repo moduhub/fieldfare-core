@@ -51,25 +51,47 @@ export class VersionedCollection extends Collection {
 		//just accept remote changes
 		const changes = await chain.getChanges();
 		logger.log('info', "applyChain: changes:" + JSON.stringify(changes));
-		for await (const change of changes) {
-			if(change.method === 'merge') {
+		for await (const changeDescriptor of changes) {
+			if(changeDescriptor.method === 'merge') {
 				const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
 				mergeChain.limit(params.base);
 				await this.applyChain(mergeChain, true);
 			} else {
-				logger.debug('await this.apply('+ change.issuer + ',' + change.method + ',' + JSON.stringify(change.params) + ')');
-				await this.apply(change, merge);
+				logger.debug('await this.apply('
+					+ changeDescriptor.issuer + ',' 
+					+ changeDescriptor.method + ',' 
+					+ JSON.stringify(changeDescriptor.params) + ')');
+				if(merge) {
+					logger.log('info', '>>MERGE ' + changeDescriptor.method
+						+ ' params: ' + JSON.stringify(changeDescriptor.params));
+				}
+				const change = this.getChangeFromDescriptor(changeDescriptor);
+				await change.execute();
 			}
 		}
 	}
 
-	async apply(change, merge=false) {
-		const methodCallback = this.methods.get(change.method);
-		if(!methodCallback) {
-			throw Error('apply failed: unknown change method ' + methodName);
+	/**
+	 * Apply a change to the collection elements.
+	 * @param {Change} change 
+	 * @param {boolean} merge 
+	 */
+	async getChangeFromDescriptor(descriptor) {
+		if(this.allowedChanges.has(descriptor.method) === false) {
+			throw Error('change is not allowed ' + change.methodName);
 		}
-		if(merge) logger.log('info', '>>MERGE ' + change.method + ' params: ' + JSON.stringify(change.params));
-		await methodCallback(change.issuer, change.params, merge);
+		const classMethod = this[descriptor.method];
+		if(!classMethod) {
+			throw Error('change is not defined ' + change.method);
+		}
+		const change = classMethod(...descriptor.params).bind(this);
+		if(change instanceof Change === false) {
+			throw Error('class method ' + change.method + ' does not return a Change object');
+		}
+		if(descriptor.issuer) {
+			change.setIssuer(descriptor.issuer);
+		}
+		return change;
 	}
 
 	async checkout(versionIdentifier) {
