@@ -130,6 +130,7 @@ function parseArgumentsIntoOptions(rawArgs) {
         address: args['--address'] || null,
         port: args['--port'] || null,
         operation: rawArgs[2],
+        variableName: rawArgs[3],
         file: args['--file'] || null
     };
 }
@@ -527,6 +528,51 @@ async function mainMenu() {
     }
 }
 
+async function show(name, options) {
+    switch(name) {
+        case 'admins': {
+            const envAdmins = await env.getElement('admins');
+            if(!envAdmins) {
+                console.log('<no admins defined>');
+            } else {
+                var count = 0;
+                for await (const chunk of envAdmins) {
+                    const hostIdentifier = HostIdentifier.fromChunkIdentifier(chunk.id);
+                    console.log("[" + count++ +"]: " + hostIdentifier);
+                }
+            }
+        } break;
+        case 'changes': {
+            const localChain = new VersionChain(env.versionIdentifier, LocalHost.getID(), 50);
+            await localChain.print();
+        } break;
+        case 'providers': {
+            if(!options.uuid) {
+                throw new Error('Missing service UUID');
+            }
+            const providers = await env.getElement(options.uuid + '.providers');
+            if(providers) {
+                for await (const chunk of providers) {
+                    const hostIdentifier = HostIdentifier.fromChunkIdentifier(chunk.id);
+                    console.log(">> " + hostIdentifier);
+                }
+            }
+        } break;
+        case 'webports': {
+            const webports = await env.getElements('webports');
+            if(webports) {
+                for await (const chunk of webports) {
+                    const webport = await chunk.expand();
+                    console.log(JSON.stringify(webport));
+                }
+            }
+        } break;
+        default: {
+            throw new Error('Invalid variable name: \"' + name + '\"');
+        } break;
+    }
+}
+
 export async function main(args) {
     const options = parseArgumentsIntoOptions(args);
     logger.disable();
@@ -551,54 +597,18 @@ export async function main(args) {
     }
 
     switch(options.operation) {
-
         case undefined:
         case 'menu': {
             await mainMenu();
         } break;
-
-        case 'getChanges': {
-            const localChain = new VersionChain(env.versionIdentifier, LocalHost.getID(), 50);
-            await localChain.print();
-            process.exit(0);
-        } break;
-
-        case 'getAdmins': {
-            console.log(">>getAdmins from " + env.uuid);
-            const envAdmins = await env.getElement('admins');
-            if(!envAdmins) {
-                console.log('<no admins defined>');
-            } else {
-                var count = 0;
-                for await (const admin of envAdmins) {
-                    console.log("[" + count++ +"]: " + admin);
-                }
+        case 'show': {
+            try {
+                await show(options.variableName, options);
+            } catch(error) {
+                console.log(error);
             }
             process.exit(0);
         } break;
-
-        case 'getProviders': {
-            console.log('>>getProviders of service ' + options.uuid + ' from env ' + envUUID);
-            const providers = await env.getElement(options.uuid + '.providers');
-            if(providers) {
-                for await (const hostid of providers) {
-                    console.log(">> " + hostid);
-                }
-            }
-            process.exit(0);
-        } break;
-
-        case 'getWebports': {
-            const webports = await env.getElements('webports');
-            if(webports) {
-                for await (const chunk of webports) {
-                    const webport = await chunk.expand();
-                    console.log(JSON.stringify(webport));
-                }
-            }
-            process.exit(0);
-        } break;
-
         case 'addAdmin': {
                 console.log(">>addAdmin " + options.host
                     + 'to environment ' + envUUID);

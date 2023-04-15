@@ -4,15 +4,18 @@
   "description": "Backend framework for distributed networks",
   "type": "module",
   "bin": {
-    "ffsetup": "bin/ffsetup",
-    "ffconf": "bin/ffconf",
-    "ffrun": "bin/ffrun"
+    "fieldfare": "./bin/fieldfare.js",
+    "ffsetup": "./bin/ffsetup",
+    "ffenvconfig": "./bin/ffenvconfig",
+    "ffhost": "./bin/ffhost"
   },
   "scripts": {
+    "setup": "node bin/ffsetup.js",
+    "host": "node bin/ffhost.js",
+    "envconfig": "node bin/ffenvconfig.js",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest --verbose --runInBand",
     "coverage": "jest --collectCoverage --",
-    "debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand",
-    "snapshot": "npx ffrun src/env/services/Snapshot.js"
+    "debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
   },
   "repository": {
     "type": "git",
