@@ -295,72 +295,72 @@ export class Environment extends AdministeredCollection {
 		return false;
 	}
 
-	async applyAddProvider(issuer, params, merge=false) {
-		Utils.validateParameters(params,
-			['uuid', 'host']);
-		await this.auth(issuer);
-		const serviceUUID = params.uuid;
-		const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(params.host);
-		const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
-		const providerListName = serviceUUID + '.providers';
-		const providers = await this.getElement(providerListName);
-		if(!providers) {
-			throw Error(serviceUUID + ' providers ChunkSet does not exist');
-		}
-		if(await providers.has(hostChunk)) {
-			if(merge) {
-				logger.log('info', 'addProvider successfully MERGED');
-			} else {
-				throw Error('provider already in list');
-			}
-		}
-		await providers.add(hostChunk);
-		await this.updateElement(providerListName, providers.descriptor);
+	addProvider(serviceUUID, providerID) {
+		Utils.isUUID(serviceUUID);
+		HostIdentifier.validate(providerID);
+		return new Change('addProvider', arguments)
+			.setAuth(async (issuer) => {
+				return await this.isAdmin(issuer);
+			})
+			.setMergePolicy(async () => {
+				const providers = await this.getElement(serviceUUID+'.providers');
+				if(providers) {
+					const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
+					const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
+					if(await providers.has(hostChunk)) {
+						logger.debug('addProvider successfully MERGED');
+						return false;
+					}
+				}
+				return true;
+			})
+			.setAction(async () => {
+				const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
+				const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
+				const providerListName = serviceUUID + '.providers';
+				const providers = await this.getElement(providerListName);
+				if(!providers) {
+					throw Error(serviceUUID + ' providers ChunkSet does not exist');
+				}
+				if(await providers.has(hostChunk)) {
+					throw Error('provider already in list');
+				}
+				await providers.add(hostChunk);
+				await this.updateElement(providerListName, providers.descriptor);
+			})
 	}
 
-	async addProvider(serviceUUID, providerID) {
-		const params = {
-			uuid: serviceUUID,
-			host: providerID
-		}
-		await this.applyAddProvider(LocalHost.getID(), params);
-		await this.commit({
-			addProvider: params
-		});
-		await NVD.save(this.uuid, this.versionIdentifier);
-	}
-
-    async applyRemoveProvider(issuer, params, merge=false) {
-        Utils.validateParameters(params,
-            ['uuid', 'host']);
-		const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(params.host);
-		const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, params.host);
-        await this.auth(issuer);
-        const providers = await this.getElement(params.uuid+'.providers');
-        if(!providers) {
-			throw Error('Service '+params.uuid+' providers is not defined');
-		}
-		if(await providers.has(hostChunk) === false) {
-            if(merge) {
-                logger.log('info', 'addProvider successfully MERGED');
-            } else {
-                throw Error('provider not in list');
-            }
-        }
-        await providers.delete(hostChunk);
-		await this.updateElement(params.uuid+'.providers', providers.descriptor);
-    }
-
-	async removeProvider(serviceUUID, providerID) {
-        const params = {
-            uuid: serviceUUID,
-            host: providerID
-        }
-        await this.applyRemoveProvider(LocalHost.getID(), params);
-        await this.commit({
-            removeProvider: params
-        });
-        await NVD.save(this.uuid, this.versionIdentifier);
+	removeProvider(serviceUUID, providerID) {
+		return new Change('removeProvider', arguments)
+			.setAuth(async (issuer) => {
+				return await this.isAdmin(issuer);
+			})
+			.setMergePolicy(async () => {
+				const providers = await this.getElement(serviceUUID+'.providers');
+				if(providers) {
+					const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
+					const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
+					if(await providers.has(hostChunk)) {
+						return true;
+					}
+				}
+				logger.debug('removeProvider successfully MERGED');
+				return true;
+			})
+			.setAction(async () => {
+				const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
+				const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
+				const providerListName = serviceUUID + '.providers';
+				const providers = await this.getElement(providerListName);
+				if(!providers) {
+					throw Error(serviceUUID + ' providers ChunkSet does not exist');
+				}
+				if(await providers.has(hostChunk) === false) {
+					throw Error('provider not in list');
+				}
+				await providers.delete(hostChunk);
+				await this.updateElement(providerListName, providers.descriptor);
+			})
 	}
 
 	async getWebports(hostID) {
@@ -379,70 +379,66 @@ export class Environment extends AdministeredCollection {
 		return hostWebports;
 	}
 
-	async applyAddWebport(issuer, params, merge=false) {
-		Utils.validateParameters(params, ['hostid', 'protocol', 'address', 'port']);
-		await this.auth(issuer);
-		const webportChunk = await Chunk.fromObject(params);
-		const webports = await this.getElement('webports');
-		if(!webports) {
-			throw Error('webports ChunkSet does not exist');
-		}
-		if(await webports.has(webportChunk)) {
-			//Exact same information already present
-			if(merge) {
-				logger.log('info', 'addWebport successfully MERGED');
-				return;
-			} else {
-				throw Error('webport already defined');
-			}
-		}
-		await webports.add(webportChunk);
-		this.updateElement('webports', webports.descriptor);
+	addWebport(descriptor) {
+		Utils.validateParameters(descriptor, ['hostid', 'protocol', 'address', 'port']);
+		return new Change('addWebport', arguments)
+			.setAuth(async (issuer) => {
+				return await this.isAdmin(issuer);
+			})
+			.setMergePolicy(async () => {
+				const webportChunk = await Chunk.fromObject(descriptor);
+				const webports = await this.getElement('webports');
+				if(webports) {
+					if(await webports.has(webportChunk)) {
+						logger.debug('addWebport successfully MERGED');
+						return false;
+					}
+				}
+				return true;
+			})
+			.setAction(async () => {
+				let webports = await this.getElement('webports');
+				if(!webports) {
+					webports = await this.forceCreateElement('webports', {
+						type: 'set',
+						degree: 5
+					});
+				}
+				const webportChunk = await Chunk.fromObject(descriptor);
+				if(await webports.has(webportChunk)) {
+					throw Error('webport already defined');
+				}
+				await webports.add(webportChunk);
+				await this.updateElement('webports', webports.descriptor);
+			})
 	}
 
-	async addWebport(info) {
-		const webports = await this.getElement('webports');
-		if(!webports) {
-			await this.createElement('webports', {
-				type: 'set',
-				degree: 5
-			});
-		}
-		await this.applyAddWebport(LocalHost.getID(), info);
-		await this.commit({
-			addWebport: info
-		});
-		NVD.save(this.uuid, this.versionIdentifier);
-	}
-
-    async applyRemoveWebport(issuer, params, merge=false) {
-        const webportChunk = params;
-        if(webportChunk instanceof Chunk === false) {
-			throw Error('applyRemoveWebport params must be a Chunk object');
-		}
-        await this.auth(issuer);
-        const webports = await this.getElement('webports');
-		if(!webports) {
-			throw Error('webports ChunkSet does not exist');
-		}
-        if(await webports.has(webportChunk) === false) {
-            if(merge) {
-                logger.debug('removeWebport successfully MERGED');
-                return;
-            } else {
-                throw Error('webport does not exist');
-            }
-        }
-        await webports.delete(webportChunk);
-		this.updateElement('webports', webports.descriptor);
-    }
-
-    async removeWebport(webportChunk) {
-        await this.applyRemoveWebport(LocalHost.getID(), webportChunk);
-        await this.commit({
-            removeWebport: webportChunk
-        });
-        NVD.save(this.uuid, this.versionIdentifier);
+    removeWebport(webportChunk) {
+		return new Change('removeWebport', arguments)
+			.setAuth(async (issuer) => {
+				return await this.isAdmin(issuer);
+			})
+			.setMergePolicy(async () => {
+				const webports = await this.getElement('webports');
+				if(webports) {
+					if(await webports.has(webportChunk)) {
+						return true;
+					}
+				}
+				logger.debug('removeWebport successfully MERGED');
+				return false;
+			})
+			.setAction(async () => {
+				const webports = await this.getElement('webports');
+				if(!webports) {
+					throw Error('webports ChunkSet does not exist');
+				}
+				if(await webports.has(webportChunk) === false) {
+					throw Error('webport does not exist');
+				}
+				await webports.delete(webportChunk);
+				await this.updateElement('webports', webports.descriptor);
+			})
     }
 
 };

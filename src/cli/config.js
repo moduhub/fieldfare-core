@@ -361,7 +361,9 @@ async function providersMenu(serviceUUID) {
             const { hostid } = await inquirer.prompt(inputHostID);
             if(hostid != '') {
                 try {
-                    await env.addProvider(serviceUUID, hostid);
+                    await env.commit(
+                        env.addProvider(serviceUUID, hostid)
+                    );
                 } catch(error) {
                     console.log(chalk.bgRed("Provider inclusion failed: " + error));
                 }
@@ -372,7 +374,9 @@ async function providersMenu(serviceUUID) {
             const hostid = await selectHostMenu(providersArray);
             if(hostid != '') {
                 try {
-                    await env.removeProvider(serviceUUID, hostid);
+                    await env.commit(
+                        env.removeProvider(serviceUUID, hostid)
+                    );
                 } catch(error) {
                     console.log(chalk.bgRed("Provider exclusion failed: " + error));
                 }
@@ -445,7 +449,9 @@ async function webportsMenu() {
             });
             if(confirm) {
                 try {
-                    await env.addWebport(newWebport);
+                    await env.commit(
+                        env.addWebport(newWebport)
+                    );
                 } catch(error) {
                     console.log(chalk.bgRed('Webport inclusion failed: ' + error));
                 }
@@ -464,7 +470,9 @@ async function webportsMenu() {
                 });
                 if(confirm) {
                     try {
-                        await env.removeWebport(chunk);
+                        await env.commit(
+                            env.removeWebport(chunk)
+                        );
                     } catch(error) {
                         console.log(chalk.bgRed('Webport exclusion failed: ' + error));
                     }
