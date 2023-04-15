@@ -33,32 +33,13 @@ class ChangesIterator {
     }
 
     async* [Symbol.asyncIterator]() {
-
         const numChunks = this.chunks.length;
-
-        //logger.log('info', 'ChangesIterator enter, num changes: ' + numChunks);
-
         for(var i=0; i<numChunks; i++) {
-
             const chunk = this.chunks[i];
             const issuer = this.issuers[i];
-
-            //logger.log('info', 'Iteration ' + i + '>  identifier:' + identifier + ' issuer: ' + issuer);
-
             const changes = await chunk.expand();
-
-			for(const prop in changes) {
-				const value = changes[prop];
-
-                // logger.log('info', "Apply method: " + prop
-                // + ' from issuer: ' + issuer);
-                // + ' with params: ' + JSON.stringify(value)
-
-                yield {
-                    issuer: issuer,
-                    method: prop,
-                    params: value
-                };
+			for(const descriptor of changes) {
+                yield {issuer, descriptor};
             }
         }
     }
@@ -157,22 +138,21 @@ export class VersionChain {
     }
 
     async print(mergeDepth=0) {
-        console.log('Head version identifier: \'' + this.head + '\'');
         const localChanges = await this.getChanges();
-        for await (const change of localChanges) {
+        for await (const {issuer, descriptor} of localChanges) {
             var string;
             var prepend = '';
             for(var i=0; i<mergeDepth; i++) {
                 prepend += ' |';
             }
-            if(change.method === 'merge') {
-                const mergeChain = new VersionChain(params.head, change.issuer, 50);
+            if(descriptor.method === 'merge') {
+                const mergeChain = new VersionChain(params.head, issuer, 50);
                 mergeChain.limit(params.base);
                 mergeChain.print(mergeDepth+1);
             } else {
-                string = chalk.bold.bgWhite.blue(' ' + change.method + ' ')
-                    + ' from \'' + change.issuer
-                    + '\'\n'+ JSON.stringify(change.params, null, 2);
+                string = chalk.bold.bgWhite.blue(' ' + descriptor.method + ' ')
+                    + ' from \'' + issuer
+                    + '\'\n'+ JSON.stringify(descriptor.params, null, 2);
                 string.replace('\n', prepend + '\n');
                 console.log(string);
             }
