@@ -213,7 +213,6 @@ export class VersionedCollection extends Collection {
 			change.setIssuer(LocalHost.getID());
 			await change.execute();
 			changeDescriptors.push(change.descriptor);
-			console.log("Change descriptor: " + JSON.stringify(change.descriptor, null, 2));
 		}
 		var versionStatement = new VersionStatement();
 		versionStatement.source = LocalHost.getID();
@@ -242,6 +241,24 @@ export class VersionedCollection extends Collection {
 			.setMergePolicy(async () => {
 				if(await this.hasElement(name)) {
 					logger.log('info', 'createElement merge policy: element already exists, skipping');
+					return false;
+				}
+				return true;
+			})
+	}
+
+	forceDeleteElement(name) {
+		return super.deleteElement(name);
+	}
+
+	deleteElement(name) {
+		return new Change('deleteElement', arguments)
+			.setAction(async () => {
+				await super.deleteElement(name);
+			})
+			.setMergePolicy(async () => {
+				if(await this.hasElement(name) === false) {
+					logger.log('info', 'deleteElement merge policy: element does not exist, skipping');
 					return false;
 				}
 				return true;
