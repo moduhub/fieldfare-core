@@ -12,13 +12,13 @@ import { Utils } from "../basic/Utils.js";
 import { NVD } from "../basic/NVD.js";
 import { logger } from "../basic/Log.js";
 import { HostIdentifier } from "../env/HostIdentifier.js";
+import { Change } from "./Change.js";
 
 export class AdministeredCollection extends VersionedCollection {
 
     constructor(uuid) {
         super(uuid);
-        this.methods.set('addAdmin', this.applyAddAdmin.bind(this));
-        this.methods.set('removeAdmin', this.applyRemoveAdmin.bind(this));
+        this.allowedChanges.add(['addAdmin', 'removeAdmin']);
     }
 
     async isAdmin(hostIdentifier) {
@@ -43,81 +43,71 @@ export class AdministeredCollection extends VersionedCollection {
 			});
 	}
 
-	async applyAddAdmin(issuer, params, merge=false) {
-		Utils.validateParameters(params, ['id']);
-		const hostIdentifier = params.id;
-		const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
-		const newAdminChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
-		const admins = await this.getElement('admins');
-		if(!admins) {
-			throw Error('admins groups does not exist');
-		}
-		logger.log('info', "Current admins: ");
-		for await (const admin of admins) {
-			logger.log('info', '> ' + admin);
-		}
-		//Check if admin was not already present
-		if(await admins.has(newAdminChunk)) {
-			if(merge) {
-				logger.log('info', 'applyAddAdmin successfully MERGED');
-				return;
-			} else {
-				throw Error('applyAddAdmin failed: id already in set');
-			}
-		}
-		//Check auth, non strict
-		await this.auth(issuer, false);
-		//Perform local changes
-		await admins.add(newAdminChunk);
-		await this.updateElement('admins', admins.descriptor);
-	}
-
-	async addAdmin(newAdminID) {
-		const params = {id: newAdminID};
-		//newAdmin must be a valid host ID
-		const admins = await this.getElement('admins');
-		if(!admins) {
-			await this.createElement('admins', {
-				type: 'set',
-				degree: 5,
-				root: null
+	addAdmin(hostIdentifier) {
+		return new Change('addAdmin', arguments)
+			.setAuth((issuer) => {
+				return this.isAdmin(issuer);
+			})
+			.setMergePolicy(async () => {
+				const admins = await this.getElement('admins');
+				if(admins) {
+					const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
+					const newAdminChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
+					if(await admins.has(newAdminChunk)) {
+						return false; //skip change
+					}
+				}
+				return true;
+			})
+			.setAction(async () => {
+				const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
+				const newAdminChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
+				let admins = await this.getElement('admins');
+				if(!admins) {
+					admins = await this.forceCreateElement('admins', {
+						type: 'set',
+						degree: 5,
+						root: null
+					});
+				}
+				if(await admins.has(newAdminChunk)) {
+					throw Error('applyAddAdmin failed: id already in set');
+				}
+				await admins.add(newAdminChunk);
+				await this.updateElement('admins', admins.descriptor);
 			});
-		}
-		await this.applyAddAdmin(LocalHost.getID(), params);
-		await this.commit({
-			addAdmin: params
-		});
-		await NVD.save(this.uuid, this.versionIdentifier);
 	}
 
-	async applyRemoveAdmin(issuer, params, merge=false) {
-		Utils.validateParameters(params, ['id']);
-		const adminIdentifier = params.id;
-		const chunkIdentifier = HostIdentifier.toChunkIdentifier(adminIdentifier);
-		const adminChunk = Chunk.fromIdentifier(chunkIdentifier);
-		const admins = await this.getElement('admins');
-		if(await admins.has(adminChunk)===false) {
-			if(merge) {
-				logger.debug('applyRemoveAdmin successfully MERGED');
-				return;
-			} else {
-				throw Error('applyRemoveAdmin failed: id not in set');
-			}
-		}
-		//Check auth, non strict
-		await this.auth(issuer, false);
-		//Perform local changes
-		await admins.delete(adminChunk);
-		await this.updateElement('admins', admins.descriptor);
-	}
-
-	async removeAdmin(adminID) {
-		const params = {id: adminID};
-		await this.applyRemoveAdmin(LocalHost.getID(), params);
-		await this.commit({
-			removeAdmin: params
-		});
-		await NVD.save(this.uuid, this.versionIdentifier);
+	removeAdmin(hostIdentifier) {
+		return new Change('removeAdmin', arguments)
+			.setAuth((issuer) => {
+				return this.isAdmin(issuer);
+			})
+			.setMergePolicy(async () => {
+				const admins = await this.getElement('admins');
+				if(!admins) {
+					throw Error('applyRemoveAdmin failed: no admins set');
+				}
+				const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
+				const newAdminChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
+				if(await admins.has(newAdminChunk) === false) {
+					return false; //skip change
+				}
+				return true;
+			})
+			.setAction(async () => {
+				const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
+				const adminChunk = Chunk.fromIdentifier(chunkIdentifier);
+				const admins = await this.getElement('admins');
+				if(!admins) {
+					throw Error('applyRemoveAdmin failed: no admins set');
+				}
+				if(await admins.has(adminChunk)===false) {
+					throw Error('applyRemoveAdmin failed: id not in set');
+				}
+				await admins.delete(adminChunk);
+				await this.updateElement('admins', admins.descriptor);
+			});
 	}
 
 }

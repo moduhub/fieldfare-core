@@ -183,7 +183,9 @@ async function adminsMenu() {
             const {hostid} = await inquirer.prompt(inputHostID);
             if(hostid !== '') {
                 try {
-                    await env.addAdmin(hostid);
+                    await env.commit(
+                        env.addAdmin(hostid)
+                    );
                 } catch (error) {
                     console.log(chalk.red("FAILED: " + error));
                 }
@@ -195,7 +197,9 @@ async function adminsMenu() {
             const hostid = await selectHostMenu(adminArray);
             if(hostid !== '') {
                 try {
-                    await env.removeAdmin(hostid);
+                    await env.commit(
+                        env.removeAdmin(hostid)
+                    );
                 } catch (error) {
                     console.log(chalk.red("FAILED: " + error));
                 }
@@ -481,9 +485,8 @@ async function mainMenu() {
     if(env) {
         console.table({
             uuid: env.uuid,
-            version: env.version
+            version: env.versionIdentifier
         })
-        //console.log('Current env UUID: ' + env.uuid + ' at version: ' + env.version);
     } else {
         console.log('<No Enviroment configured>');
     }
