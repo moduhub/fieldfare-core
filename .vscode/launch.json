@@ -7,7 +7,18 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "Fieldfare conf getChanges",
+            "cwd": "${workspaceFolder}",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\bin\\ffconf.js",
+            "args": ["getChanges"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "FieldFare Run CLI",
             "cwd": "${workspaceFolder}",
             "skipFiles": [
                 "<node_internals>/**"
