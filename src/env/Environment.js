@@ -8,6 +8,7 @@
 import { LocalHost } from './LocalHost.js';
 import { Chunk } from '../chunking/Chunk.js';
 import { AdministeredCollection } from '../versioning/AdministeredCollection.js';
+import { Change } from '../versioning/Change.js';
 import { ServiceDescriptor } from './ServiceDescriptor.js';
 import { NVD } from '../basic/NVD.js';
 import { Utils } from '../basic/Utils.js';
@@ -184,14 +185,27 @@ export class Environment extends AdministeredCollection {
 		return list;
 	}
 
-	async defaultAuth(issuer) {
-		return await this.isAdmin(issuer);
-	}
-
 	addService(definition) {
 		return new Change('addService', arguments)
-			.auth(this.defaultAuth)
-			.action(async () => {
+			.setAuth(async (issuer) => {
+				return await this.isAdmin(issuer);
+			})
+			.setMergePolicy(async () => {
+				const services = await this.getElement('services');
+				if(services) {
+					const previousDefinitionChunk = await services.get(keyChunk);
+					if(previousDefinitionChunk) {
+						if(previousDefinitionChunk.id === definitionChunk.id) {
+							logger.log('info', 'applyAddService succesfuly MERGED');
+							return false;
+						} else {
+							throw Error('applyAddService MERGE FAILED: different service defined with same UUID');
+						}
+					}
+				}
+				return true;
+			})
+			.setAction(async () => {
 				ServiceDescriptor.validate(definition);
 				const definitionChunk = await Chunk.fromObject(definition);
 				const keyChunk = await Chunk.fromObject({
@@ -199,62 +213,51 @@ export class Environment extends AdministeredCollection {
 				});
 				let services = await this.getElement('services');
 				if(!services) {
-					services = await this.createElement('services', {
+					services = await this.forceCreateElement('services', {
 						type: 'map',
 						degree: 3
 					});
 				}
 				if(await services.has(keyChunk)) {
-					if(merge) {
-						const previousDefinitionChunk = await services.get(keyChunk);
-						if(previousDefinitionChunk.id === definitionChunk.id) {
-							logger.log('info', 'applyAddService succesfuly MERGED');
-							return;
-						} else {
-							throw Error('applyAddService MERGE FAILED: different service defined with same UUID');
-						}
-					} else {
-						throw Error('service UUID already assigned');
-					}
+					throw Error('service UUID already assigned');
 				}
 				await services.set(keyChunk, definitionChunk);
 				await this.updateElement('services', services.descriptor);
-				await this.createElement(definition.uuid+'.providers', {
+				await this.forceCreateElement(definition.uuid+'.providers', {
 					type: 'set',
 					degree: 5
 				})
 			})
 	}
 
-    async applyRemoveService(issuer, params, merge=false) {
-        Utils.validateParameters(params, ['uuid']);
-		logger.debug('applyRemoveService params: ' + JSON.stringify(params));
-		const uuid = params.uuid;
-		const keyChunk = await Chunk.fromObject({uuid:params.uuid});
-		const services = await this.getElement('services');
-		if(!services) {
-			throw Error('Environment services not defined');
-		}
-		if(await services.has(keyChunk) === false) {
-			if(merge) {
-				logger.log('info', 'applyRemoveService succesfuly MERGED');
-			} else {
-				throw Error('service does not exist');
+    removeService(uuid) {
+		return new Change('removeService', arguments)
+		.setAuth(async (issuer) => {
+			return await this.isAdmin(issuer);
+		})
+		.setMergePolicy(async () => {
+			const services = await this.getElement('services');
+			if(services) {
+				const keyChunk = await Chunk.fromObject({uuid:uuid});
+				if(await services.has(keyChunk)) {
+					return true;
+				}
 			}
-		}
-		await this.auth(issuer);
-		await services.delete(keyChunk);
-		await this.updateElement('services', services.descriptor);
-		await this.deleteElement(uuid+'.providers');
-    }
-
-    async removeService(uuid) {
-        const params = {uuid: uuid};
-		await this.applyRemoveService(LocalHost.getID(), params);
-		await this.commit({
-			removeService: params
-		});
-		NVD.save(this.uuid, this.versionIdentifier);
+			return false;
+		})
+		.setAction(async () => {
+			const keyChunk = await Chunk.fromObject({uuid:uuid});
+			const services = await this.getElement('services');
+			if(!services) {
+				throw Error('Environment services not defined');
+			}
+			if(await services.has(keyChunk) === false) {
+				throw Error('Service does not exist');
+			}
+			await services.delete(keyChunk);
+			await this.updateElement('services', services.descriptor);
+			await this.forceDeleteElement(uuid+'.providers');
+		})
     }
 
 	async getServiceDescriptor(uuid) {

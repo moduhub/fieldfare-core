@@ -266,7 +266,6 @@ async function servicesMenu() {
     switch (action) {
         case 'Add new': {
             try {
-                await env.auth(LocalHost.getID());
                 var {uuid} = await inquirer.prompt(inputUUID);
                 const {serviceName} = await inquirer.prompt(inputServiceName);
                 var definition = {
@@ -301,7 +300,9 @@ async function servicesMenu() {
                     message: 'Do you wish to confirm service inclusion?'
                 });
                 if(confirm) {
-                    await env.addService(definition);
+                    await env.commit(
+                        env.addService(definition)
+                    );
                 }
             } catch (error) {
                 console.log('Cannot add a new service: ' + error);
@@ -317,7 +318,9 @@ async function servicesMenu() {
             });
             if(confirm) {
                 try {
-                    await env.removeService(uuid);
+                    await env.commit(
+                        env.removeService(uuid)
+                    );
                 } catch(error) {
                     console.log(chalk.bold.red('Service remove failed: ' + error));
                 }
