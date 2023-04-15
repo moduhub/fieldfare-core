@@ -9,24 +9,13 @@ export class Change {
 
     get descriptor() {
         return {
-            issuer: this.issuer,
             method: this.method,
             params: this.params
         };
     }
 
-    set descriptor(descriptor) {
-        this.issuer = descriptor.issuer;
-        this.method = descriptor.method;
-        this.params = descriptor.params;
-    }
-
-    setAuth(callback) {
-        if(callback instanceof Function === false) {
-            throw Error('callback must be a function');
-        }
-        this.authCallback = callback;
-        return this;
+    setIssuer(issuer) {
+        this.issuer = issuer;
     }
 
     setAction(callback) {
@@ -37,14 +26,44 @@ export class Change {
         return this;
     }
 
-    async apply() {
+    setMergePolicy(callback) {
+        if(callback instanceof Function === false) {
+            throw Error('callback must be a function');
+        }
+        this.mergeCallback = callback;
+        return this;
+    }
+
+    setAuth(callback) {
+        if(callback instanceof Function === false) {
+            throw Error('callback must be a function');
+        }
+        this.authCallback = callback;
+        return this;
+    }
+
+    async execute(merge=false) {
         if(!this.issuer) {
             throw Error('issuer not set');
         }
         if(this.authCallback) {
-            await this.authCallback(issuer);
+            const auth = await this.authCallback(this.issuer);
+            if(!auth) {
+                throw Error('issuer not authorized');
+            }
         }
-        await this.actionCallback();
+        if(merge) {
+            if(!this.mergeCallback) {
+                const mergeAllowed = await this.mergeCallback();
+                if(mergeAllowed) {
+                    await this.actionCallback();
+                } else {
+                    //merge bypassed
+                }
+            }
+        } else {
+            await this.actionCallback();
+        }
     }
 
 }
