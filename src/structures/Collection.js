@@ -44,11 +44,11 @@ export class Collection {
 		gTypeMap.set(typeName, type);
 	}
 
-	get state() {
+	async getState() {
 		return this.elements.descriptor;
 	}
 
-	set state(state) {
+	async setState(state) {
 		this.elements.descriptor = state;
 	}
 
@@ -58,7 +58,7 @@ export class Collection {
 		}
 		const state = await NVD.load(this.uuid);
 		if(state) {
-            this.state = state;
+            await this.setState(state);
         }
 	}
 
@@ -75,10 +75,11 @@ export class Collection {
 			throw Error('createElement failed: element already exists');
 		}
         await this.elements.set(nameChunk, descriptorChunk);
-		await NVD.save(this.uuid, this.state);
+		await NVD.save(this.uuid, await this.getState());
 		this.events.emit('elementCreated', name);
 		this.events.emit(name + '.created', Collection.expandDescriptor(descriptor));
 		this.events.emit('change');
+		return Collection.expandDescriptor(descriptor);
 	}
 
 	async deleteElement(name) {
@@ -87,7 +88,7 @@ export class Collection {
 			throw Error('deleteElement failed: element does not exist');
 		}
         await this.elements.delete(nameChunk);
-		await NVD.save(this.uuid, this.state);
+		await NVD.save(this.uuid, await this.getState());
 		this.events.emit('elementDeleted', name);
 		this.events.emit('change');
 	}
@@ -102,14 +103,16 @@ export class Collection {
 		}
 		const descriptorChunk = await Chunk.fromObject(descriptor);
 		await this.elements.set(nameChunk, descriptorChunk);
-        await NVD.save(this.uuid, this.state);
+        await NVD.save(this.uuid, await this.getState());
 		this.events.emit('elementUpdated', name);
 		this.events.emit(name + '.change', Collection.expandDescriptor(descriptor));
 		this.events.emit('change');
 	}
 
-	static async expandDescriptor(descriptorChunk) {
-		const descriptor = await descriptorChunk.expand(0);
+	static async expandDescriptor(descriptor) {
+		if(descriptor instanceof Chunk) {
+			descriptor = await descriptor.expand(0);
+		}
 		const type = gTypeMap.get(descriptor.type);
 		if(type == null
 		|| type == undefined) {

@@ -40,12 +40,12 @@ export class VersionedCollection extends Collection {
 		]);
 	}
 
-	get state() {
+	async getState() {
 		return this.versionIdentifier;
 	}
 
-	set state(state) {
-		this.versionIdentifier = state;
+	async setState(state) {
+		await this.checkout(state);
 	}
 
 	async applyChain(chain, merge=false) {
@@ -66,8 +66,8 @@ export class VersionedCollection extends Collection {
 					logger.log('info', '>>MERGE ' + changeDescriptor.method
 						+ ' params: ' + JSON.stringify(changeDescriptor.params));
 				}
-				const change = this.getChangeFromDescriptor(changeDescriptor);
-				await change.execute();
+				const change = await this.getChangeFromDescriptor(changeDescriptor);
+				await change.execute(merge);
 			}
 		}
 	}
@@ -179,7 +179,7 @@ export class VersionedCollection extends Collection {
 					}
 				}
 				//Save changes permanently
-				await NVD.save(this.uuid, this.state);
+				await NVD.save(this.uuid, await this.getState());
 				// Reset blacklist
 				this.versionBlacklist.clear();
 				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.versionIdentifier);
@@ -213,6 +213,7 @@ export class VersionedCollection extends Collection {
 			change.setIssuer(LocalHost.getID());
 			await change.execute();
 			changeDescriptors.push(change.descriptor);
+			console.log("Change descriptor: " + JSON.stringify(change.descriptor, null, 2));
 		}
 		var versionStatement = new VersionStatement();
 		versionStatement.source = LocalHost.getID();
@@ -226,6 +227,11 @@ export class VersionedCollection extends Collection {
 		this.versionIdentifier = versionChunk.id;
 		logger.debug("New version statement: " + JSON.stringify(versionStatement, null, 2)//.replaceAll('\\', '')
 			+ "->" + this.versionIdentifier);
+		await NVD.save(this.uuid, await this.getState());
+	}
+
+	forceCreateElement(name, descriptor) {
+		return super.createElement(name, descriptor);
 	}
 
 	createElement(name, descriptor) {
