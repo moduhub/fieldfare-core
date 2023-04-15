@@ -71,10 +71,18 @@ async function implementationsMenu() {
                     'Back'],
     };
     console.log("__________ Local Service Implementations __________");
-    const implementations = await actions.getServiceImplementations();
+    let implementations = await actions.getServiceImplementations();
     if(implementations && implementations.length > 0) {
-        console.table(implementations);
+        const truncatedImplentations = implementations.map(({uuid, filename}) => {
+            if(filename.length > 24) {
+                return {uuid, filename: '...' + filename.slice(filename.length-24)};
+            } else {
+                return {uuid, filename};
+            }
+        });
+        console.table(truncatedImplentations);
     } else {
+        implementations = [];
         console.log(" <No implementations registered>");
     }
     const answer = await inquirer.prompt(prompt);
@@ -100,7 +108,7 @@ async function implementationsMenu() {
                 }
                 await actions.addServiceImplementation(fullpath);
             } catch (error) {
-                console.log(chalk.red("Failed to add new implementation: " + error));
+                console.log(chalk.red("Failed to add new implementation: " + error.stack));
             }
             implementationsMenu();
         } break;
