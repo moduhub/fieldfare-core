@@ -100,53 +100,33 @@ export class RemoteHost {
 	async treatMessage(message, channel) {
 		this.lastMessageTime = Date.now();
 		try {
-//		logger.log('info', "Message redirected to "
-//			+ this.id + ": "
-//			+ JSON.stringify(message));
-
 			if(message.service == 'announce') {
-
 				await this.treatAnnounce(message, channel);
-
 			} else
 			if(message.service == 'chunk') {
-
-				//logger.log('info', "treating chunk request (request/response)");
 				await this.treatChunkMessage(message, channel);
 			} else
 			if(message.service == 'response') {
-
 				if('hash' in message.data === false) {
 					throw Error('Malformed reponse data');
 				}
-
 				if(this.pendingRequests.has(message.data.hash)) {
-
 					const request = this.pendingRequests.get(message.data.hash);
-
 					request.resolve(message);
-
 				} else {
 					throw Error('Response does not have an assigned request');
 				}
-
 			} else {
-
 				const localService = LocalHost.getLocalService(message.service);
-
 				if(localService === undefined
 				|| localService === null) {
 					throw Error('unexpected service id: ' + message.service);
 				}
-
 				if(await cryptoManager.verifyMessage(message) !== true) {
 					throw Error('invalid message signature');
 				}
-
 				await localService.pushRequest(this, message);
-
 			}
-
 		} catch(error) {
 			logger.log('info', "Message parse failed: " + error);
 			logger.error("Message parse failed: " + error.stack);
@@ -271,9 +251,7 @@ export class RemoteHost {
 		|| 'error' in message.data) {
 			//this is a response to a previous request
 			if(this.onResponseReceived) {
-
 				this.onResponseReceived(message, channel);
-
 			} else {
 				throw Error('treatChunkRequest: undefined response callback');
 			}
