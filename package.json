@@ -22,7 +22,7 @@
     "url": "git+https://github.com/moduhub/fieldfare.git"
   },
   "keywords": [
-    "backend, framework, distributed, version-control, distributed hash tables, dht, p2p, peer-to-peer, peer to peer, peer, to, peer, p2p, peer2peer,"
+    "backend, framework, distributed, hash tables, version-control, distributed hash tables, dht, p2p, peer-to-peer, peer to peer, peer, to, peer, p2p, peer2peer,"
   ],
   "author": "Adan Kvitschal",
   "license": "ISC",
