@@ -37,6 +37,12 @@ export class CryptoManager {
 	}
 
     async signMessage(message, privateKey) {
+        if(!message) {
+            throw Error('message is undefined');
+        }
+        if(!privateKey) {
+            throw Error('privateKey is undefined');
+        }
         if(cryptoManager === undefined) {
             throw Error('CryptoManager not initialized');
         }
