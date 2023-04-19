@@ -12,8 +12,8 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\bin\\ffconf.js",
-            "args": ["getChanges"]
+            "program": "${workspaceFolder}\\bin\\fieldfare.js",
+            "args": ["envconfig", "show", "changes"]
         },
         {
             "type": "node",
@@ -23,8 +23,8 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\bin\\ffrun.js",
-            //"runtimeArgs": ["-r","esm"]
+            "program": "${workspaceFolder}\\bin\\fieldfare.js",
+            "args": ["run"]
         }
     ]
 }
