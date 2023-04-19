@@ -6,11 +6,7 @@
  */
 
 import { VersionedCollection } from "./VersionedCollection.js";
-import { LocalHost } from "../env/LocalHost.js";
 import { Chunk } from "../chunking/Chunk.js";
-import { Utils } from "../basic/Utils.js";
-import { NVD } from "../basic/NVD.js";
-import { logger } from "../basic/Log.js";
 import { HostIdentifier } from "../env/HostIdentifier.js";
 import { Change } from "./Change.js";
 
