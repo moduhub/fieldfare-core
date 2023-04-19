@@ -27,7 +27,7 @@ export class BrowserCryptoManager extends WebCryptoManager {
                 namedCurve: "P-256"
             },
             false,
-            ["sign"]
+            ["sign", "verify"]
         );
         const publicKey = newKeypair.publicKey;
         const privateKey = newKeypair.privateKey;
