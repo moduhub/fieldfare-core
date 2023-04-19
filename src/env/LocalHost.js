@@ -9,6 +9,7 @@ import { Chunk } from '../chunking/Chunk.js';
 import { HostIdentifier } from './HostIdentifier.js';
 import { Environment } from '../env/Environment.js';
 import { LocalService } from './LocalService.js';
+import { Collection } from '../structures/Collection.js';
 import { RemoteHost } from './RemoteHost.js';
 import { Message } from '../trx/Message.js';
 import { Utils } from '../basic/Utils.js';
@@ -114,16 +115,6 @@ export const LocalHost = {
 		return localHost.services.get(uuid);
 	},
 
-	updateState() {
-		var hostState = new Object;
-		for(const [uuid, service] of localHost.services) {
-			// const serviceName = service.definition.name;
-			const serviceState = service.updateState();
-			hostState[uuid] = serviceState;
-		}
-		return hostState;
-	},
-
 	async registerRemoteHost(hostid) {
 		var remoteHost = localHost.remoteHosts.get(hostid);
 		//Check if host exists
@@ -225,10 +216,9 @@ export const LocalHost = {
 		}
 		var message = new Message('announce', {
 			id: localHost.id,
-			env: envVersionGroup,
-			state: LocalHost.updateState()
+			collections: await Collection.getLocalCollectionsStates()
 		});
-		await cryptoManager.signMessage(message, localHost.privateKey);
+		await cryptoManager.signMessage(message, localHost.keypair.privateKey);
 		message.setSourceAddress(localHost.id);
 		if(typeof (destination.send) !== 'function') {
 			throw Error('destination ' + JSON.stringify(destination) + ' not send-able');

@@ -6,12 +6,15 @@
  */
 
 import { LocalHost } from '../env/LocalHost.js';
+import { Chunk } from '../chunking/Chunk.js';
 import { ChunkManager } from '../chunking/ChunkManager.js';
 import { RemoteService } from './RemoteService.js';
 import { Message } from '../trx/Message.js';
 import { Utils } from '../basic/Utils.js';
 import { logger } from '../basic/Log.js';
 import { cryptoManager } from '../basic/CryptoManager.js';
+import { HostIdentifier } from './HostIdentifier.js';
+import { Collection } from '../structures/Collection.js';
 
 export class RemoteHost {
 
@@ -138,47 +141,24 @@ export class RemoteHost {
 		if('id' in message.data === false) {
 			throw Error('malformed announce, missing host id');
 		}
+		const remoteHostIdentifier = message.data.id;
 		if(this.pubKey === undefined) {
-			//Get host pubkey
-			var remotePubKeyChunk = await Chunk.fromIdentifier(message.data.id, message.data.id);
-			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyChunk));
-			const remotePubKeyJWK = remotePubKeyChunk.expand();
+			const chunkIdentifier = HostIdentifier.toChunkIdentifier(remoteHostIdentifier);
+			var remotePubKeyChunk = await Chunk.fromIdentifier(chunkIdentifier, remoteHostIdentifier);
+			const remotePubKeyJWK = await remotePubKeyChunk.expand();
+			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyJWK));
 			this.pubKey = await cryptoManager.importPublicKey(remotePubKeyJWK);
 		}
 		if(await cryptoManager.verifyMessage(message, this.pubKey) !== true) {
 			throw Error('invalid message signature');
 		}
-		//Env update
-		if('env' in message.data) {
-			for(const uuid in message.data.env) {
-				if(Utils.isUUID(uuid) === false) {
-					throw Error('Invalid env uuid inside announce');
+		if('collections' in message.data) {
+			for(const uuid in message.data.collections) {
+				if(!Utils.isUUID(uuid)) {
+					throw Error('invalid collection uuid');
 				}
-				const version = message.data.env[uuid];
-				if(Utils.isBase64(version) === false) {
-					throw Error('Invalid env version inside announce');
-				}
-				try {
-					await this.updateEnvironment(uuid, version);
-				} catch(error) {
-					logger.error('Environment update failed: ' + error);
-				}
-			}
-		}
-		//Get host state
-		if('state' in message.data === false) {
-			throw Error('malformed announce packet, missing state data');
-		}
-		if(message.data.state instanceof Object === false) {
-			throw Error('Message state object is not an object');
-		}
-		this.lastState = message.data.state;
-		for(const prop in message.data.state) {
-			const service = this.implementedServices.get(prop);
-			if(service) {
-				service.setState(message.data.state[prop]);
-			} else {
-				logger.info('Service not implemented: ' + prop);
+				const state = message.data.collections[uuid];
+				Collection.updateRemoteCollection(remoteHostIdentifier, uuid, state);
 			}
 		}
 	}
@@ -231,7 +211,7 @@ export class RemoteHost {
 
 	//Assign callbacks
 	onResponseReceived(response) {
-		var assignedRequest = LocalHost.getPendingRequest(response.data.hash);
+		var assignedRequest = LocalHost.getPendingRequest(response.data.id);
 		//logger.log('info', "remoteHost.onResponseReceived(" + JSON.stringify(response));
 		if(assignedRequest) {
 			//logger.log('info', "assignedRequest " + JSON.stringify(assignedRequest));
@@ -240,6 +220,8 @@ export class RemoteHost {
 			} else {
 				assignedRequest.resolve(response);
 			}
+		} else {
+			logger.warning('Received a response without an assigned request');
 		}
 	}
 

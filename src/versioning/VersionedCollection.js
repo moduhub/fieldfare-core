@@ -179,7 +179,7 @@ export class VersionedCollection extends Collection {
 					}
 				}
 				//Save changes permanently
-				await NVD.save(this.uuid, await this.getState());
+				await NVD.save(this.gid, await this.getState());
 				// Reset blacklist
 				this.versionBlacklist.clear();
 				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.versionIdentifier);
@@ -226,7 +226,7 @@ export class VersionedCollection extends Collection {
 		this.versionIdentifier = versionChunk.id;
 		logger.debug("New version statement: " + JSON.stringify(versionStatement, null, 2)//.replaceAll('\\', '')
 			+ "->" + this.versionIdentifier);
-		await NVD.save(this.uuid, await this.getState());
+		await NVD.save(this.gid, await this.getState());
 	}
 
 	forceCreateElement(name, descriptor) {

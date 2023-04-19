@@ -10,12 +10,24 @@ import { ChunkMap } from "./ChunkMap.js";
 import { NVD } from "../basic/NVD.js";
 import { Utils } from "../basic/Utils.js";
 import { EventEmitter } from '../basic/EventEmitter.js';
+import { HostIdentifier } from "../env/HostIdentifier.js";
 
 export const gTypeMap = new Map;
 
+const gListeners = new Map;
+const gLocalCollections = new Map;
+const gRemoteCollections = new Map;
+const gCollectionsByHost = new Map;
+const gCollectionsByUUID = new Map;
+
 export class Collection {
 
-    constructor(uuid) {
+	/**
+	 * Collection class default constructor
+	 * @param {string} uuid 
+	 * @param {string} owner 
+	 */
+    constructor(uuid, owner='local') {
 		if(!uuid) {
 			throw Error('Collection UUID must be informed');
 		}
@@ -30,13 +42,22 @@ export class Collection {
          * @private
          */		
 		this.uuid = uuid;
+		if(!owner) {
+			throw Error('Collection owner must be informed');
+		}
+		if(owner !== 'local') {
+			if(HostIdentifier.isValid(owner) === false) {
+				throw Error('invalid owner');
+			}
+			this.owner = owner;
+		}
 		/**
          * A map of elements under version control, the key is a chunk that expands to an
 		 * object with a name property identifying the elements and the value is a descriptor chunk
          * @type {ChunkMap}
          * @private
          */
-		this.elements = new ChunkMap(5);        
+		this.elements = new ChunkMap(5);
 		this.events = new EventEmitter;
     }
 
@@ -44,19 +65,108 @@ export class Collection {
 		gTypeMap.set(typeName, type);
 	}
 
+	static track(uuid, callback) {
+		if(!uuid) {
+			throw Error('Collection UUID must be informed');
+		}
+		if(!Utils.isUUID(uuid)) {
+			throw Error('invalid UUID');
+		}
+		if(callback instanceof Function === false) {
+			throw Error('invalid callback');
+		}
+		if(!gListeners.has(uuid)) {
+			gListeners.set(uuid, new Set());
+		}
+		gListeners.get(uuid).add(callback);
+	}
+
+	static getRemoteCollection(hostIdentifier, uuid) {
+		return gRemoteCollections.get(hostIdentifier + ':' + uuid);
+	}
+
+	static getLocalCollections() {
+		return gLocalCollections;
+	}
+
+	static async getLocalCollectionsStates() {
+		if(gLocalCollections.size === 0) {
+			return undefined;
+		}
+		const states = {};
+		for(const [uuid, collection] of gLocalCollections) {
+			states[uuid] = await collection.getState();
+		}
+		return states;
+	}
+
+	static getHostCollections(hostIdentifier) {
+		return gCollectionsByHost.get(hostIdentifier);
+	}
+
+	static getCollectionsByUUID(uuid) {
+		return gCollectionsByUUID.get(uuid);
+	}
+
+	static async updateRemoteCollection(hostIdentifier, uuid, state) {
+		if(gListeners.has(uuid)) {
+			let collection = gRemoteCollections.get(hostIdentifier + ':' + uuid);
+			if(!collection) {
+				collection = new Collection(uuid, owner);
+				await collection.init();
+				gRemoteCollections.set(this.gid, this);
+				if(!gCollectionsByHost.has(hostIdentifier)) {
+					gCollectionsByHost.set(hostIdentifier, new Map());
+				}
+				gCollectionsByHost.get(hostIdentifier).set(uuid, this);
+				if(!gCollectionsByUUID.has(uuid)) {
+					gCollectionsByUUID.set(uuid, new Map());
+				}
+				gCollectionsByUUID.get(uuid).set(hostIdentifier, this);
+			}
+			const prevState = await collection.getState();
+			if(prevState != state) {
+				await collection.setState(state);
+				collection.events.emit('change');
+				//TODO: how to trigger specific create/delete events ??
+				const callback = gListeners.get(uuid);
+				if(callback) {
+					callback(collection);
+				}
+			}
+		}
+	}
+
+	get gid() {
+		if(this.owner) {
+			return this.owner + ':' + this.uuid;
+		} else {
+			return 'local:' + this.uuid;
+		}
+	}
+
+	publish() {
+		if(this.owner) {
+			throw Error('cannot publish a remote collection');
+		}
+		gLocalCollections.set(this.uuid, this);
+	}
+
 	async getState() {
-		return this.elements.descriptor;
+		const stateChunk = await Chunk.fromObject(this.elements.descriptor);
+		return stateChunk.id;
 	}
 
 	async setState(state) {
-		this.elements.descriptor = state;
+		const stateChunk = Chunk.fromIdentifier(state);
+		this.elements.descriptor = await stateChunk.expand(0);
 	}
 
     async init() {
 		if(NVD.available() === false) {
 			throw Error('NVD was not initialized');
 		}
-		const state = await NVD.load(this.uuid);
+		const state = await NVD.load(this.gid);
 		if(state) {
             await this.setState(state);
         }
@@ -75,7 +185,7 @@ export class Collection {
 			throw Error('createElement failed: element already exists');
 		}
         await this.elements.set(nameChunk, descriptorChunk);
-		await NVD.save(this.uuid, await this.getState());
+		await NVD.save(this.gid, await this.getState());
 		this.events.emit('elementCreated', name);
 		this.events.emit(name + '.created', Collection.expandDescriptor(descriptor));
 		this.events.emit('change');
@@ -88,7 +198,7 @@ export class Collection {
 			throw Error('deleteElement failed: element does not exist');
 		}
         await this.elements.delete(nameChunk);
-		await NVD.save(this.uuid, await this.getState());
+		await NVD.save(this.gid, await this.getState());
 		this.events.emit('elementDeleted', name);
 		this.events.emit('change');
 	}
@@ -103,7 +213,7 @@ export class Collection {
 		}
 		const descriptorChunk = await Chunk.fromObject(descriptor);
 		await this.elements.set(nameChunk, descriptorChunk);
-        await NVD.save(this.uuid, await this.getState());
+        await NVD.save(this.gid, await this.getState());
 		this.events.emit('elementUpdated', name);
 		this.events.emit(name + '.change', Collection.expandDescriptor(descriptor));
 		this.events.emit('change');

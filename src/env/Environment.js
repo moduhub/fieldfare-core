@@ -14,6 +14,7 @@ import { NVD } from '../basic/NVD.js';
 import { Utils } from '../basic/Utils.js';
 import { logger } from '../basic/Log.js';
 import { HostIdentifier } from './HostIdentifier.js';
+import { Collection } from '../structures/Collection.js';
 
 export class Environment extends AdministeredCollection {
 
@@ -30,6 +31,14 @@ export class Environment extends AdministeredCollection {
 		// setInterval(() => {
 		//	logger.info(this.report());
 		// }, 10000);
+	}
+
+	async init() {
+		await super.init();
+		Collection.track(this.uuid, (remoteCollection) => {
+			logger.log('info', 'Environment '+this.uuid+' received update from remote host ' + remoteCollection.owner);
+			this.update(remoteCollection);
+		});
 	}
 
 	report() {

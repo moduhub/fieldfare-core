@@ -94,6 +94,7 @@ export class LocalService {
                 await serviceInstance.collection.createElement(definedElement.name, definedElement.descriptor);
             }
         }
+        await serviceInstance.collection.publish();
         logger.debug('Service ' + JSON.stringify(uuid) + ' implemented successfully');
         return serviceInstance;
     }
