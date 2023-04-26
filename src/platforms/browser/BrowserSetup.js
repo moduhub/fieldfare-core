@@ -13,6 +13,7 @@ import {IndexedDBNVD} from './IndexedDBNVD.js';
 import {WebClientTransceiver} from '../shared/WebClientTransceiver.js';
 import {logger} from '../../basic/Log.js';
 import {cryptoManager} from '../../basic/CryptoManager.js';
+import {setupBasicCollectionTypes} from '../shared/CommonSetup.js';
 
 export * from '../shared/CommonSetup.js';
 
@@ -22,6 +23,7 @@ export async function setupLocalHost() {
 	VolatileChunkManager.init();
 	IndexedDBChunkManager.init();
 	BrowserCryptoManager.init();
+	setupBasicCollectionTypes();
 	const localKeypair = await cryptoManager.getLocalKeypair();
 	await LocalHost.init(localKeypair);
 	LocalHost.assignWebportTransceiver('ws', new WebClientTransceiver);
