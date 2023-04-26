@@ -15,9 +15,10 @@ import { Message } from '../trx/Message.js';
 import { Utils } from '../basic/Utils.js';
 import { logger } from '../basic/Log.js';
 import { cryptoManager } from '../basic/CryptoManager.js';
+import { EventEmitter } from '../basic/EventEmitter.js';
 
 
-export const localHost = {
+const localHost = {
 	bootChannels: new Set(),
 	chunkManagers: new Set(),
 	remoteHosts: new Map(),
@@ -26,9 +27,8 @@ export const localHost = {
 	environments: new Set(),
 	webportTransceivers: new Map(),
 	webportChannels: new Map(),
-	stateHash: ''
+	events: new EventEmitter()
 };
-
 
 export const LocalHost = {
 	/**
@@ -39,14 +39,17 @@ export const LocalHost = {
 		return localHost.id;
 	},
 
+	get events() {
+		return localHost.events;
+	},
+
 	async init(keypair) {
 		if(keypair === undefined
 		|| keypair === null) {
-			throw Error('No host private key defined');
+			throw Error('No host keypair defined');
 		}
 		localHost.keypair = keypair;
 		const jwkPubKey = await cryptoManager.exportPublicKey(keypair.publicKey);
-		logger.log('jwkPubKey: ' + JSON.stringify(jwkPubKey))
 		const pubKeyChunk = await Chunk.fromObject(jwkPubKey);
 		localHost.id = HostIdentifier.fromChunkIdentifier(pubKeyChunk.id);
 		logger.log('info', 'HOST ID: ' + localHost.id);
@@ -78,6 +81,31 @@ export const LocalHost = {
 	},
 
 	/**
+	 * Implement all services assigned to this host in a given environment.
+	 * If this function is called many many times, only new services will be implemented.
+	 * @param {*} environment The environment from which service assignments are fetched
+	 */
+	async implementLocalServices(environment) {
+		const serviceArray = await environment.getServicesForHost(localHost.id);
+		logger.debug('List of services assigned to host: ' + JSON.stringify(serviceArray));
+		for(const serviceUUID of serviceArray) {
+			if(!localHost.services.has(serviceUUID)) {
+				const newService = await LocalService.implement(serviceUUID, environment);
+				localHost.services.set(serviceUUID, newService);
+				localHost.events.emit('newService', newService);
+			}
+		}
+	},
+
+	async serveEnvironmentWebports(environment) {
+		const servedWebports = await environment.getWebports(LocalHost.getID());
+		for(const webport of servedWebports) {
+			LocalHost.serveWebport(webport);
+		}
+		localHost.environments.add(environment);
+	},
+
+	/**
 	 * Joining the environment means fetching all the services that are assigned to
 	 * this host identifier and implementing them by searching the local implementations
 	 * registered by LocalService.registerImplementation().
@@ -96,19 +124,12 @@ export const LocalHost = {
 			throw Error('Environment already joined before ' + environment.uuid);
 		}
 		logger.debug('Joining new environment: ' + environment.uuid);
-		//Implement Local Services
-		const serviceArray = await environment.getServicesForHost(localHost.id);
-		logger.debug('List of services assigned to host: ' + JSON.stringify(serviceArray));
-		for(const serviceUUID of serviceArray) {
-			const newService = await LocalService.implement(serviceUUID, environment);
-			localHost.services.set(serviceUUID, newService);
-		}
-		//Serve assigned webports
-		const servedWebports = await environment.getWebports(LocalHost.getID());
-		for(const webport of servedWebports) {
-			LocalHost.serveWebport(webport);
-		}
-		localHost.environments.add(environment);
+		await this.implementLocalServices(environment);
+		environment.events.on('change', () => {
+			this.implementLocalServices(environment);
+		});
+		await this.serveEnvironmentWebports(environment);
+		environment.publish();
 	},
 
 	getLocalService(uuid) {
