@@ -137,6 +137,15 @@ export class VersionChain {
         return count;
     }
 
+    async toArray() {
+        const array = [];
+        const changes = await this.getChanges();
+        for await (const change of changes) {
+            array.push(change);
+        }
+        return array;
+    }
+
     async print(mergeDepth=0) {
         const localChanges = await this.getChanges();
         for await (const {issuer, descriptor} of localChanges) {

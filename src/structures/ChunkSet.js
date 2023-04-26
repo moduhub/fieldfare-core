@@ -89,4 +89,12 @@ export class ChunkSet extends ChunkTree {
 		}
 	}
 
+    async toArray() {
+        const array = [];
+        for await (const chunk of this) {
+            array.push(chunk);
+        }
+        return array;
+    }
+
 }
