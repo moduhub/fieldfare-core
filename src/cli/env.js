@@ -591,6 +591,9 @@ export async function main(args) {
                 }
             }
         }
+        //await LocalHost.join(env);
+        await LocalHost.serveEnvironmentWebports(env);
+        env.publish();
     } catch (error) {
         console.error('Fieldfare initialization failed: ' + error.stack);
         process.exit(1);
