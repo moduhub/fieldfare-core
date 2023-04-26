@@ -57,7 +57,7 @@ export class Collection {
          * @type {ChunkMap}
          * @private
          */
-		this.elements = new ChunkMap(5);
+		this.elements = new ChunkMap(5, undefined, (!owner || owner=='local')? true: false);
 		this.events = new EventEmitter;
     }
 
@@ -112,7 +112,7 @@ export class Collection {
 		if(gListeners.has(uuid)) {
 			let collection = gRemoteCollections.get(hostIdentifier + ':' + uuid);
 			if(!collection) {
-				collection = new Collection(uuid, owner);
+				collection = new Collection(uuid, hostIdentifier);
 				await collection.init();
 				gRemoteCollections.set(this.gid, this);
 				if(!gCollectionsByHost.has(hostIdentifier)) {
@@ -158,7 +158,7 @@ export class Collection {
 	}
 
 	async setState(state) {
-		const stateChunk = Chunk.fromIdentifier(state);
+		const stateChunk = Chunk.fromIdentifier(state, this.owner);
 		this.elements.descriptor = await stateChunk.expand(0);
 	}
 
