@@ -24,24 +24,26 @@ export class Collection {
 
 	/**
 	 * Collection class default constructor
-	 * @param {string} uuid 
-	 * @param {string} owner 
+	 * @param {string} uuid Assign an UUID to the collection. If it is not defined,
+	 * the collection will be treated as temporary and will not be stored in the local host
+	 * nor be available for remote hosts.
+	 * @param {string} owner Assign an owner to the collection to treat it as a remote collection
+	 * or leave it undefined or equal to a string 'local' to treat it as a local collection.
 	 */
     constructor(uuid, owner='local') {
-		if(!uuid) {
-			throw Error('Collection UUID must be informed');
+		if(uuid) {
+			if(!Utils.isUUID(uuid)) {
+				throw Error('invalid UUID');
+			}
+			/**
+			 * The versioned Collection UUID helps to uniquely identify the data collection.
+			 * It is also used to persist the state as NVD in the local host between runs.
+			 * An undefined UUID memans the collection is temporary and won't be persisted.
+			 * @type {string}
+			 * @private
+			 */		
+			this.uuid = uuid;
 		}
-		if(!Utils.isUUID(uuid)) {
-			throw Error('invalid UUID');
-		}
-		/**
-         * The versioned Collection UUID helps to uniquely identify the data collection,
-		 * avoiding conflicts in early commits/pull between similar collections. It is also
-		 * used to store the latest data state as NVD in the local host.
-         * @type {string}
-         * @private
-         */		
-		this.uuid = uuid;
 		if(!owner) {
 			throw Error('Collection owner must be informed');
 		}
@@ -138,6 +140,9 @@ export class Collection {
 	}
 
 	get gid() {
+		if(!this.uuid) {
+			return 'tempCollection';
+		}
 		if(this.owner) {
 			return this.owner + ':' + this.uuid;
 		} else {
@@ -148,6 +153,9 @@ export class Collection {
 	publish() {
 		if(this.owner) {
 			throw Error('cannot publish a remote collection');
+		}
+		if(!this.uuid) {
+			throw Error('cannot publish a temporary collection');
 		}
 		gLocalCollections.set(this.uuid, this);
 	}
@@ -162,7 +170,7 @@ export class Collection {
 		this.elements.descriptor = await stateChunk.expand(0);
 	}
 
-    async init() {
+    async loadPersistentState() {
 		if(NVD.available() === false) {
 			throw Error('NVD was not initialized');
 		}
@@ -176,20 +184,25 @@ export class Collection {
 		if(!descriptor) {
 			throw Error('descriptor must be informed');
 		}
-        if(gTypeMap.has(descriptor.type) === false) {
-            throw Error('unsupported element type');
-        }
+		if(descriptor.type !== 'obj') {
+			if(gTypeMap.has(descriptor.type) === false) {
+				throw Error('unsupported element type');
+			}
+		}
         const nameChunk = await Chunk.fromObject({name: name});
         const descriptorChunk = await Chunk.fromObject(descriptor);
 		if(await this.elements.has(nameChunk)) {
 			throw Error('createElement failed: element already exists');
 		}
         await this.elements.set(nameChunk, descriptorChunk);
-		await NVD.save(this.gid, await this.getState());
+		if(this.uuid) {
+			await NVD.save(this.gid, await this.getState());
+		}
+		const expandedElement = await Collection.expandDescriptor(descriptor);
 		this.events.emit('elementCreated', name);
-		this.events.emit(name + '.created', Collection.expandDescriptor(descriptor));
+		this.events.emit(name + '.created', expandedElement);
 		this.events.emit('change');
-		return Collection.expandDescriptor(descriptor);
+		return expandedElement;
 	}
 
 	async deleteElement(name) {
@@ -198,22 +211,28 @@ export class Collection {
 			throw Error('deleteElement failed: element does not exist');
 		}
         await this.elements.delete(nameChunk);
-		await NVD.save(this.gid, await this.getState());
+		if(this.uuid) {
+			await NVD.save(this.gid, await this.getState());
+		}
 		this.events.emit('elementDeleted', name);
 		this.events.emit('change');
 	}
 
 	async updateElement(name, descriptor) {
-        if(gTypeMap.has(descriptor.type) === false) {
-            throw Error('unsupported element type');
-        }
+		if(descriptor.type !== 'obj') {
+			if(gTypeMap.has(descriptor.type) === false) {
+				throw Error('unsupported element type');
+			}
+		}
 		const nameChunk = await Chunk.fromObject({name: name});
 		if(await this.elements.has(nameChunk) === false) {
 			throw Error('attempt to update element that does not exist: ' + name);
 		}
 		const descriptorChunk = await Chunk.fromObject(descriptor);
 		await this.elements.set(nameChunk, descriptorChunk);
-        await NVD.save(this.gid, await this.getState());
+		if(this.uuid) {
+        	await NVD.save(this.gid, await this.getState());
+		}
 		this.events.emit('elementUpdated', name);
 		this.events.emit(name + '.change', Collection.expandDescriptor(descriptor));
 		this.events.emit('change');
@@ -223,12 +242,16 @@ export class Collection {
 		if(descriptor instanceof Chunk) {
 			descriptor = await descriptor.expand(0);
 		}
-		const type = gTypeMap.get(descriptor.type);
-		if(type == null
-		|| type == undefined) {
-			throw Error('element type not registered');
+		if(descriptor.type === 'obj') {
+			return descriptor.obj;
+		} else {
+			const type = gTypeMap.get(descriptor.type);
+			if(type == null
+			|| type == undefined) {
+				throw Error('element type not registered');
+			}
+			return type.fromDescriptor(descriptor);
 		}
-		return type.fromDescriptor(descriptor);
 	}
 
 	/**
