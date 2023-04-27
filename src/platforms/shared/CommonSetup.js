@@ -13,7 +13,6 @@ import { ChunkSet } from './CommonExports.js';
 import { ChunkMap } from './CommonExports.js';
 import { Collection } from './CommonExports.js';
 
-
 export async function setEnvironmentUUID(uuid) {
 	await NVD.save('envUUID', uuid);
 }
@@ -21,9 +20,9 @@ export async function setEnvironmentUUID(uuid) {
 export async function setupEnvironment() {
 	const envUUID = await NVD.load('envUUID');
     if(!envUUID) {
-        throw Error('Environemnt UUID not defined, please check your setup');;
+        throw Error('Environment UUID not defined, please check your setup');
     }
-    const env = new Environment(envUUID);
+    const env =  new Environment(envUUID);
     await env.init();
     return env;
 }
