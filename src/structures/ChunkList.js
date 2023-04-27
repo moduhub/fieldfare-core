@@ -140,9 +140,12 @@ export class ChunkList {
 		return false;
 	}
 
-	async append(element) {
+	async push(element) {
 		if(!this.local) {
 			throw Error('Attempt to edit a remote linked list');
+		}
+		if(element instanceof Chunk === false) {
+			throw Error('element not an instance of Chunk');
 		}
 		const currentNumElements = await this.getNumElements();
 		var newContainer;
