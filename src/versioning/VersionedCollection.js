@@ -27,6 +27,13 @@ import { Change } from './Change.js';
 export class VersionedCollection {
 
 	constructor(uuid) {
+		if(!uuid) {
+			throw Error('uuid must be defined');
+		}
+		if(Utils.isUUID(uuid) === false) {
+			throw Error('invalid uuid');
+		}
+		this.uuid = uuid;
 		/**
 		 * Name of the methods that can be used to alter the collection elements 'legally'.
 		 * Any remote call to a method outside this set will be blocked.
@@ -46,13 +53,18 @@ export class VersionedCollection {
 		 * using the chunk identifier assigned to the lastest version statement.
 		 * @type {string}
 		 */
-		this.versionIdentifier = '';
+		this.currentVersion = '';
 		/**
-		 * The version blacklist contains a set of version identifiers previosly rejected by the
+		 * The version blacklist contains a set of version identifiers previously rejected by the
 		 * local host. This is used to avoid re-checking out a version that was already rejected.
 		 * @type {Set<string>}
 		 */
 		this.versionBlacklist = new Set();
+	}
+
+	async init(){
+		await this.localCopy.loadPersistentState();
+		this.currentVersion = await this.localCopy.getState();
 		Collection.track(this.uuid, (remoteCollection) => {
 			logger.debug('Versioned collection '+this.uuid+' received remote host update ' + remoteCollection.owner);
 			remoteCollection.getElement('version').then((versionChunk) => {
@@ -113,41 +125,41 @@ export class VersionedCollection {
 
 	/**
 	 * Force update to a given version, discarding any local changes.
-	 * @param {string} versionIdentifier chunk identifier of the version to update to.
+	 * @param {string} version identifier of the version to update to.
 	 * @param {string} hostIdentifier Host identifier from where the changes should be fetched.
 	 */
-	async checkout(versionIdentifier, hostIdentifier) {
-		const versionChunk = Chunk.fromIdentifier(versionIdentifier, hostIdentifier);
+	async checkout(version, hostIdentifier) {
+		const versionChunk = Chunk.fromIdentifier(version, hostIdentifier);
 		const statement = await VersionStatement.fromDescriptor(versionChunk);
 		await this.localCopy.setState(statement.data.state);
-		this.versionIdentifier = versionIdentifier;
+		this.currentVersion = version;
 	}
 
 	/**
 	 * Update to a given version, fetching changes from a given source host.
-	 * @param {string} versionIdentifier 
+	 * @param {string} version 
 	 * @param {HostIdentifier} source 
 	 * @returns 
 	 */
-	async pull(versionIdentifier, source) {
-		ChunkingUtils.validateIdentifier(versionIdentifier);
-		if(this.updateInProgress === versionIdentifier) {
+	async pull(version, source) {
+		ChunkingUtils.validateIdentifier(version);
+		if(this.updateInProgress === version) {
 			//Already updating to same version, consider success?
 			return;
 		}
 		if(this.updateInProgress) {
 			throw Error('another update in progress');
 		}
-		if(this.versionBlacklist.has(versionIdentifier)) {
+		if(this.versionBlacklist.has(version)) {
 			throw Error('This version has been blacklisted');
 		}
-		logger.debug(">> pull changes to version: " + versionIdentifier);
-		this.updateInProgress = versionIdentifier;
-		const versionChunk = Chunk.fromIdentifier(versionIdentifier, source);
+		logger.debug(">> pull changes to version: " + version);
+		this.updateInProgress = version;
+		const versionChunk = Chunk.fromIdentifier(version, source);
 		const versionStatement = await VersionStatement.fromDescriptor(versionChunk);
 		logger.debug("Received version statement: " + JSON.stringify(versionStatement,null, 2));
-		const localChain = new VersionChain(this.versionIdentifier, LocalHost.getID(), 50);
-		const remoteChain = new VersionChain(versionIdentifier, source, 50);
+		const localChain = new VersionChain(this.currentVersion, LocalHost.getID(), 50);
+		const remoteChain = new VersionChain(version, source, 50);
 		const commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
 		//Limit to commonVersion, not including
 		localChain.limit(commonVersion, false);
@@ -177,7 +189,7 @@ export class VersionedCollection {
 				if(achievedState !== expectedState) {
 					throw Error('state mismatch after remote changes applied');
 				}
-				this.versionIdentifier = remoteChain.head;
+				this.currentVersion = remoteChain.head;
 				//now merge local changes at end of remote chain, if any
 				if(localCommitsAhead > 0) {
 					this.applyChain(localChain, true);
@@ -187,14 +199,13 @@ export class VersionedCollection {
 						await this.commit({
 							merge: {
 								head: localChain.head,
-								base: localChain.base}
+								base: localChain.base
 							}
-						);
+						});
 					}
 				}
-				await NVD.save(this.uuid + '.version', this.versionIdentifier);
 				this.versionBlacklist.clear();
-				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.versionIdentifier);
+				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.currentVersion);
 			} catch (error) {
 				// Recover previous state
 				await this.checkout(localChain.head);
@@ -217,6 +228,7 @@ export class VersionedCollection {
 		if(changes instanceof Array === false) {
 			changes = [changes];
 		}
+		const prevState = await this.localCopy.getState();
 		const changeDescriptors = [];
 		for(const change of changes) {
 			if(change instanceof Change === false) {
@@ -226,19 +238,25 @@ export class VersionedCollection {
 			await change.execute();
 			changeDescriptors.push(change.descriptor);
 		}
-		var versionStatement = new VersionStatement();
-		versionStatement.source = LocalHost.getID();
-		versionStatement.data = {
-			prev: this.versionIdentifier,
-			state: await this.localCopy.getState(),
-			changes: await Chunk.fromObject(changeDescriptors)
-		};
+		const versionStatement = new VersionStatement(
+			LocalHost.getID(),
+			{
+				prev: prevState,
+				changes: await Chunk.fromObject(changeDescriptors)
+			}
+		);
 		await LocalHost.signMessage(versionStatement);
-		const versionChunk = await Chunk.fromObject(versionStatement);
-		this.versionIdentifier = versionChunk.id;
-		logger.debug("New version statement: " + JSON.stringify(versionStatement, null, 2)
-			+ "->" + this.versionIdentifier);
-		await NVD.save(this.uuid + '.version', this.versionIdentifier);
+		console.log(versionStatement);
+		const descriptor = {
+			type: 'obj',
+			obj: versionStatement
+		};
+		if(await this.localCopy.hasElement('version')) {
+			await this.localCopy.updateElement('version', descriptor);
+		} else {
+			await this.localCopy.createElement('version', descriptor);
+		}
+		this.currentVersion = await this.localCopy.getState();
 	}
 
 	createElement(name, descriptor) {
