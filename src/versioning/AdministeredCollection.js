@@ -39,6 +39,16 @@ export class AdministeredCollection extends VersionedCollection {
 			});
 	}
 
+	removeElement(name) {
+		return super.removeElement(name)
+			.setAuth((issuer) => {
+				if(name == 'admins') {
+					return false;
+				}
+				return this.isAdmin(issuer);
+			});
+	}
+
 	addAdmin(hostIdentifier) {
 		return new Change('addAdmin', arguments)
 			.setAuth((issuer) => {
