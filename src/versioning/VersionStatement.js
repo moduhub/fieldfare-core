@@ -10,12 +10,20 @@ import { logger } from '../basic/Log.js';
 
 export class VersionStatement {
 
-	constructor() {
+	constructor(source, data) {
 		this.signature = '';
-		this.source = '';
-		this.data = {
-			prev: ''
-		};
+		if(source) {
+			this.source = source;
+		} else {
+			this.source = '';
+		}
+		if(data) {
+			this.data = data;
+		} else {
+			this.data = {
+				prev: ''
+			};
+		}
 	}
 
 	static async fromDescriptor(descriptor) {
@@ -35,7 +43,6 @@ export class VersionStatement {
 			throw Error('malformed update descriptor');
 		}
 		if('prev' in descriptor.data === false
-		|| 'state' in descriptor.data === false
 		|| 'changes' in descriptor.data === false) {
 			throw Error('malformed update descriptor data');
 		}
