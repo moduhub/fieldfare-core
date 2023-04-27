@@ -20,7 +20,7 @@ export class AdministeredCollection extends VersionedCollection {
     async isAdmin(hostIdentifier) {
 		const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
 		const hostChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
-		const admins = await this.getElement('admins');
+		const admins = await this.localCopy.getElement('admins');
 		if(!admins
 		|| await admins.isEmpty()
 		|| await admins.has(hostChunk)) {
@@ -55,7 +55,7 @@ export class AdministeredCollection extends VersionedCollection {
 				return this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
-				const admins = await this.getElement('admins');
+				const admins = await this.localCopy.getElement('admins');
 				if(admins) {
 					const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
 					const newAdminChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
@@ -68,7 +68,7 @@ export class AdministeredCollection extends VersionedCollection {
 			.setAction(async () => {
 				const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
 				const newAdminChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
-				let admins = await this.getElement('admins');
+				let admins = await this.localCopy.getElement('admins');
 				if(!admins) {
 					admins = await this.localCopy.createElement('admins', {
 						type: 'set',
@@ -90,7 +90,7 @@ export class AdministeredCollection extends VersionedCollection {
 				return this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
-				const admins = await this.getElement('admins');
+				const admins = await this.localCopy.getElement('admins');
 				if(!admins) {
 					throw Error('applyRemoveAdmin failed: no admins set');
 				}
@@ -104,7 +104,7 @@ export class AdministeredCollection extends VersionedCollection {
 			.setAction(async () => {
 				const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
 				const adminChunk = Chunk.fromIdentifier(chunkIdentifier);
-				const admins = await this.getElement('admins');
+				const admins = await this.localCopy.getElement('admins');
 				if(!admins) {
 					throw Error('applyRemoveAdmin failed: no admins set');
 				}
