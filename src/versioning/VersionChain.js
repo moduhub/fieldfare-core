@@ -67,10 +67,10 @@ export class VersionChain {
 
     async toArray() {
         const array = [];
-        for await (const change of this.changes()) {
+        for await (const change of this.changesIterator()) {
             array.push(change);
         }
-        return array;
+        return array.reverse();
     }
 
     async* changesIterator() {
