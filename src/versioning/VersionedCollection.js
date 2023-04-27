@@ -24,12 +24,9 @@ import { Change } from './Change.js';
  * them with all other hosts in the admin group, that may accept or
  * reject the changes based on a shared set of rules.
  */
-export class VersionedCollection extends Collection {
+export class VersionedCollection {
 
 	constructor(uuid) {
-		super(uuid);
-		this.versionIdentifier = '';
-		this.versionBlacklist = new Set();	
 		/**
 		 * Name of the methods that can be used to alter the collection elements 'legally'.
 		 * Any remote call to a method outside this set will be blocked.
@@ -38,14 +35,33 @@ export class VersionedCollection extends Collection {
 		this.allowedChanges = new Set([
 			'createElement', 'deleteElement'
 		]);
-	}
-
-	async getState() {
-		return this.versionIdentifier;
-	}
-
-	async setState(state) {
-		await this.checkout(state);
+		/**
+		 * A local copy of the collection, containing the version last checked out.
+		 * @type {Collection}
+		 */
+		this.localCopy = new Collection(uuid);
+		this.localCopy.publish();
+		/**
+		 * The version identifier is a string that identifies the current version of the collection
+		 * using the chunk identifier assigned to the lastest version statement.
+		 * @type {string}
+		 */
+		this.versionIdentifier = '';
+		/**
+		 * The version blacklist contains a set of version identifiers previosly rejected by the
+		 * local host. This is used to avoid re-checking out a version that was already rejected.
+		 * @type {Set<string>}
+		 */
+		this.versionBlacklist = new Set();
+		Collection.track(this.uuid, (remoteCollection) => {
+			logger.debug('Versioned collection '+this.uuid+' received remote host update ' + remoteCollection.owner);
+			remoteCollection.getElement('version').then((versionChunk) => {
+				logger.debug('Detected version statement ' + versionChunk.id + ' in remote collection');
+				if(versionChunk) {
+					this.pull(versionChunk.id, remoteCollection.owner);
+				}
+			});
+		});
 	}
 
 	async applyChain(chain, merge=false) {
@@ -74,8 +90,8 @@ export class VersionedCollection extends Collection {
 
 	/**
 	 * Apply a change to the collection elements.
-	 * @param {Change} change 
-	 * @param {boolean} merge 
+	 * @param {Change} change
+	 * @param {boolean} merge
 	 */
 	async getChangeFromDescriptor(descriptor) {
 		if(this.allowedChanges.has(descriptor.method) === false) {
@@ -97,17 +113,14 @@ export class VersionedCollection extends Collection {
 
 	/**
 	 * Force update to a given version, discarding any local changes.
-	 * @param {string} versionIdentifier 
+	 * @param {string} versionIdentifier chunk identifier of the version to update to.
+	 * @param {string} hostIdentifier Host identifier from where the changes should be fetched.
 	 */
-	async checkout(versionIdentifier) {
-		const versionChunk = Chunk.fromIdentifier(versionIdentifier);
+	async checkout(versionIdentifier, hostIdentifier) {
+		const versionChunk = Chunk.fromIdentifier(versionIdentifier, hostIdentifier);
 		const statement = await VersionStatement.fromDescriptor(versionChunk);
-		const elementsChunk = statement.data.elements;
-		if(elementsChunk instanceof Chunk === false) {
-			throw Error('elements inside versionChunk not a valid chunk');
-		}
-		this.elements = await ChunkMap.fromDescriptor(elementsChunk);
-		this.versionIdentifier = versionChunk.id;
+		await this.localCopy.setState(statement.data.state);
+		this.versionIdentifier = versionIdentifier;
 	}
 
 	/**
@@ -154,13 +167,14 @@ export class VersionedCollection extends Collection {
 				await this.checkout(commonVersion);
 			}
 			try {
-				logger.debug("state before apply: " + JSON.stringify(this.elements.descriptor));
+				const stateBeforeApply = await this.localCopy.getState();
+				logger.debug("state before apply: " + stateBeforeApply);
 				await this.applyChain(remoteChain);
-				const newElementsChunk = await Chunk.fromObject(this.elements.descriptor);
+				const achievedState = await this.localCopy.getState();
 				const expectedState = await remoteChain.getHeadDescriptor();
-				logger.debug("state after apply: " + JSON.stringify(this.elements.descriptor));
-				logger.debug("expected state: " + JSON.stringify(await expectedState.expand(1)));
-				if(newElementsChunk.id !== expectedState.id) {
+				logger.debug("state after apply: " + achievedState);
+				logger.debug("expected state: " + expectedState);
+				if(achievedState !== expectedState) {
 					throw Error('state mismatch after remote changes applied');
 				}
 				this.versionIdentifier = remoteChain.head;
@@ -178,9 +192,7 @@ export class VersionedCollection extends Collection {
 						);
 					}
 				}
-				//Save changes permanently
-				await NVD.save(this.gid, await this.getState());
-				// Reset blacklist
+				await NVD.save(this.uuid + '.version', this.versionIdentifier);
 				this.versionBlacklist.clear();
 				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.versionIdentifier);
 			} catch (error) {
@@ -218,25 +230,21 @@ export class VersionedCollection extends Collection {
 		versionStatement.source = LocalHost.getID();
 		versionStatement.data = {
 			prev: this.versionIdentifier,
-			elements: await Chunk.fromObject(this.elements.descriptor),
+			state: await this.localCopy.getState(),
 			changes: await Chunk.fromObject(changeDescriptors)
 		};
 		await LocalHost.signMessage(versionStatement);
 		const versionChunk = await Chunk.fromObject(versionStatement);
 		this.versionIdentifier = versionChunk.id;
-		logger.debug("New version statement: " + JSON.stringify(versionStatement, null, 2)//.replaceAll('\\', '')
+		logger.debug("New version statement: " + JSON.stringify(versionStatement, null, 2)
 			+ "->" + this.versionIdentifier);
-		await NVD.save(this.gid, await this.getState());
-	}
-
-	forceCreateElement(name, descriptor) {
-		return super.createElement(name, descriptor);
+		await NVD.save(this.uuid + '.version', this.versionIdentifier);
 	}
 
 	createElement(name, descriptor) {
 		return new Change('createElement', arguments)
 			.setAction(async () => {
-				await super.createElement(name, descriptor);
+				await this.localCopy.createElement(name, descriptor);
 			})
 			.setMergePolicy(async () => {
 				if(await this.hasElement(name)) {
@@ -247,14 +255,10 @@ export class VersionedCollection extends Collection {
 			})
 	}
 
-	forceDeleteElement(name) {
-		return super.deleteElement(name);
-	}
-
 	deleteElement(name) {
 		return new Change('deleteElement', arguments)
 			.setAction(async () => {
-				await super.deleteElement(name);
+				await this.localCopy.deleteElement(name);
 			})
 			.setMergePolicy(async () => {
 				if(await this.hasElement(name) === false) {

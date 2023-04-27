@@ -33,14 +33,6 @@ export class Environment extends AdministeredCollection {
 		// }, 10000);
 	}
 
-	async init() {
-		await super.init();
-		Collection.track(this.uuid, (remoteCollection) => {
-			logger.log('info', 'Environment '+this.uuid+' received update from remote host ' + remoteCollection.owner);
-			this.update(remoteCollection);
-		});
-	}
-
 	report() {
 		var content = 'Active hosts: ' + this.activeHosts.size + '\n';
 		for(const [id, info] of this.activeHosts) {
@@ -178,12 +170,12 @@ export class Environment extends AdministeredCollection {
 
 	async getServicesForHost(hostIdentifier) {
 		var list = [];
-		const services = await this.getElement('services');
+		const services = await this.localCopy.getElement('services');
 		if(services) {
 			for await(const [keyChunk, valueChunk] of services) {
 				const {uuid} = await keyChunk.expand();
 				const providerListName = uuid + '.providers';
-				const providers = await this.getElement(providerListName);
+				const providers = await this.localCopy.getElement(providerListName);
 				const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
 				const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier);
 				if(await providers.has(hostChunk)) {
@@ -200,7 +192,7 @@ export class Environment extends AdministeredCollection {
 				return await this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
-				const services = await this.getElement('services');
+				const services = await this.localCopy.getElement('services');
 				if(services) {
 					const previousDefinitionChunk = await services.get(keyChunk);
 					if(previousDefinitionChunk) {
@@ -220,9 +212,9 @@ export class Environment extends AdministeredCollection {
 				const keyChunk = await Chunk.fromObject({
 					uuid: definition.uuid
 				});
-				let services = await this.getElement('services');
+				let services = await this.localCopy.getElement('services');
 				if(!services) {
-					services = await this.forceCreateElement('services', {
+					services = await this.localCopy.createElement('services', {
 						type: 'map',
 						degree: 3
 					});
@@ -231,8 +223,8 @@ export class Environment extends AdministeredCollection {
 					throw Error('service UUID already assigned');
 				}
 				await services.set(keyChunk, definitionChunk);
-				await this.updateElement('services', services.descriptor);
-				await this.forceCreateElement(definition.uuid+'.providers', {
+				await this.localCopy.updateElement('services', services.descriptor);
+				await this.localCopy.createElement(definition.uuid+'.providers', {
 					type: 'set',
 					degree: 5
 				})
@@ -245,7 +237,7 @@ export class Environment extends AdministeredCollection {
 			return await this.isAdmin(issuer);
 		})
 		.setMergePolicy(async () => {
-			const services = await this.getElement('services');
+			const services = await this.localCopy.getElement('services');
 			if(services) {
 				const keyChunk = await Chunk.fromObject({uuid:uuid});
 				if(await services.has(keyChunk)) {
@@ -256,7 +248,7 @@ export class Environment extends AdministeredCollection {
 		})
 		.setAction(async () => {
 			const keyChunk = await Chunk.fromObject({uuid:uuid});
-			const services = await this.getElement('services');
+			const services = await this.localCopy.getElement('services');
 			if(!services) {
 				throw Error('Environment services not defined');
 			}
@@ -264,13 +256,13 @@ export class Environment extends AdministeredCollection {
 				throw Error('Service does not exist');
 			}
 			await services.delete(keyChunk);
-			await this.updateElement('services', services.descriptor);
-			await this.forceDeleteElement(uuid+'.providers');
+			await this.localCopy.updateElement('services', services.descriptor);
+			await this.localCopy.deleteElement(uuid+'.providers');
 		})
     }
 
 	async getServiceDescriptor(uuid) {
-		const services = await this.getElement('services');
+		const services = await this.localCopy.getElement('services');
 		if(services) {
 			const keyChunk = await Chunk.fromObject({uuid:uuid});
 			const descriptorChunk = await services.get(keyChunk);
@@ -281,7 +273,7 @@ export class Environment extends AdministeredCollection {
 	}
 
 	async hasService(uuid) {
-		const services = await this.getElement('services');
+		const services = await this.localCopy.getElement('services');
 		if(services) {
 			for await(const chunk of services) {
 				const service = await chunk.expand();
@@ -312,7 +304,7 @@ export class Environment extends AdministeredCollection {
 				return await this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
-				const providers = await this.getElement(serviceUUID+'.providers');
+				const providers = await this.localCopy.getElement(serviceUUID+'.providers');
 				if(providers) {
 					const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
 					const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
@@ -327,7 +319,7 @@ export class Environment extends AdministeredCollection {
 				const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
 				const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
 				const providerListName = serviceUUID + '.providers';
-				const providers = await this.getElement(providerListName);
+				const providers = await this.localCopy.getElement(providerListName);
 				if(!providers) {
 					throw Error(serviceUUID + ' providers ChunkSet does not exist');
 				}
@@ -335,7 +327,7 @@ export class Environment extends AdministeredCollection {
 					throw Error('provider already in list');
 				}
 				await providers.add(hostChunk);
-				await this.updateElement(providerListName, providers.descriptor);
+				await this.localCopy.updateElement(providerListName, providers.descriptor);
 			})
 	}
 
@@ -345,7 +337,7 @@ export class Environment extends AdministeredCollection {
 				return await this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
-				const providers = await this.getElement(serviceUUID+'.providers');
+				const providers = await this.localCopy.getElement(serviceUUID+'.providers');
 				if(providers) {
 					const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
 					const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
@@ -360,7 +352,7 @@ export class Environment extends AdministeredCollection {
 				const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
 				const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
 				const providerListName = serviceUUID + '.providers';
-				const providers = await this.getElement(providerListName);
+				const providers = await this.localCopy.getElement(providerListName);
 				if(!providers) {
 					throw Error(serviceUUID + ' providers ChunkSet does not exist');
 				}
@@ -368,13 +360,13 @@ export class Environment extends AdministeredCollection {
 					throw Error('provider not in list');
 				}
 				await providers.delete(hostChunk);
-				await this.updateElement(providerListName, providers.descriptor);
+				await this.localCopy.updateElement(providerListName, providers.descriptor);
 			})
 	}
 
 	async getWebports(hostID) {
 		var hostWebports = [];
-		const envWebports = await this.getElement('webports');
+		const envWebports = await this.localCopy.getElement('webports');
 		if(envWebports) {
 			for await(const chunk of envWebports) {
 				//logger.debug('[ENV] getWebports>chunk.key: '+ chunk.key);
@@ -396,7 +388,7 @@ export class Environment extends AdministeredCollection {
 			})
 			.setMergePolicy(async () => {
 				const webportChunk = await Chunk.fromObject(descriptor);
-				const webports = await this.getElement('webports');
+				const webports = await this.localCopy.getElement('webports');
 				if(webports) {
 					if(await webports.has(webportChunk)) {
 						logger.debug('addWebport successfully MERGED');
@@ -406,9 +398,9 @@ export class Environment extends AdministeredCollection {
 				return true;
 			})
 			.setAction(async () => {
-				let webports = await this.getElement('webports');
+				let webports = await this.localCopy.getElement('webports');
 				if(!webports) {
-					webports = await this.forceCreateElement('webports', {
+					webports = await this.localCopy.createElement('webports', {
 						type: 'set',
 						degree: 5
 					});
@@ -418,7 +410,7 @@ export class Environment extends AdministeredCollection {
 					throw Error('webport already defined');
 				}
 				await webports.add(webportChunk);
-				await this.updateElement('webports', webports.descriptor);
+				await this.localCopy.updateElement('webports', webports.descriptor);
 			})
 	}
 
@@ -428,7 +420,7 @@ export class Environment extends AdministeredCollection {
 				return await this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
-				const webports = await this.getElement('webports');
+				const webports = await this.localcopy.getElement('webports');
 				if(webports) {
 					if(await webports.has(webportChunk)) {
 						return true;
@@ -438,7 +430,7 @@ export class Environment extends AdministeredCollection {
 				return false;
 			})
 			.setAction(async () => {
-				const webports = await this.getElement('webports');
+				const webports = await this.localCopy.getElement('webports');
 				if(!webports) {
 					throw Error('webports ChunkSet does not exist');
 				}
@@ -446,7 +438,7 @@ export class Environment extends AdministeredCollection {
 					throw Error('webport does not exist');
 				}
 				await webports.delete(webportChunk);
-				await this.updateElement('webports', webports.descriptor);
+				await this.localCopy.updateElement('webports', webports.descriptor);
 			})
     }
 

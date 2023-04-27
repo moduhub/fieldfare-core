@@ -165,7 +165,7 @@ async function adminsMenu() {
     };
     console.log('__________ Environment Admins configuration __________');
     var adminArray = []
-    const envAdmins = await env.getElement('admins');
+    const envAdmins = await env.localCopy.getElement('admins');
     if(envAdmins) {
         for await (const chunk of envAdmins) {
             const adminID = HostIdentifier.fromChunkIdentifier(chunk.id);
@@ -239,7 +239,7 @@ async function selectServiceMenu(servicesArray) {
 
 async function getServicesArray() {
     const servicesArray = [];
-    const services = await env.getElement('services');
+    const services = await env.localCopy.getElement('services');
     if(services) {
         for await (const [keyChunk, valueChunk] of services) {
             servicesArray.push(await valueChunk.expand());
@@ -344,7 +344,7 @@ async function providersMenu(serviceUUID) {
     }
     console.log(title('__________ Service <'+serviceUUID+'> Providers configuration __________'));
     var providersArray = [];
-    const providers = await env.getElement(serviceUUID+'.providers');
+    const providers = await env.localCopy.getElement(serviceUUID+'.providers');
     if(providers) {
         for await(const providerChunk of providers) {
             providersArray.push(HostIdentifier.fromChunkIdentifier(providerChunk.id));
@@ -424,7 +424,7 @@ async function webportsMenu() {
     }
     console.log(title('__________ Enviroment Webports configuration __________'));
     var list = [];
-    const webports = await env.getElement('webports');
+    const webports = await env.localCopy.getElement('webports');
     if(webports) {
         for await(const chunk of webports) {
             const webport = await chunk.expand();
@@ -531,7 +531,7 @@ async function mainMenu() {
 async function show(name, options) {
     switch(name) {
         case 'admins': {
-            const envAdmins = await env.getElement('admins');
+            const envAdmins = await env.localCopy.getElement('admins');
             if(!envAdmins) {
                 console.log('<no admins defined>');
             } else {
@@ -550,7 +550,7 @@ async function show(name, options) {
             if(!options.uuid) {
                 throw new Error('Missing service UUID');
             }
-            const providers = await env.getElement(options.uuid + '.providers');
+            const providers = await env.localCopy.getElement(options.uuid + '.providers');
             if(providers) {
                 for await (const chunk of providers) {
                     const hostIdentifier = HostIdentifier.fromChunkIdentifier(chunk.id);
@@ -559,7 +559,7 @@ async function show(name, options) {
             }
         } break;
         case 'webports': {
-            const webports = await env.getElements('webports');
+            const webports = await env.localCopy.getElement('webports');
             if(webports) {
                 for await (const chunk of webports) {
                     const webport = await chunk.expand();
@@ -579,7 +579,7 @@ export async function main(args) {
     try {
         await ffinit.setupLocalHost();
         env = await ffinit.setupEnvironment();
-        const envWebports = await env.getElement('webports');
+        const envWebports = await env.localCopy.getElement('webports');
         if(!envWebports) {
             const bootWebports = await ffinit.getBootWebports();
             for(const webport of bootWebports) {
@@ -593,7 +593,6 @@ export async function main(args) {
         }
         //await LocalHost.join(env);
         await LocalHost.serveEnvironmentWebports(env);
-        env.publish();
     } catch (error) {
         console.error('Fieldfare initialization failed: ' + error.stack);
         process.exit(1);
@@ -615,7 +614,9 @@ export async function main(args) {
         case 'addAdmin': {
                 console.log(">>addAdmin " + options.host
                     + 'to environment ' + envUUID);
-                await env.addAdmin(options.host);
+                await env.commit(
+                    env.addAdmin(options.host)
+                );
                 process.exit(0);
         } break;
 

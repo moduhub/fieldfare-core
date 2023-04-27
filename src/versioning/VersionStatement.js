@@ -26,7 +26,7 @@ export class VersionStatement {
 			if(!descriptor.id) {
 				throw Error('VersionStatement descriptor chunk identifier  is \'' + JSON.stringify(descriptor.id) + '\'');
 			}
-			descriptor = await descriptor.expand(1);
+			descriptor = await descriptor.expand(0);
 		}
 		if('signature' in descriptor === false
 		|| 'source' in descriptor === false
@@ -35,7 +35,7 @@ export class VersionStatement {
 			throw Error('malformed update descriptor');
 		}
 		if('prev' in descriptor.data === false
-		|| 'elements' in descriptor.data === false
+		|| 'state' in descriptor.data === false
 		|| 'changes' in descriptor.data === false) {
 			throw Error('malformed update descriptor data');
 		}

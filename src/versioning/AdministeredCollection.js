@@ -60,7 +60,7 @@ export class AdministeredCollection extends VersionedCollection {
 				const newAdminChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
 				let admins = await this.getElement('admins');
 				if(!admins) {
-					admins = await this.forceCreateElement('admins', {
+					admins = await this.localCopy.createElement('admins', {
 						type: 'set',
 						degree: 5,
 						root: null
@@ -70,7 +70,7 @@ export class AdministeredCollection extends VersionedCollection {
 					throw Error('applyAddAdmin failed: id already in set');
 				}
 				await admins.add(newAdminChunk);
-				await this.updateElement('admins', admins.descriptor);
+				await this.localCopy.updateElement('admins', admins.descriptor);
 			});
 	}
 
@@ -102,7 +102,7 @@ export class AdministeredCollection extends VersionedCollection {
 					throw Error('applyRemoveAdmin failed: id not in set');
 				}
 				await admins.delete(adminChunk);
-				await this.updateElement('admins', admins.descriptor);
+				await this.localCopy.updateElement('admins', admins.descriptor);
 			});
 	}
 
