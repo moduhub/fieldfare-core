@@ -497,7 +497,7 @@ async function mainMenu() {
     if(env) {
         console.table({
             uuid: env.uuid,
-            version: env.versionIdentifier
+            version: env.currentVersion
         })
     } else {
         console.log('<No Enviroment configured>');
@@ -543,8 +543,8 @@ async function show(name, options) {
             }
         } break;
         case 'changes': {
-            const localChain = new VersionChain(env.versionIdentifier, LocalHost.getID(), 50);
-            await localChain.print();
+            const localChain = new VersionChain(env.currentVersion, LocalHost.getID(), 50);
+            await localChain.prettyPrint();
         } break;
         case 'providers': {
             if(!options.uuid) {
