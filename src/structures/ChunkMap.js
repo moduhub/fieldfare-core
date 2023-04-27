@@ -13,8 +13,8 @@ import { Utils } from "../basic/Utils.js";
 
 export class ChunkMap extends ChunkTree {
     
-    constructor(degree) {
-        super(degree);
+    constructor(degree, root, local) {
+        super(degree, root, local);
     }
 
     static async fromDescriptor(descriptor) {
