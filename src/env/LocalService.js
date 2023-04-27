@@ -80,7 +80,7 @@ export class LocalService {
         //create service data
         const serviceInstance = new implementation(environment);
         serviceInstance.collection = new Collection(serviceDescriptor.uuid);
-        await serviceInstance.collection.init();
+        await serviceInstance.collection.loadPersistentState();
         for await (const definedElement of serviceDescriptor.collection) {
             const localElement = await serviceInstance.collection.getElement(definedElement.name);
             if(localElement) {

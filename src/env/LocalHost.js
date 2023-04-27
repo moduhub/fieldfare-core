@@ -125,11 +125,10 @@ export const LocalHost = {
 		}
 		logger.debug('Joining new environment: ' + environment.uuid);
 		await this.implementLocalServices(environment);
-		environment.events.on('change', () => {
+		environment.localCopy.events.on('change', () => {
 			this.implementLocalServices(environment);
 		});
 		await this.serveEnvironmentWebports(environment);
-		environment.publish();
 	},
 
 	getLocalService(uuid) {

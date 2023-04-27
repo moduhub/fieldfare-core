@@ -115,7 +115,7 @@ export class Collection {
 			let collection = gRemoteCollections.get(hostIdentifier + ':' + uuid);
 			if(!collection) {
 				collection = new Collection(uuid, hostIdentifier);
-				await collection.init();
+				await collection.loadPersistentState();
 				gRemoteCollections.set(this.gid, this);
 				if(!gCollectionsByHost.has(hostIdentifier)) {
 					gCollectionsByHost.set(hostIdentifier, new Map());
@@ -131,8 +131,7 @@ export class Collection {
 				await collection.setState(state);
 				collection.events.emit('change');
 				//TODO: how to trigger specific create/delete events ??
-				const callback = gListeners.get(uuid);
-				if(callback) {
+				for(const callback of gListeners.get(uuid)) {
 					callback(collection);
 				}
 			}
@@ -167,7 +166,9 @@ export class Collection {
 
 	async setState(state) {
 		const stateChunk = Chunk.fromIdentifier(state, this.owner);
-		this.elements.descriptor = await stateChunk.expand(0);
+		const descriptor = await stateChunk.expand(0);
+		console.log('setState', descriptor);
+		this.elements.descriptor = descriptor;
 	}
 
     async loadPersistentState() {
