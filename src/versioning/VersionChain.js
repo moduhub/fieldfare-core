@@ -8,6 +8,7 @@
 import { Chunk } from '../chunking/Chunk.js';
 import { Collection } from '../structures/Collection.js';
 import { VersionStatement } from '../versioning/VersionStatement.js';
+import { logger } from '../basic/Log.js';
 import chalk from 'chalk';
 
 export class VersionChain {
@@ -22,9 +23,9 @@ export class VersionChain {
 
     static async findCommonVersion(chainA, chainB) {
         var depthA = 0;
-        for await (const versionA of chainA.versionsIterator()) {
+        for await (const {version:versionA} of chainA.versionsIterator()) {
             var depthB = 0;
-            for await (const versionB of chainB.versionsIterator()) {
+            for await (const {version:versionB} of chainB.versionsIterator()) {
                 // logger.log('info', "A("+depthA+"): " + versionA);
                 // logger.log('info', "B("+depthB+"): " + versionB);
                 if(versionA === versionB) {
@@ -46,18 +47,22 @@ export class VersionChain {
         return this;
     }
 
-    async length(prevVersion) {
+    async length(limitVersion) {
         var count = 0;
-        if(prevVersion === undefined) prevVersion = this.base;
-        if(this.head !== prevVersion) {
-            for await(const [version, statement] of this) {
+        if(limitVersion === undefined) limitVersion = this.base;
+        if(this.head !== limitVersion) {
+            for await(const {version, collection} of this.versionsIterator()) {
                 if(++count>this.maxDepth) throw Error('max depth exceeded');
-                if(version == prevVersion) {
+                // console.log('version: ' + version + ' x limit: ' + limitVersion);
+                if(version == limitVersion) {
                     return count;
                 }
-                if(this.includeBase === false
-                && statement.data.prev.id === prevVersion) {
-                    return count;
+                if(this.includeBase === false) {
+                    const statement = await collection.getElement('version');
+                    const prevVersion = statement.data.prev;
+                    if(prevVersion == limitVersion) {
+                        return count;
+                    }
                 }
             }
             throw Error('prev version not in chain');
