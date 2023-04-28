@@ -17,6 +17,7 @@ import {
     inputIndexBetween
 } from './menuCommon.js';
 import { cryptoManager } from '../basic/CryptoManager.js';
+import { logger } from '../basic/Log.js';
 
 async function environmentMenu() {
 
@@ -226,7 +227,7 @@ async function bootWebportsMenu() {
                 var index = 0;
                 if(webports.length > 1) {
                     index = await inquirer.prompt(inputIndexBetween(0, webports.length-1));
-                }           
+                }
                 const webportToRemove = webports[index];
                 console.table(webportToRemove);
                 const {confirm} = await inquirer.prompt({
@@ -244,19 +245,15 @@ async function bootWebportsMenu() {
         } break;
 
         case 'Remove All': {
-
             const {confirm} = await inquirer.prompt({
                 type: 'confirm',
                 name: 'confirm',
                 message: "Are you sure you want to drop all Boot Webports?"
             });
-
             if(confirm) {
                 await actions.removeAllBootWebports();
             }
-
             bootWebportsMenu();
-
         } break;
 
         default:
@@ -301,6 +298,7 @@ function mainMenu() {
 }
 
 export async function main(args) {
+    logger.disable();
     await actions.init();
     mainMenu();
 }
