@@ -65,36 +65,27 @@ export class VersionedCollection {
 	async init(){
 		await this.localCopy.loadPersistentState();
 		this.currentVersion = await this.localCopy.getState();
-		Collection.track(this.uuid, (remoteCollection) => {
+		Collection.track(this.uuid, async (remoteCollection) => {
 			logger.debug('Versioned collection '+this.uuid+' received remote host update ' + remoteCollection.owner);
-			remoteCollection.getElement('version').then((versionChunk) => {
-				logger.debug('Detected version statement ' + versionChunk.id + ' in remote collection');
-				if(versionChunk) {
-					this.pull(versionChunk.id, remoteCollection.owner);
-				}
+			remoteCollection.getState().then((version) => {
+				this.pull(version, remoteCollection.owner);
 			});
 		});
 	}
 
 	async applyChain(chain, merge=false) {
-		//just accept remote changes
-		const changes = await chain.getChanges();
-		logger.log('info', "applyChain: changes:" + JSON.stringify(changes));
-		for await (const changeDescriptor of changes) {
-			if(changeDescriptor.method === 'merge') {
+		const changes = await chain.toArray();
+		console.log('Applying '+changes.length+' changes...');
+		for await (const {issuer, descriptor} of changes) {
+			console.log('>>> descriptor', descriptor);
+			if(descriptor.method === 'merge') {
 				const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
 				mergeChain.limit(params.base);
 				await this.applyChain(mergeChain, true);
 			} else {
-				logger.debug('await this.apply('
-					+ changeDescriptor.issuer + ',' 
-					+ changeDescriptor.method + ',' 
-					+ JSON.stringify(changeDescriptor.params) + ')');
-				if(merge) {
-					logger.log('info', '>>MERGE ' + changeDescriptor.method
-						+ ' params: ' + JSON.stringify(changeDescriptor.params));
-				}
-				const change = await this.getChangeFromDescriptor(changeDescriptor);
+				const change = await this.getChangeFromDescriptor(descriptor);
+				change.setIssuer(issuer);
+				console.log('>>> executing change:', change);
 				await change.execute(merge);
 			}
 		}
@@ -107,15 +98,17 @@ export class VersionedCollection {
 	 */
 	async getChangeFromDescriptor(descriptor) {
 		if(this.allowedChanges.has(descriptor.method) === false) {
-			throw Error('change is not allowed ' + change.methodName);
+			throw Error('change is not allowed ' + descriptor.method);
 		}
-		const classMethod = this[descriptor.method];
+		const classMethod = this[descriptor.method].bind(this);
 		if(!classMethod) {
-			throw Error('change is not defined ' + change.method);
+			throw Error('change is not defined ' + descriptor.method);
 		}
-		const change = classMethod(...descriptor.params).bind(this);
+		//console.log('descriptor.params', descriptor.params);
+		console.log(classMethod);
+		const change = classMethod(...descriptor.params);
 		if(change instanceof Change === false) {
-			throw Error('class method ' + change.method + ' does not return a Change object');
+			throw Error('class method ' + descriptor.method + ' does not return a Change object');
 		}
 		if(descriptor.issuer) {
 			change.setIssuer(descriptor.issuer);
@@ -129,9 +122,7 @@ export class VersionedCollection {
 	 * @param {string} hostIdentifier Host identifier from where the changes should be fetched.
 	 */
 	async checkout(version, hostIdentifier) {
-		const versionChunk = Chunk.fromIdentifier(version, hostIdentifier);
-		const statement = await VersionStatement.fromDescriptor(versionChunk);
-		await this.localCopy.setState(statement.data.state);
+		await this.localCopy.setState(version);
 		this.currentVersion = version;
 	}
 
@@ -143,6 +134,7 @@ export class VersionedCollection {
 	 */
 	async pull(version, source) {
 		ChunkingUtils.validateIdentifier(version);
+		const initialState = await this.localCopy.getState();
 		if(this.updateInProgress === version) {
 			//Already updating to same version, consider success?
 			return;
@@ -153,37 +145,30 @@ export class VersionedCollection {
 		if(this.versionBlacklist.has(version)) {
 			throw Error('This version has been blacklisted');
 		}
-		logger.debug(">> pull changes to version: " + version);
 		this.updateInProgress = version;
-		const versionChunk = Chunk.fromIdentifier(version, source);
-		const versionStatement = await VersionStatement.fromDescriptor(versionChunk);
-		logger.debug("Received version statement: " + JSON.stringify(versionStatement,null, 2));
-		const localChain = new VersionChain(this.currentVersion, LocalHost.getID(), 50);
-		const remoteChain = new VersionChain(version, source, 50);
-		const commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
-		//Limit to commonVersion, not including
-		localChain.limit(commonVersion, false);
-		remoteChain.limit(commonVersion, false);
-		logger.debug("Common version is " + commonVersion);
-		const localCommitsAhead = await localChain.length();
-		const remoteCommitsAhead = await remoteChain.length();
-		logger.debug("Local env is " + localCommitsAhead + " commits ahead");
-		logger.debug("Remote env is " + remoteCommitsAhead + " commits ahead");
-		// 		1) I have concurrent changes
-		// && 	2) remote chain is longer
-		// 			so... stash localChanges and perform remote before
-		if(remoteCommitsAhead > 0
-		&& remoteCommitsAhead >= localCommitsAhead) {
-			if(localCommitsAhead > 0) {
-				// logger.log('info', "Stashing local changes");
-				await this.checkout(commonVersion);
-			}
-			try {
-				const stateBeforeApply = await this.localCopy.getState();
-				logger.debug("state before apply: " + stateBeforeApply);
+		try {
+			logger.debug(">> pull changes to version: " + version);
+			const localChain = new VersionChain(this.currentVersion, LocalHost.getID(), 50);
+			const remoteChain = new VersionChain(version, source, 50);
+			const commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
+			//Limit to commonVersion, not including
+			localChain.limit(commonVersion, false);
+			remoteChain.limit(commonVersion, false);
+			logger.debug("Common version is " + commonVersion);
+			const localCommitsAhead = await localChain.length();
+			const remoteCommitsAhead = await remoteChain.length();
+			logger.debug("Local collection is " + localCommitsAhead + " commits ahead");
+			logger.debug("Remote collection is " + remoteCommitsAhead + " commits ahead");
+			if(remoteCommitsAhead > 0
+			&& remoteCommitsAhead >= localCommitsAhead) {
+				if(localCommitsAhead > 0) {
+					// logger.log('info', "Stashing local changes");
+					await this.checkout(commonVersion);
+				}
+				logger.debug("initial state: " + initialState);
 				await this.applyChain(remoteChain);
 				const achievedState = await this.localCopy.getState();
-				const expectedState = await remoteChain.getHeadDescriptor();
+				const expectedState = await remoteChain.head;
 				logger.debug("state after apply: " + achievedState);
 				logger.debug("expected state: " + expectedState);
 				if(achievedState !== expectedState) {
@@ -205,19 +190,18 @@ export class VersionedCollection {
 					}
 				}
 				this.versionBlacklist.clear();
-				logger.debug('Environment ' + this.uuid + ' updated successfully to version ' + this.currentVersion);
-			} catch (error) {
-				// Recover previous state
-				await this.checkout(localChain.head);
-				throw Error('environment changes apply all failed: ' + error, {cause: error});
-			} finally {
-				this.updateInProgress = null;
+				logger.debug('Collection ' + this.uuid + ' updated successfully to version ' + this.currentVersion);
+			} else {
+				logger.debug("Local chain is ahead of remote chain, nothing to do");
+				//Local chain is ahead of remote, wait for remote to merge
+				// Todo: notify him?
 			}
-		} else {
+		} catch (error) {
+			// Recover previous state
+			await this.checkout(initialState);
+			throw Error('Pull failed: ' + error, {cause: error});
+		} finally {
 			this.updateInProgress = null;
-			logger.debug("Local chain is ahead of remote chain, nothing to do");
-			//Local chain is ahead of remote, wait for remote to merge
-			// Todo: notify him?
 		}
 	}
 
@@ -238,15 +222,11 @@ export class VersionedCollection {
 			await change.execute();
 			changeDescriptors.push(change.descriptor);
 		}
-		const versionStatement = new VersionStatement(
-			LocalHost.getID(),
-			{
-				prev: prevState,
-				changes: await Chunk.fromObject(changeDescriptors)
-			}
-		);
+		const versionStatement = new VersionStatement(LocalHost.getID(), {
+			prev: prevState,
+			changes: await Chunk.fromObject(changeDescriptors)
+		});
 		await LocalHost.signMessage(versionStatement);
-		console.log(versionStatement);
 		const descriptor = {
 			type: 'obj',
 			obj: versionStatement
