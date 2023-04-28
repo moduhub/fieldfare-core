@@ -16,7 +16,7 @@ import { Utils } from '../basic/Utils.js';
  */
 export class ChunkList {
 
-	constructor(degree, last, ownerID) {
+	constructor(degree, last, owner) {
 		if(degree == undefined
 		|| degree == null) {
 			degree = 1;
@@ -45,9 +45,9 @@ export class ChunkList {
          * @private
          */
 		this.last = last;
-		if(ownerID) {
-			this.local = false;
-			this.ownerID = ownerID;
+		if(owner
+		&& owner !== LocalHost.getID()) {
+			this.owner = owner;
 		} else {
 			this.local=true;
 		}
@@ -63,7 +63,7 @@ export class ChunkList {
 	}
 
     set descriptor(descriptor) {
-		Utils.validateParameters(descriptor, ['type', 'degree'], ['last', 'ownerID']);
+		Utils.validateParameters(descriptor, ['type', 'degree'], ['last', 'owner']);
 		if(descriptor.type !== 'list') {
 			throw Error('Descriptor type is not compatible with chunk list');
 		}

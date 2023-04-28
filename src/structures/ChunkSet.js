@@ -13,8 +13,8 @@ import { Utils } from "../basic/Utils.js";
 
 export class ChunkSet extends ChunkTree {
 
-    constructor(degree) {
-        super(degree);
+    constructor(degree, root, owner) {
+        super(degree, root, owner);
     }
 
     static async fromDescriptor(descriptor) {
@@ -33,7 +33,7 @@ export class ChunkSet extends ChunkTree {
         }
         this.degree = descriptor.degree;
         if(descriptor.root) {
-            this.rootChunk = Chunk.fromIdentifier(descriptor.root);
+            this.rootChunk = Chunk.fromIdentifier(descriptor.root, this.owner);
         } else {
             this.rootChunk = undefined;
         }
@@ -60,7 +60,7 @@ export class ChunkSet extends ChunkTree {
     		newRoot.add(element.id);
     		this.rootChunk = await Chunk.fromObject(newRoot);
 		} else {
-            const branch = new TreeBranch(this.rootChunk.id, this.rootChunk.ownerID);
+            const branch = new TreeBranch(this.rootChunk.id, this.owner);
             await branch.getToKey(element.id);
             var iContainer = branch.getLastContainer();
             if(branch.containsKey) {
@@ -75,7 +75,7 @@ export class ChunkSet extends ChunkTree {
             } else {
                 newRootIdentifier = await branch.update();
             }
-            this.rootChunk = Chunk.fromIdentifier(newRootIdentifier, this.ownerID);
+            this.rootChunk = Chunk.fromIdentifier(newRootIdentifier, this.owner);
 		}
 		return this.rootChunk;
 	}
@@ -84,7 +84,7 @@ export class ChunkSet extends ChunkTree {
 		if(this.rootChunk) {
 			var rootContainer = await TreeContainer.fromDescriptor(this.rootChunk);
             for await(const identifier of rootContainer.iterator(this.rootChunk.ownerID)) {
-                yield Chunk.fromIdentifier(identifier);;
+                yield Chunk.fromIdentifier(identifier, this.owner);
             }
 		}
 	}

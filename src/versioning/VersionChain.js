@@ -77,7 +77,7 @@ export class VersionChain {
         for await (const {version, collection} of this.versionsIterator()) {
             const statement = await collection.getElement('version');
             if(statement) {
-                const changes = await Chunk.fromIdentifier(statement.data.changes).expand(0);
+                const changes = await Chunk.fromIdentifier(statement.data.changes, this.owner).expand(0);
                 for(const descriptor of changes) {
                     yield {issuer: statement.source, descriptor};
                 }
@@ -87,7 +87,7 @@ export class VersionChain {
 
 	async* versionsIterator() {
         if(this.head !== '') {
-            const iCollection = new Collection();
+            const iCollection = new Collection(undefined, this.owner);
             iCollection.setState(this.head);
             yield {version:this.head, collection:iCollection};
             let iVersionStatement = await iCollection.getElement('version');

@@ -13,8 +13,8 @@ import { Utils } from "../basic/Utils.js";
 
 export class ChunkMap extends ChunkTree {
     
-    constructor(degree, root, local) {
-        super(degree, root, local);
+    constructor(degree, root, owner) {
+        super(degree, root, owner);
     }
 
     static async fromDescriptor(descriptor) {
@@ -27,6 +27,9 @@ export class ChunkMap extends ChunkTree {
     }
 
     set descriptor(descriptor) {
+        if(!descriptor) {
+            return;
+        }
         Utils.validateParameters(descriptor, ['type', 'degree'], ['root']);
         if(descriptor.type !== 'map') {
             throw Error('Unexpected type value');
@@ -38,7 +41,7 @@ export class ChunkMap extends ChunkTree {
         }
         this.degree = descriptor.degree;
         if(descriptor.root) {
-            this.rootChunk = Chunk.fromIdentifier(descriptor.root);
+            this.rootChunk = Chunk.fromIdentifier(descriptor.root, this.owner);
         } else {
             this.rootChunk = undefined;
         }
@@ -85,7 +88,7 @@ export class ChunkMap extends ChunkTree {
                     newRootIdentifier = await branch.update();
                 }
             }
-            this.rootChunk = Chunk.fromIdentifier(newRootIdentifier);
+            this.rootChunk = Chunk.fromIdentifier(newRootIdentifier, this.owner);
         }
     }
 
@@ -99,9 +102,9 @@ export class ChunkMap extends ChunkTree {
                 const nextContainerIdentifier = iContainer.follow(key.id);
                 if(nextContainerIdentifier === true) {
                     const valueIdentifier = iContainer.getKeyValue(key.id);
-                    return Chunk.fromIdentifier(valueIdentifier, this.rootChunk.ownerID);
+                    return Chunk.fromIdentifier(valueIdentifier, this.owner);
                 }
-                const containerChunk = Chunk.fromIdentifier(nextContainerIdentifier, this.rootChunk.ownerID);
+                const containerChunk = Chunk.fromIdentifier(nextContainerIdentifier, this.owner);
                 iContainer = await TreeContainer.fromDescriptor(containerChunk);
             }
         }
@@ -112,8 +115,8 @@ export class ChunkMap extends ChunkTree {
 		if(this.rootChunk) {
 			var rootContainer = await TreeContainer.fromDescriptor(this.rootChunk);
    			for await(const [keyIdentifier, valueIdentifier] of rootContainer.iterator(this.rootChunk.ownerID)) {
-                const key = Chunk.fromIdentifier(keyIdentifier);
-                const value = Chunk.fromIdentifier(valueIdentifier);
+                const key = Chunk.fromIdentifier(keyIdentifier, this.owner);
+                const value = Chunk.fromIdentifier(valueIdentifier, this.owner);
                 yield [key, value];
             }
 		}

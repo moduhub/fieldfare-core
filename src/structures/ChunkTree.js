@@ -6,15 +6,21 @@
  */
 
 import { Chunk } from '../chunking/Chunk.js';
+import { LocalHost } from '../env/LocalHost.js';
 import { TreeBranch } from './TreeBranch.js';
 import { TreeContainer } from './TreeContainer.js';
  
 export class ChunkTree {
 
-	constructor(degree=5, root, local=true) {
+	constructor(degree=5, root, owner) {
 		this.degree = degree;
 		this.rootChunk = root;
-        this.local = local;
+        if(owner
+        && owner !== LocalHost.getID()) {
+            this.owner = owner;
+        } else {
+            this.local = true;
+        }
 	}
 
     async delete(key) {
@@ -28,7 +34,7 @@ export class ChunkTree {
 		|| this.rootChunk == undefined) {
             throw Error('tree is empty');
 		} else {
-            const branch = new TreeBranch(this.rootChunk.id, this.rootChunk.ownerID);
+            const branch = new TreeBranch(this.rootChunk.id, this.owner);
             await branch.getToKey(key.id);
             if(branch.containsKey === false) {
                 throw Error('key does not exist in tree');
@@ -48,10 +54,10 @@ export class ChunkTree {
                 }
             } else {
                 const [leftContainerKey, rightContainerKey] = ownerContainer.getChildrenAroundKey(key.id);
-                const leftBranch = new TreeBranch(leftContainerKey, this.ownerID);
+                const leftBranch = new TreeBranch(leftContainerKey, this.owner);
                 await leftBranch.getToRightmostLeaf();
                 const leftStealLeaf = leftBranch.getLastContainer();
-                const rightBranch = new TreeBranch(rightContainerKey, this.ownerID);
+                const rightBranch = new TreeBranch(rightContainerKey, this.owner);
                 await rightBranch.getToLeftmostLeaf();
                 const rightStealLeaf = rightBranch.getLastContainer();
                 var stolenElement;
@@ -72,7 +78,7 @@ export class ChunkTree {
                 }
             }
             const newRootKey = await branch.update(mergeDepth);
-            this.rootChunk = Chunk.fromIdentifier(newRootKey);
+            this.rootChunk = Chunk.fromIdentifier(newRootKey, this.owner);
         }
     }
 

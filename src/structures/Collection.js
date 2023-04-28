@@ -41,7 +41,7 @@ export class Collection {
 			 * An undefined UUID memans the collection is temporary and won't be persisted.
 			 * @type {string}
 			 * @private
-			 */		
+			 */
 			this.uuid = uuid;
 		}
 		if(!owner) {
@@ -59,7 +59,7 @@ export class Collection {
          * @type {ChunkMap}
          * @private
          */
-		this.elements = new ChunkMap(5, undefined, (!owner || owner=='local')? true: false);
+		this.elements = new ChunkMap(5, undefined, owner);
 		this.events = new EventEmitter;
     }
 
@@ -167,7 +167,6 @@ export class Collection {
 	async setState(state) {
 		const stateChunk = Chunk.fromIdentifier(state, this.owner);
 		const descriptor = await stateChunk.expand(0);
-		console.log('setState', descriptor);
 		this.elements.descriptor = descriptor;
 	}
 
