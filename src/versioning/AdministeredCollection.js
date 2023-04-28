@@ -50,7 +50,7 @@ export class AdministeredCollection extends VersionedCollection {
 	}
 
 	addAdmin(hostIdentifier) {
-		return new Change('addAdmin', arguments)
+		return new Change('addAdmin', ...arguments)
 			.setAuth((issuer) => {
 				return this.isAdmin(issuer);
 			})
@@ -85,7 +85,7 @@ export class AdministeredCollection extends VersionedCollection {
 	}
 
 	removeAdmin(hostIdentifier) {
-		return new Change('removeAdmin', arguments)
+		return new Change('removeAdmin', ...arguments)
 			.setAuth((issuer) => {
 				return this.isAdmin(issuer);
 			})

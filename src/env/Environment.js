@@ -21,7 +21,7 @@ export class Environment extends AdministeredCollection {
 	constructor(uuid) {
 		super(uuid);
 		this.activeHosts = new Map();
-		this.allowedChanges - new Set([
+		this.allowedChanges = new Set([
 			'addAdmin', 'removeAdmin',
 			'addService', 'removeService',
 			'addProvider', 'removeProvider',
@@ -187,7 +187,7 @@ export class Environment extends AdministeredCollection {
 	}
 
 	addService(definition) {
-		return new Change('addService', arguments)
+		return new Change('addService', ...arguments)
 			.setAuth(async (issuer) => {
 				return await this.isAdmin(issuer);
 			})
@@ -232,7 +232,7 @@ export class Environment extends AdministeredCollection {
 	}
 
     removeService(uuid) {
-		return new Change('removeService', arguments)
+		return new Change('removeService', ...arguments)
 		.setAuth(async (issuer) => {
 			return await this.isAdmin(issuer);
 		})
@@ -299,7 +299,7 @@ export class Environment extends AdministeredCollection {
 	addProvider(serviceUUID, providerID) {
 		Utils.isUUID(serviceUUID);
 		HostIdentifier.validate(providerID);
-		return new Change('addProvider', arguments)
+		return new Change('addProvider', ...arguments)
 			.setAuth(async (issuer) => {
 				return await this.isAdmin(issuer);
 			})
@@ -332,7 +332,7 @@ export class Environment extends AdministeredCollection {
 	}
 
 	removeProvider(serviceUUID, providerID) {
-		return new Change('removeProvider', arguments)
+		return new Change('removeProvider', ...arguments)
 			.setAuth(async (issuer) => {
 				return await this.isAdmin(issuer);
 			})
@@ -382,7 +382,7 @@ export class Environment extends AdministeredCollection {
 
 	addWebport(descriptor) {
 		Utils.validateParameters(descriptor, ['hostid', 'protocol', 'address', 'port']);
-		return new Change('addWebport', arguments)
+		return new Change('addWebport', ...arguments)
 			.setAuth(async (issuer) => {
 				return await this.isAdmin(issuer);
 			})
@@ -415,7 +415,7 @@ export class Environment extends AdministeredCollection {
 	}
 
     removeWebport(webportChunk) {
-		return new Change('removeWebport', arguments)
+		return new Change('removeWebport', ...arguments)
 			.setAuth(async (issuer) => {
 				return await this.isAdmin(issuer);
 			})

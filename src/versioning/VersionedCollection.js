@@ -260,7 +260,7 @@ export class VersionedCollection {
 	}
 
 	createElement(name, descriptor) {
-		return new Change('createElement', arguments)
+		return new Change('createElement', ...arguments)
 			.setAction(async () => {
 				await this.localCopy.createElement(name, descriptor);
 			})
@@ -274,7 +274,7 @@ export class VersionedCollection {
 	}
 
 	deleteElement(name) {
-		return new Change('deleteElement', arguments)
+		return new Change('deleteElement', ...arguments)
 			.setAction(async () => {
 				await this.localCopy.deleteElement(name);
 			})

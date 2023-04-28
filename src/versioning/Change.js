@@ -2,7 +2,7 @@ import { LocalHost } from "../env/LocalHost.js";
 
 export class Change {
 
-    constructor(method, params) {
+    constructor(method, ...params) {
         this.method = method;
         this.params = params;
     }
