@@ -5,6 +5,7 @@
  * ISC LICENSE
  */
 
+export * from '../../basic/CryptoManager.js';
 export * from '../../basic/Log.js';
 export * from '../../basic/NVD.js';
 export * from '../../basic/Utils.js';
@@ -23,6 +24,7 @@ export * from '../../trx/Transceiver.js';
 
 export * from '../../chunking/Chunk.js';
 export * from '../../chunking/ChunkingUtils.js';
+export * from '../../chunking/ChunkManager.js';
 export * from '../../chunking/VolatileChunkManager.js';
 
 export * from '../../structures/Collection.js';
@@ -37,3 +39,4 @@ export * from '../../versioning/AdministeredCollection.js';
 
 export * from './CommonSetup.js';
 export * from './WebClientTransceiver.js';
+export * from './WebCryptoManager.js';
