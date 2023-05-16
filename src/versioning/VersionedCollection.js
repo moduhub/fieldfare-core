@@ -67,8 +67,15 @@ export class VersionedCollection {
 		this.currentVersion = await this.localCopy.getState();
 		Collection.track(this.uuid, async (remoteCollection) => {
 			logger.debug('Versioned collection '+this.uuid+' received remote host update ' + remoteCollection.owner);
-			remoteCollection.getState().then((version) => {
-				this.pull(version, remoteCollection.owner);
+			remoteCollection.getState().then(async (version) => {
+				if(this.currentVersion !== version && this.versionBlacklist.has(version) === false) {
+					try {
+						await this.pull(version, remoteCollection.owner);
+					} catch(e) {
+						logger.debug('Pull failed due to error: '+e+'\n Version was blacklisted: ' + version);
+						this.versionBlacklist.add(version);
+					}
+				}
 			});
 		});
 	}
@@ -93,20 +100,20 @@ export class VersionedCollection {
 			const changes = await Chunk.fromIdentifier(statement.data.changes, issuer).expand(0);
 			console.log('Applying set of ' + changes.length + ' changes from ' + issuer);
 			for (const descriptor of changes) {
-			console.log('>>> descriptor', descriptor);
-			if(descriptor.method === 'merge') {
-				const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
-				mergeChain.limit(params.base);
-				await this.applyChain(mergeChain, true);
-			} else {
-				const change = await this.getChangeFromDescriptor(descriptor);
-				change.setIssuer(issuer);
-				console.log('>>> executing change:', change);
-				await change.execute(merge);
-			}
+				console.log('>>> descriptor', descriptor);
+				if(descriptor.method === 'merge') {
+					const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
+					mergeChain.limit(params.base);
+					await this.applyChain(mergeChain, true);
+				} else {
+					const change = await this.getChangeFromDescriptor(descriptor);
+					change.setIssuer(issuer);
+					console.log('>>> executing change:', change);
+					await change.execute(merge);
+				}
 			}
 			await this.updateVersionStatement(statement);
-			}
+		}
 	}
 
 	/**
