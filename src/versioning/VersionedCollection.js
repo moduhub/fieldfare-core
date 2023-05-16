@@ -86,9 +86,13 @@ export class VersionedCollection {
 	}
 
 	async applyChain(chain, merge=false) {
-		const changes = await chain.toArray();
-		console.log('Applying '+changes.length+' changes...');
-		for await (const {issuer, descriptor} of changes) {
+		const statements = await chain.getStatementsArray();
+		for await (const statement of statements) {
+			console.log(statement);
+			const issuer = statement.source;
+			const changes = await Chunk.fromIdentifier(statement.data.changes, issuer).expand(0);
+			console.log('Applying set of ' + changes.length + ' changes from ' + issuer);
+			for (const descriptor of changes) {
 			console.log('>>> descriptor', descriptor);
 			if(descriptor.method === 'merge') {
 				const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
@@ -100,6 +104,8 @@ export class VersionedCollection {
 				console.log('>>> executing change:', change);
 				await change.execute(merge);
 			}
+			}
+			await this.updateVersionStatement(statement);
 			}
 	}
 
