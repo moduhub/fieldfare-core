@@ -70,7 +70,7 @@ export class VersionChain {
         return count;
     }
 
-    async toArray() {
+    async getChangesArray() {
         const array = [];
         for await (const change of this.changesIterator()) {
             array.push(change);
@@ -79,8 +79,8 @@ export class VersionChain {
     }
 
     async* changesIterator() {
-        for await (const {version, collection} of this.versionsIterator()) {
-            const statement = await collection.getElement('version');
+        for await (const {statement} of this.versionsIterator()) {
+            // console.log(version.replace('d:', 'v:'), statement);
             if(statement) {
                 const changes = await Chunk.fromIdentifier(statement.data.changes, this.owner).expand(0);
                 for(const descriptor of changes) {
@@ -94,13 +94,21 @@ export class VersionChain {
         if(this.head !== '') {
             const iCollection = new Collection(undefined, this.owner);
             iCollection.setState(this.head);
-            yield {version:this.head, collection:iCollection};
             let iVersionStatement = await iCollection.getElement('version');
+            yield {
+                version:this.head,
+                collection:iCollection,
+                statement: iVersionStatement
+            };
             let prevVersion = iVersionStatement?.data.prev;
             while (prevVersion && prevVersion !== this.base) {
                 iCollection.setState(prevVersion);
-                yield {version: prevVersion, collection: iCollection};
                 iVersionStatement = await iCollection.getElement('version');
+                yield {
+                    version: prevVersion,
+                    collection: iCollection,
+                    statement: iVersionStatement
+                };
                 prevVersion = iVersionStatement?.data.prev;
             }
             if(this.includeBase === true
