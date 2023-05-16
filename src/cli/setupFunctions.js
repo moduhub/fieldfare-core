@@ -39,15 +39,10 @@ export async function getEnvironmentUUID() {
 }
 
 export async function setEnvironmentUUID(uuid) {
-
-    console.log(">>setEnvironment to " + uuid);
-
     if(Utils.isUUID(uuid) === false) {
         throw Error('invalid UUID');
     }
-
     await NVD.save('envUUID', uuid);
-
 }
 
 export async function getServiceImplementations() {
