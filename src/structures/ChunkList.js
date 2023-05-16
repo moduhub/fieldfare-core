@@ -182,6 +182,14 @@ export class ChunkList {
 		//logger.debug("[HLL append] newListElement: " + JSON.stringify(newListElement));
 	}
 
+	async toArray() {
+		const array = [];
+		for await (const chunk of this.chunks()) {
+			array.push(chunk);
+		}
+		return array;
+	}
+
 	async* chunks() {
 		if(this.last) {
 			var iContainer = await this.last.expand(1);
