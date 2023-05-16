@@ -78,6 +78,14 @@ export class VersionChain {
         return array.reverse();
     }
 
+    async getStatementsArray() {
+        const array = [];
+        for await (const {statement} of this.versionsIterator()) {
+            array.push(statement);
+        }
+        return array.reverse();
+    }
+
     async* changesIterator() {
         for await (const {statement} of this.versionsIterator()) {
             // console.log(version.replace('d:', 'v:'), statement);
