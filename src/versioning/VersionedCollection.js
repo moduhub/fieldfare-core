@@ -73,6 +73,18 @@ export class VersionedCollection {
 		});
 	}
 
+	async updateVersionStatement(statement) {
+		const descriptor = {
+			type: 'obj',
+			obj: statement
+		};
+		if(await this.localCopy.hasElement('version')) {
+			await this.localCopy.updateElement('version', descriptor);
+		} else {
+			await this.localCopy.createElement('version', descriptor);
+		}
+	}
+
 	async applyChain(chain, merge=false) {
 		const changes = await chain.toArray();
 		console.log('Applying '+changes.length+' changes...');
@@ -88,7 +100,7 @@ export class VersionedCollection {
 				console.log('>>> executing change:', change);
 				await change.execute(merge);
 			}
-		}
+			}
 	}
 
 	/**
@@ -227,15 +239,7 @@ export class VersionedCollection {
 			changes: await Chunk.fromObject(changeDescriptors)
 		});
 		await LocalHost.signMessage(versionStatement);
-		const descriptor = {
-			type: 'obj',
-			obj: versionStatement
-		};
-		if(await this.localCopy.hasElement('version')) {
-			await this.localCopy.updateElement('version', descriptor);
-		} else {
-			await this.localCopy.createElement('version', descriptor);
-		}
+		await this.updateVersionStatement(versionStatement);
 		this.currentVersion = await this.localCopy.getState();
 	}
 
