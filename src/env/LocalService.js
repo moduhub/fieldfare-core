@@ -81,12 +81,13 @@ export class LocalService {
         const serviceInstance = new implementation(environment);
         serviceInstance.collection = new Collection(serviceDescriptor.uuid);
         await serviceInstance.collection.loadPersistentState();
-        for await (const definedElement of serviceDescriptor.collection) {
-            const localElement = await serviceInstance.collection.getElement(definedElement.name);
-            if(localElement) {
-                for(const prop in definedElement.descriptor) {
-                    if(localElement.descriptor.hasOwnProperty(prop) === false
-                    || localElement.descriptor[prop] !== definedElement.descriptor[prop]) {
+        for await (const {name: definedName, descriptor: definedDescriptor} of serviceDescriptor.collection) {
+            const localElement = await serviceInstance.collection.getElement(definedName);
+            const localDescriptor = localElement.descriptor;
+            if(localDescriptor) {
+                for(const prop in definedDescriptor.descriptor) {
+                    if(localDescriptor.descriptor.hasOwnProperty(prop) === false
+                    || localDescriptor.descriptor[prop] !== definedElement.descriptor[prop]) {
                         throw Error('mismatch between previous service state and environment provided descriptor');
                     }
                 }
