@@ -18,6 +18,20 @@ export class EventEmitter {
         } else {
             this.listeners.set(event, [listener]);
         }
+        return {event, listener};
+    }
+
+    removeEventListener(handle) {
+        const listeners = this.listeners.get(handle.event);
+        if(listeners) {
+            const index = listeners.indexOf(handle.listener);
+            if(index >= 0) {
+                listeners.splice(index, 1);
+            }
+            if(listeners.size == 0) {
+                this.listeners.delete(handle.event);
+            }
+        }
     }
 
     emit(event, ...args) {
