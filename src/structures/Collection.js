@@ -258,7 +258,7 @@ export class Collection {
         	await NVD.save(this.gid, await this.getState());
 		}
 		this.events.emit('elementUpdated', name);
-		this.events.emit(name + '.change', Collection.expandDescriptor(descriptor));
+		this.events.emit(name + '.change', await Collection.expandDescriptor(descriptor));
 		this.events.emit('change');
 	}
 
