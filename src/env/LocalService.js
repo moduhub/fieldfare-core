@@ -79,22 +79,22 @@ export class LocalService {
         }
         //create service data
         const serviceInstance = new implementation(environment);
-        serviceInstance.collection = new Collection(serviceDescriptor.uuid);
-        await serviceInstance.collection.loadPersistentState();
+        serviceInstance.collection = await Collection.getLocalCollection(serviceDescriptor.uuid);
         for await (const {name: definedName, descriptor: definedDescriptor} of serviceDescriptor.collection) {
             const localElement = await serviceInstance.collection.getElement(definedName);
-            const localDescriptor = localElement.descriptor;
-            if(localDescriptor) {
-                for(const prop in definedDescriptor.descriptor) {
-                    if(localDescriptor.descriptor.hasOwnProperty(prop) === false
-                    || localDescriptor.descriptor[prop] !== definedElement.descriptor[prop]) {
+            if(localElement) {
+                const localDescriptor = localElement.descriptor;
+                for(const prop in definedDescriptor) {
+                    if(localDescriptor.hasOwnProperty(prop) === false
+                    || localDescriptor[prop] !== definedDescriptor[prop]) {
                         throw Error('mismatch between previous service state and environment provided descriptor');
                     }
                 }
             } else {
-                await serviceInstance.collection.createElement(definedElement.name, definedElement.descriptor);
+                await serviceInstance.collection.createElement(definedName, definedDescriptor);
             }
         }
+        serviceInstance.descriptor = serviceDescriptor;
         await serviceInstance.collection.publish();
         logger.debug('Service ' + JSON.stringify(uuid) + ' implemented successfully');
         return serviceInstance;
