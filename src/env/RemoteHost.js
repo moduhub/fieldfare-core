@@ -15,6 +15,13 @@ import { logger } from '../basic/Log.js';
 import { cryptoManager } from '../basic/CryptoManager.js';
 import { HostIdentifier } from './HostIdentifier.js';
 import { Collection } from '../structures/Collection.js';
+import { EventEmitter } from '../basic/EventEmitter.js';
+import { ServiceDescriptor } from './ServiceDescriptor.js';
+
+const gOnlineHosts = new Map;
+const gOfflineHosts = new Map;
+const gRemoteHostsEvents = new EventEmitter;
+let gActivityTimeout = undefined;
 
 export class RemoteHost {
 
@@ -24,6 +31,41 @@ export class RemoteHost {
 		this.definedServices = new Map();
 		this.implementedServices = new Map();
 		this.pendingRequests = new Map();
+	}
+
+	static on(...args) {
+		return gRemoteHostsEvents.on(...args);
+	}
+
+	static removeEventListener(handle) {
+		return gRemoteHostsEvents.removeEventListener(handle);
+	}
+
+	static getOnlineHosts() {
+		return gOnlineHosts;
+	}
+
+	static fromHostIdentifier(hostIdentifier) {
+		let remoteHost = gOnlineHosts.get(hostIdentifier);
+		if(!remoteHost) {
+			remoteHost = gOfflineHosts.get(hostIdentifier);
+			if(!remoteHost) {
+				remoteHost = new RemoteHost(hostIdentifier);
+				gOfflineHosts.set(hostIdentifier, remoteHost);
+			}
+		}
+		return remoteHost;
+	}
+
+	static updateRemoteHostsActivity() {
+		for(const [hostIdentifier, remoteHost] of gOnlineHosts) {
+			if(!remoteHost.isActive()) {
+				gOfflineHosts.set(hostIdentifier, remoteHost);
+				gOnlineHosts.delete(hostIdentifier);
+				gRemoteHostsEvents.emit('offline', remoteHost);
+				logger.debug(hostIdentifier + ' is offline');
+			}
+		}
 	}
 
 	async send(message) {
@@ -46,7 +88,7 @@ export class RemoteHost {
 				killFlag = true;
 			}
 			if(killFlag) {
-				logger.warn("Channel offline, removing from list");
+				logger.debug("Channel offline, removing from list");
 				this.channels.delete(channel);
 			}
 		}
@@ -62,6 +104,13 @@ export class RemoteHost {
 			+ " channels assigned to this remote host.");
 	}
 
+	timeSinceLastAnnounceSent() {
+		if(this.lastAnnounceSent) {
+			return Date.now() - this.lastAnnounceSent;
+		}
+		return undefined;
+	}
+
 	isActive() {
 		var numActiveChannels = 0;
 		for(const channel of this.channels) {
@@ -73,7 +122,7 @@ export class RemoteHost {
 			if(this.lastMessageTime !== undefined
 			&& this.lastMessageTime !== null) {
 				var timeSinceLastMessage = Date.now() - this.lastMessageTime;
-				logger.log("time since last message: " + timeSinceLastMessage);
+				logger.debug("time since last message: " + timeSinceLastMessage);
 				if(timeSinceLastMessage < 10000) {
 					return true;
 				}
@@ -82,7 +131,7 @@ export class RemoteHost {
 		return false;
 	}
 
-	becomeActive() {
+	waitUntilActive() {
 		if(this.isActive() === false) {
 			return new Promise((resolve, reject) => {
 				var count = 0;
@@ -100,8 +149,24 @@ export class RemoteHost {
 		}
 	}
 
-	async treatMessage(message, channel) {
+	updateActivity() {
 		this.lastMessageTime = Date.now();
+		if(this.id) {
+			if(!gActivityTimeout) {
+				gActivityTimeout = setInterval(() => {
+					RemoteHost.updateRemoteHostsActivity();
+				}, 1000);
+			}
+			if(!gOnlineHosts.has(this.id)) {
+				gOfflineHosts.delete(this.id);
+				gOnlineHosts.set(this.id, this);
+				gRemoteHostsEvents.emit('online', this);
+				logger.debug(this.id + ' is online');
+			}
+		}
+	}
+
+	async treatMessage(message, channel) {
 		try {
 			if(message.service == 'announce') {
 				await this.treatAnnounce(message, channel);
@@ -125,11 +190,12 @@ export class RemoteHost {
 				|| localService === null) {
 					throw Error('unexpected service id: ' + message.service);
 				}
-				if(await cryptoManager.verifyMessage(message) !== true) {
+				if(await cryptoManager.verifyMessage(message, this.pubKey) !== true) {
 					throw Error('invalid message signature');
 				}
 				await localService.pushRequest(this, message);
 			}
+			this.updateActivity();
 		} catch(error) {
 			logger.log('info', "Message parse failed: " + error);
 			logger.error("Message parse failed: " + error.stack);
@@ -137,14 +203,14 @@ export class RemoteHost {
 	}
 
 	async treatAnnounce(message, channel) {
-		logger.debug("Received announce message: " + JSON.stringify(message, null, 2));
+		// logger.debug("Received announce message: " + JSON.stringify(message, null, 2));
 		if('id' in message.data === false) {
 			throw Error('malformed announce, missing host id');
 		}
 		const remoteHostIdentifier = message.data.id;
 		if(this.pubKey === undefined) {
 			const chunkIdentifier = HostIdentifier.toChunkIdentifier(remoteHostIdentifier);
-			var remotePubKeyChunk = await Chunk.fromIdentifier(chunkIdentifier, remoteHostIdentifier);
+			var remotePubKeyChunk = Chunk.fromIdentifier(chunkIdentifier, remoteHostIdentifier);
 			const remotePubKeyJWK = await remotePubKeyChunk.expand();
 			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyJWK));
 			this.pubKey = await cryptoManager.importPublicKey(remotePubKeyJWK);
@@ -160,6 +226,9 @@ export class RemoteHost {
 				const state = message.data.collections[uuid];
 				Collection.updateRemoteCollection(remoteHostIdentifier, uuid, state);
 			}
+		}
+		if(this.timeSinceLastAnnounceSent() > 5000) {
+			await LocalHost.announce(this);
 		}
 	}
 
