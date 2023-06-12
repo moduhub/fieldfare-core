@@ -260,27 +260,22 @@ export class RemoteHost {
 		}
 	}
 
-	async accessService(uuid) {
-		if(this.definedServices.has(uuid) === false) {
-			throw Error('Service '+ uuid +' is not defined for this host');
-		}
-		if(this.implementedServices.has(uuid) === false) {
+	accessService(descriptor) {
+		ServiceDescriptor.validate(descriptor);
+		if(this.implementedServices.has(descriptor.uuid) === false) {
 			try {
-				const definition = this.definedServices.get(uuid);
-				const newService = RemoteService.fromDefinition(definition);
+				const newService = RemoteService.fromDescriptor(descriptor);
 				newService.setOwner(this);
-				this.implementedServices.set(definition.uuid, newService);
-				if(this.lastState) {
-					const serviceState = this.lastState[uuid];
-					newService.setState(serviceState);
-				}
-				logger.debug('Implemented new RemoteService ' + uuid + ' for RemoteHost ' + this.id);
+				newService.collection = Collection.track(descriptor.collection);
+				this.implementedServices.set(descriptor.uuid, newService);
+				logger.debug('Implemented new RemoteService ' + descriptor.uuid + ' for RemoteHost ' + this.id);
+				return newService;
 			} catch(error) {
-				throw Error('Failed to setup RemoteService ' + uuid, {cause: error});
+				throw Error('Failed to setup RemoteService ' + descriptor.uuid, {cause: error});
 			}
 		}
-		const service = this.implementedServices.get(uuid);
-		logger.debug('accessService('+uuid+') result: ' + JSON.stringify(service));
+		const service = this.implementedServices.get(descriptor.uuid);
+		logger.debug('accessService('+descriptor.uuid+') result: ' + JSON.stringify(service));
 		return service;
 	}
 
