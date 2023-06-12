@@ -309,4 +309,14 @@ export class Collection {
 		}
 	}
 
+	async toArray() {
+		const array = [];
+		for await(const [keyChunk, valueChunk] of this.elements) {
+			const nameObject = await keyChunk.expand();
+			const descriptor = await valueChunk.expand(0);
+			array.push({name: nameObject.name, descriptor});
+		}
+		return array;
+	}
+
 }
