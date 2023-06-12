@@ -80,9 +80,9 @@ export class ChunkList {
 
 	get descriptor() {
 		return {
-            type: 'set',
+            type: 'list',
             degree: this.degree,
-            root: this.last?.id
+            last: this.last?.id
         };
 	}
 
