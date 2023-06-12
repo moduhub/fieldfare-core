@@ -16,23 +16,22 @@ export class RemoteService {
     constructor() {
     }
 
-    static fromDefinition(definition) {
+    static fromDescriptor(descriptor) {
         var newService = new RemoteService();
-        newService.definition = definition;
-        for(const methodName of definition.methods) {
+        newService.descriptor = descriptor;
+        for(const methodName of descriptor.methods) {
             newService[methodName] = async (params) => {
                 if(newService.owner === undefined) {
                     throw Error('RemoteService owner is undefined');
                 }
-                logger.debug('[Remote Service]' +  methodName + ' called with params: ' + JSON.stringify(params));
-                const request = new Request(newService.definition.uuid, 10000, {
-                    [methodName]: {
-                        params: params
-                    }
+                //logger.debug('[Remote Service]' +  methodName + ' called with params: ' + JSON.stringify(params));
+                const request = new Request(newService.descriptor.uuid, 10000, {
+                    [methodName]: params
                 });
                 await LocalHost.signMessage(request);
-                const requestIdentifier = await ChunkingUtils.generateidentifierForObject(request.data);
+                const requestIdentifier = await ChunkingUtils.generateIdentifierForObject(request.data);
                 newService.owner.pendingRequests.set(requestIdentifier, request);
+                console.log('Sending request...', request);
                 newService.owner.send(request);
                 const response = await request.complete();
                 if('data' in response === false) {
@@ -47,8 +46,6 @@ export class RemoteService {
                 return response.data.result;
             };
         }
-        //Assign service data elements
-        ServiceDescriptor.buildData(definition, newService);
         return newService;
     }
 
