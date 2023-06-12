@@ -140,7 +140,7 @@ export class LocalService {
         logger.log('info', 'Service UUID: ' + this.uuid
             + ' received payload:' + JSON.stringify(request.data));
         for(const prop in request.data) {
-            const methodImplementation = this[prop];
+            const methodImplementation = this[prop].bind(this);
             if(methodImplementation
             && methodImplementation !== null
             && methodImplementation !== undefined) {
