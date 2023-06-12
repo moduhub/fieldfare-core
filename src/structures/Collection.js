@@ -38,7 +38,7 @@ export class Collection {
 			/**
 			 * The versioned Collection UUID helps to uniquely identify the data collection.
 			 * It is also used to persist the state as NVD in the local host between runs.
-			 * An undefined UUID memans the collection is temporary and won't be persisted.
+			 * An undefined UUID means the collection is temporary and won't be persisted.
 			 * @type {string}
 			 * @private
 			 */

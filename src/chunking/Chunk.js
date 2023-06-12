@@ -67,7 +67,7 @@ export class Chunk {
                     throw error;
                 }
                 this.data = await ChunkManager.getRemoteChunkContents(this.id, this.ownerID);
-                this.local = false;    
+                this.local = false;
             }
         }
         return this.data;

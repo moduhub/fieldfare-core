@@ -66,7 +66,6 @@ export class VersionedCollection {
 		await this.localCopy.loadPersistentState();
 		this.currentVersion = await this.localCopy.getState();
 		Collection.track(this.uuid, async (remoteCollection) => {
-			logger.debug('Versioned collection '+this.uuid+' received remote host update ' + remoteCollection.owner);
 			remoteCollection.getState().then(async (version) => {
 				if(this.currentVersion !== version && this.versionBlacklist.has(version) === false) {
 					try {

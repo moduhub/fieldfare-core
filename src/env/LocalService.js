@@ -137,7 +137,7 @@ export class LocalService {
             hash: await ChunkingUtils.generateIdentifierForObject(request.data),
             status: 'done'
         };
-        logger.log('info', 'Service UUID: ' + this.uuid
+        logger.debug('Service UUID: ' + this.descriptor.uuid
             + ' received payload:' + JSON.stringify(request.data));
         for(const prop in request.data) {
             const methodImplementation = this[prop].bind(this);
@@ -146,7 +146,7 @@ export class LocalService {
             && methodImplementation !== undefined) {
                 if(!(methodImplementation instanceof Function)
                 && !(methodImplementation instanceof AsyncFunction)) {
-                    throw Error('mathod name not a valid function: ' + prop);
+                    throw Error('method name not a valid function: ' + prop);
                 }
                 try {
                     responseData.result = await methodImplementation(remoteHost, request.data[prop]);
