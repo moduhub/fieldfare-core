@@ -83,12 +83,36 @@ export class Collection {
 		gListeners.get(uuid).add(callback);
 	}
 
-	static getRemoteCollection(hostIdentifier, uuid) {
-		return gRemoteCollections.get(hostIdentifier + ':' + uuid);
+	static async getRemoteCollection(hostIdentifier, uuid) {
+		// if(hostIdentifier === 'local'
+		// || hostIdentifier === LocalHost.getID()) {
+		// 	throw Error('attempt to fetch local collection as remote');
+		// }
+		let collection = gRemoteCollections.get(hostIdentifier + ':' + uuid);
+		if(!collection) {
+			collection = new Collection(uuid, hostIdentifier);
+			await collection.loadPersistentState();
+			gRemoteCollections.set(this.gid, this);
+			if(!gCollectionsByHost.has(hostIdentifier)) {
+				gCollectionsByHost.set(hostIdentifier, new Map());
+			}
+			gCollectionsByHost.get(hostIdentifier).set(uuid, this);
+			if(!gCollectionsByUUID.has(uuid)) {
+				gCollectionsByUUID.set(uuid, new Map());
+			}
+			gCollectionsByUUID.get(uuid).set(hostIdentifier, this);
+		}
+		return collection;
 	}
 
-	static getLocalCollections() {
-		return gLocalCollections;
+	static async getLocalCollection(uuid) {
+		let collection = gLocalCollections.get(uuid);
+		if(!collection) {
+			collection = new Collection(uuid);
+			await collection.loadPersistentState();
+			gLocalCollections.set(this.gid, collection);
+		}
+		return collection;
 	}
 
 	static async getLocalCollectionsStates() {
