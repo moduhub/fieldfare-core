@@ -51,32 +51,5 @@ export class RemoteService {
 
     setOwner(owner) {
         this.owner = owner;
-        for(const prop in this.data) {
-            this.data[prop].setOwnerID(owner.id);
-        }
     }
-
-    setState(state) {
-       // logger.debug('[RemoteService] ' + this.definition.uuid + ' set state:' + JSON.stringify(state));
-       var stateChanged = false;
-       for(const prop in state) {
-           // logger.log('info', "entry state: " + state[prop]);
-           if(prop in this.data === false) {
-               throw Error('state data mismatch');
-           }
-           const entryNewState = state[prop];
-           const entryPrevState = this.data[prop].getState();
-           if(entryNewState !== entryPrevState) {
-            //    logger.debug('[RemoteService] Entry '+ this.definition.uuid + '.' + prop + ' state changed '
-            // + ' from \''  + entryPrevState
-            // + '\' to \'' + entryNewState + '\'');
-               this.data[prop].setState(entryNewState);
-               stateChanged = true;
-           }
-       }
-       if(stateChanged && this.onStateUpdate) {
-           this.onStateUpdate(state);
-       }
-    }
-
 }
