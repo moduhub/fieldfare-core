@@ -9,7 +9,6 @@ import { Chunk } from '../chunking/Chunk.js';
 import { Collection } from '../structures/Collection.js';
 import { VersionStatement } from '../versioning/VersionStatement.js';
 import { logger } from '../basic/Log.js';
-import chalk from 'chalk';
 
 export class VersionChain {
 
@@ -142,7 +141,7 @@ export class VersionChain {
                 mergeChain.limit(params.base);
                 mergeChain.prettyPrint(mergeDepth+1);
             } else {
-                line = chalk.bold.bgWhite.blue(' ' + descriptor.method + ' ')
+                line = ' ' + descriptor.method + ' '
                     + ' from \'' + issuer
                     + '\'\n'+ JSON.stringify(descriptor.params, null, 2);
                 line.replace('\n', prepend + '\n');
