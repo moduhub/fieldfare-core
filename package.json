@@ -54,6 +54,10 @@
     "./test": {
       "require": "./src/platforms/test/TestExports.js",
       "import": "./src/platforms/test/TestExports"
+    },
+    "./services/": {
+      "require": "./src/env/services/",
+      "import": "./src/env/services/"
     }
   },
   "devDependencies": {
