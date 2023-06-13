@@ -128,7 +128,6 @@ export class LocalService {
     }
 
     async treatRequest(remoteHost, request) {
-        console.log(request);
         this.numRequests++;
         if(!request.data) {
             throw Error('request contains no data');
