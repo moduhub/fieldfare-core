@@ -19,14 +19,7 @@
   "author": "Adan Kvitschal",
   "license": "ISC",
   "dependencies": {
-    "arg": "^5.0.1",
-    "blessed": "^0.1.81",
-    "esm": "^3.2.25",
-    "inquirer": "^9.1.5",
-    "inquirer-file-tree-selection-prompt": "^2.0.5",
-    "level": "^8.0.0",
-    "uuid": "^9.0.0",
-    "websocket": "^1.0.34"
+    "uuid": "^9.0.0"
   },
   "exports": {
     ".": {
