@@ -1,10 +1,10 @@
 import {
     Chunk,
     VolatileChunkManager,
-    TestCryptoManager,
     ChunkSet,
     logger
-} from 'fieldfare/test';
+} from '../../src';
+import { TestCryptoManager } from '../mockSetup';
 
 const numCreatedChunks = 100;
 const numNonExistingChunks = Math.floor(numCreatedChunks/5);

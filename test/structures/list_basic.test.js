@@ -1,10 +1,10 @@
 import {
     Chunk,
     VolatileChunkManager,
-    TestCryptoManager,
     ChunkList,
     logger
-} from 'fieldfare/test';
+} from '../../src';
+import { TestCryptoManager } from '../mockSetup';
 
 import {jest} from '@jest/globals';
 
@@ -34,7 +34,7 @@ test('ChunkList stores '+numCreatedChunks+' chunks', async () => {
     await expect(chunkList.getNumElements()).resolves.toBe(0);
     var currentNumElements=0;
     for(const chunk of createdChunks) {
-        await chunkList.append(chunk);
+        await chunkList.push(chunk);
         currentNumElements++;
         await expect(chunkList.getNumElements()).resolves.toBe(currentNumElements);
     }
@@ -43,7 +43,7 @@ test('ChunkList stores '+numCreatedChunks+' chunks', async () => {
 
 test('ChunkList iterates chunks in reverse order', async () => {
     var index = createdChunks.length-1;
-    for await(const chunk of chunkList) {
+    for await(const chunk of chunkList.chunks()) {
         const expectedChunkIdentifier = createdChunks[index].id;
         expect(chunk.id).toBe(expectedChunkIdentifier)
         index--;

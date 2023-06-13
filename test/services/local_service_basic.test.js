@@ -1,5 +1,4 @@
 import {
-    ffinit,
     cryptoManager,
     HostIdentifier,
     RemoteHost,
@@ -11,7 +10,8 @@ import {
     Collection,
     Chunk,
     logger
-} from 'fieldfare/test';
+} from '../../src';
+import {init, terminate} from '../mockSetup';
 
 import {jest} from '@jest/globals';
 
@@ -86,10 +86,12 @@ class InvalidService {
 
 
 beforeAll(async () => {
-    //logger.disable();
-    await ffinit.setupLocalHost();
+    logger.disable();
+    await init();
     //prepare a mocked up environment
-    await gTestEnvironment.addService(testServiceDefinition);
+    await gTestEnvironment.commit(
+        gTestEnvironment.addService(testServiceDefinition)
+    );
     for(var i=0; i<numTestHosts; i++) {
         const iKeypair = await cryptoManager.generateTestKeypair();
         const iPubkeyJWK = await cryptoManager.exportPublicKey(iKeypair.publicKey);
@@ -115,7 +117,7 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
-    ffinit.terminate();
+    terminate();
 });
 
 
@@ -181,9 +183,7 @@ describe('LocalService implemented service', () => {
         });
         test('has exactly 2 elements', async () => {
             var numElements = 0;
-            console.log(gTestService.collection);
             for await (const [name, value] of gTestService.collection) {
-                console.log(name);
                 numElements++;
             }
             expect(numElements).toBe(2);
@@ -224,7 +224,6 @@ describe('LocalService implemented service', () => {
             await expect(gTestService.pushRequest(testHosts[0], fastTestRequests[0])).resolves.toBeUndefined();
             expect(testSendMocks[0]).toHaveBeenCalledTimes(1);
             const [response] = testSendMocks[0].mock.calls[0];
-            console.log(response);
             expect(response.service).toBe('response');
             //expect(response.data.hash).toBe(requestHash[0]);
             expect(response.data.status).toBe('done');
@@ -235,7 +234,6 @@ describe('LocalService implemented service', () => {
             await expect(gTestService.pushRequest(testHosts[0], slowTestRequests[0])).resolves.toBeUndefined();
             expect(testSendMocks[0]).toHaveBeenCalledTimes(1);
             const [response] = testSendMocks[0].mock.calls[0];
-            console.log(response);
             expect(response.service).toBe('response');
             //expect(response.data.hash).toBe(requestHash[0]);
             expect(response.data.status).toBe('done');

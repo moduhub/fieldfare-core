@@ -1,10 +1,10 @@
 import {
     Chunk,
     VolatileChunkManager,
-    TestCryptoManager,
     ChunkMap,
     logger
-} from 'fieldfare/test';
+} from '../../src';
+import { TestCryptoManager } from '../mockSetup';
 
 import {jest} from '@jest/globals';
 

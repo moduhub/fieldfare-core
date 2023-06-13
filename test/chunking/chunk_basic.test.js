@@ -2,17 +2,20 @@ import {
     Chunk,
     ChunkingUtils,
     VolatileChunkManager,
-    NodeCryptoManager,
-    logger
-} from 'fieldfare/node';
-import { Utils } from '../../src/basic/Utils';
+    logger,
+    Utils
+} from '../../src';
+
+import {
+    TestCryptoManager
+} from '../mockSetup'
 
 var gTestPersonChunk;
 
 beforeAll(async () => {
 
     logger.disable();
-    await NodeCryptoManager.init();
+    await TestCryptoManager.init();
     VolatileChunkManager.init();
 
     //Create Chunk tree
