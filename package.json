@@ -2,18 +2,9 @@
   "name": "@fieldfare/core",
   "version": "1.0.0",
   "description": "Backend framework for distributed networks",
-  "main": "./src/platforms/shared/CommonExports.js",
+  "main": "./src/index.js",
   "type": "module",
-  "bin": {
-    "fieldfare": "./bin/fieldfare.js",
-    "ffsetup": "./bin/ffsetup",
-    "ffenvconfig": "./bin/ffenvconfig",
-    "ffhost": "./bin/ffhost"
-  },
   "scripts": {
-    "setup": "node bin/ffsetup.js",
-    "host": "node bin/ffhost.js",
-    "envconfig": "node bin/ffenvconfig.js",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest --verbose --runInBand",
     "coverage": "jest --collectCoverage --",
     "debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
@@ -39,24 +30,8 @@
   },
   "exports": {
     ".": {
-      "require": "./src/platforms/shared/CommonExports.js",
-      "import": "./src/platforms/shared/CommonExports"
-    },
-    "./browser": {
-      "require": "./src/platforms/browser/BrowserExports.js",
-      "import": "./src/platforms/browser/BrowserExports"
-    },
-    "./node": {
-      "require": "./src/platforms/node/NodeExports.js",
-      "import": "./src/platforms/node/NodeExports"
-    },
-    "./test": {
-      "require": "./src/platforms/test/TestExports.js",
-      "import": "./src/platforms/test/TestExports"
-    },
-    "./services/": {
-      "require": "./src/env/services/",
-      "import": "./src/env/services/"
+      "require": "./src/index.js",
+      "import": "./src/index"
     }
   },
   "devDependencies": {
@@ -67,8 +42,7 @@
     "url": "https://github.com/moduhub/fieldfare/issues"
   },
   "homepage": "https://github.com/moduhub/fieldfare#readme",
-  "directories": {
-    "doc": "doc",
-    "test": "test"
-  }
+  "files": [
+    "src"
+  ]
 }
