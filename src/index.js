@@ -5,10 +5,10 @@
  * ISC LICENSE
  */
 
-export * from './basic';
-export * from './chunking';
-export * from './env';
-export * from './structures';
-export * from './trx';
-export * from './versioning';
-export * from './platforms';
+export * from './basic/index.js';
+export * from './chunking/index.js';
+export * from './env/index.js';
+export * from './structures/index.js';
+export * from './trx/index.js';
+export * from './versioning/index.js';
+export * from './platforms/index.js';

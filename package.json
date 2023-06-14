@@ -2,7 +2,6 @@
   "name": "@fieldfare/core",
   "version": "1.0.0",
   "description": "Backend framework for distributed networks",
-  "main": "./src/index.js",
   "type": "module",
   "scripts": {
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest --verbose --runInBand",
@@ -22,10 +21,7 @@
     "uuid": "^9.0.0"
   },
   "exports": {
-    ".": {
-      "require": "./src/index.js",
-      "import": "./src/index"
-    }
+    ".": "./src/index.js"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
