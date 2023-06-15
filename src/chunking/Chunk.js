@@ -74,6 +74,43 @@ export class Chunk {
         return this.data;
     }
 
+/**
+	 * Clone a chunk and all its children recursively from a given remote host, down to the given depth.
+	 * @param {string} identifier Chunk identifier in base64 format plus prefix
+	 * @param {string} source Chunk owner ID in base64 format
+	 * @param {number} depth Maximum depth to clone, defaults to inifinity
+	 * @returns number of chunks cloned
+	 * @throws Error if the chunk is not found locally or remotely
+	 * @throws Error if the chunk data is corrupted
+	 */
+    async clone(depth=Number.POSITIVE_INFINITY) {
+        if(!this.ownerID) {
+            throw Error('Owner ID not set');
+        }
+        if(!Number.isInteger(depth) || depth < 0) {
+        	throw Error('Invalid depth: ' + JSON.stringify(depth));
+        }
+        let numChunksCloned = 0;
+        const {base64data, complete} = await ChunkManager.getLocalChunkContents(this.id);
+        if(!complete) {
+            if(!base64data) {
+                base64data = await ChunkManager.getRemoteChunkContents(this.id, this.ownerID);
+                await ChunkManager.storeChunkContents(base64data);
+                numChunksCloned++;
+            }
+            if(depth > 0) {
+                const childrenIdentifiers = await ChunkingUtils.getChildrenIdentifiers(base64data);
+                const promises = [];
+                for(const childIdentifier of childrenIdentifiers) {
+                    promises.push(this.clone(childIdentifier, this.ownerID, depth-1));
+                }
+                const numClonedChildren = await Promise.all(promises);
+                numChunksCloned += numClonedChildren.reduce((a, b) => a + b, 0);
+            }
+        }
+        return numChunksCloned;
+    }
+
     /**
      * Construct a new Chunk by casting the given object to a string 
      * in base64 format and store the result in the local Chunk managers.
