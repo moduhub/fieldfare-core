@@ -25,7 +25,7 @@ export class Chunk {
     }
 
     /**
-     * Build Chunk from its indentifier. If teh identifier is null or
+     * Build Chunk from its indentifier. If the identifier is null or
      * a null string like '', the function will return null.
      * @param {string} id chunk identifier in base64 format plus prefix
      * @param {string} owner remote chunk owner ID in base64 format
@@ -74,8 +74,8 @@ export class Chunk {
     }
 
     /**
-     * Construct a new Chunk by casting the given  object to a string 
-     * in base64 format and stores the result in the local Chunk managers.
+     * Construct a new Chunk by casting the given object to a string 
+     * in base64 format and store the result in the local Chunk managers.
      * @param {Object} object 
      * @returns Chunk created from object contents
      */
