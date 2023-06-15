@@ -95,8 +95,6 @@ export class Chunk {
         if(!complete) {
             if(!base64data) {
                 base64data = await ChunkManager.getRemoteChunkContents(this.id, this.ownerID);
-                await ChunkManager.storeChunkContents(base64data);
-                numChunksCloned++;
             }
             if(depth > 0) {
                 const childrenIdentifiers = await ChunkingUtils.getChildrenIdentifiers(base64data);
@@ -107,6 +105,8 @@ export class Chunk {
                 const numClonedChildren = await Promise.all(promises);
                 numChunksCloned += numClonedChildren.reduce((a, b) => a + b, 0);
             }
+            await ChunkManager.storeChunkContents(base64data);
+            numChunksCloned++;
         }
         return numChunksCloned;
     }
