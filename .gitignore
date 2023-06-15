@@ -48,6 +48,9 @@ Thumbs.db
 *.mov
 *.wmv
 
+# jsdoc output
+out
+
 /mhlib-js/nbproject/private/
 /nbproject/private/
 /nvd
