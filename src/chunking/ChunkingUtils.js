@@ -75,5 +75,22 @@ export const ChunkingUtils = {
 		const base64data = ChunkingUtils.convertObjectToData(object);
 		const id = await ChunkingUtils.generateIdentifierForData(base64data);
 		return id;
-	}
+	},
+
+    /**
+	 * Expand the base64 chunk data collecting all valid chunk identifiers found in its properties,
+	 * will parse inside all objects and arrays recursively.
+	 * @param {string} base64data Chunk data in base64 format
+	 * @returns an array containing the identifiers found
+	 */
+    getChildrenIdentifiers: async function (base64data) {
+        const json = atob(base64data);
+        const children = [];
+        JSON.parse(json, (key, value) => {
+            if(ChunkingUtils.isValidIdentifier(value)) {
+                children.push(value);
+            }
+        });
+        return children;
+    }
 }
