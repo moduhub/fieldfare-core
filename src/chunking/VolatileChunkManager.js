@@ -13,10 +13,12 @@ export class VolatileChunkManager extends ChunkManager {
 
     constructor(enableReport=false) {
         super();
-        this.hashmap = new Map;
+        this.completeQualifiedChunks = new Map;
+        this.incompleteChunks = new Map;
         if(enableReport) {
             setInterval(() => {
-                logger.log('info', "Volatile Chunk Manager: " + this.hashmap.size + " chunks stored.");
+                const numChunks = this.completeQualifiedChunks.size + this.incompleteChunks.size;
+                logger.log('info', "Volatile Chunk Manager: " + numChunks + " chunks stored.");
             }, 30000);
         }
     }
@@ -27,19 +29,50 @@ export class VolatileChunkManager extends ChunkManager {
     }
 
     async storeChunkContents(base64data) {
-        const id = await ChunkingUtils.generateIdentifierForData(base64data);
-		this.hashmap.set(id, base64data);
-		return id;
-	}
+        let complete = true;
+        let depth = 0;
+        let size = base64data.length;
+        if(size > 1024) {
+            throw Error('Chunk size limit exceeded');
+        }
+        const childrenIdentifiers = await ChunkingUtils.getChildrenIdentifiers(base64data);
+        for(const childIdentifier of childrenIdentifiers) {
+            const childChunk = this.completeQualifiedChunks.get(childIdentifier);
+            if(!childChunk) {
+                complete = false;
+                break;
+            }
+            size += childChunk.size;
+            depth = Math.max(depth, childChunk.depth+1);
+        }
+        const identifier = await ChunkingUtils.generateIdentifierForData(base64data);
+        if(complete) {
+            this.completeQualifiedChunks.set(identifier, {base64data, depth, size});
+        } else {
+            this.incompleteChunks.set(identifier, base64data);
+            depth = undefined;
+            size = undefined;
+        }
+        return {identifier, base64data, complete, depth, size};
+    }
 
-	getChunkContents(id) {
-		var base64data = this.hashmap.get(id);
-        if(base64data === undefined) {
+    getChunkContents(identifier) {
+        const completeChunk = this.completeQualifiedChunks.get(identifier);
+		if(completeChunk) {
+            return {
+                base64data: completeChunk.base64data,
+                complete: true,
+                depth: completeChunk.depth,
+                size: completeChunk.size
+            };
+        }
+        const base64data = this.incompleteChunks.get(identifier);
+        if(!base64data) {
             const error = Error('Chunk not found');
             error.name = 'NOT_FOUND_ERROR';
             throw error;
         }
-		return base64data;
+		return {base64data, complete:false};
 	}
 
 };

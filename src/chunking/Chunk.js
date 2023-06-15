@@ -52,7 +52,8 @@ export class Chunk {
     async fetch() {
         if(this.data === undefined)  {
             try {
-                this.data = await ChunkManager.getLocalChunkContents(this.id);
+                const {base64data} = await ChunkManager.getLocalChunkContents(this.id);
+                this.data = base64data;
                 this.local = true;
             } catch(error) {
                 if(error.name !== 'NOT_FOUND_ERROR') {
@@ -90,7 +91,8 @@ export class Chunk {
         });
         const utf8ArrayBuffer = Utils.strToUtf8Array(json);
 		newChunk.data = Utils.uint8ArrayToBase64(utf8ArrayBuffer);
-        newChunk.id = await ChunkManager.storeChunkContents(newChunk.data);
+        const {identifier} = await ChunkManager.storeChunkContents(newChunk.data);
+        newChunk.id = identifier;
         return newChunk;
     }
 

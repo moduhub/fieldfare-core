@@ -9,6 +9,7 @@ import { LocalHost } from '../env/LocalHost.js';
 import { Request } from '../trx/Request.js';
 import { ChunkingUtils } from './ChunkingUtils.js';
 import { logger } from '../basic/Log.js';
+import { Utils } from '../basic/Utils.js';
 
 var instances = new Set();
 
@@ -53,12 +54,12 @@ export class ChunkManager {
 	 * @returns string containing chunk data in base64 format
 	 */
 	static async getLocalChunkContents(id) {
-		var base64data;
 		for(const instance of instances) {
 			try {
-				base64data = await instance.getChunkContents(id);
-				if(base64data !== undefined) {
-					return base64data;
+				const result = await instance.getChunkContents(id);
+				Utils.validateParameters(result, ['base64data', 'complete', 'depth', 'size']);
+				if(result.base64data) {
+					return result;
 				}
 			} catch (error) {
 				if(error.name === 'NOT_FOUND_ERROR') {
@@ -101,7 +102,7 @@ export class ChunkManager {
 				var remoteChunkIdentifier = response.data.id;
 				var remoteChunkData = response.data.data;
 				//logger.log 'info', ("Received remote chunk response:" + JSON.stringify(response.data.data));
-				const verifyIdentifier = await ChunkManager.storeChunkContents(remoteChunkData);
+				const verifyIdentifier = await ChunkingUtils.generateIdentifierForData(remoteChunkData);
 				if(verifyIdentifier !== remoteChunkIdentifier) {
 					//logger.log('info', "[+RES] (" + hash + "):(" + response.data.data + ")");
 					throw Error('corrupted chunk received from remote host');
