@@ -57,7 +57,7 @@ export class ChunkManager {
 		for(const instance of instances) {
 			try {
 				const result = await instance.getChunkContents(id);
-				Utils.validateParameters(result, ['base64data', 'complete', 'depth', 'size']);
+				Utils.validateParameters(result, ['base64data', 'complete'], ['depth', 'size']);
 				if(result.base64data) {
 					return result;
 				}
