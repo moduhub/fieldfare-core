@@ -299,7 +299,7 @@ export class RemoteHost {
 			try {
 				const newService = RemoteService.fromDescriptor(descriptor);
 				newService.setOwner(this);
-				newService.collection = await Collection.getRemoteCollection(descriptor.collection);
+				newService.collection = await Collection.getRemoteCollection(this.id, descriptor.uuid);
 				this.implementedServices.set(descriptor.uuid, newService);
 				logger.debug('Implemented new RemoteService ' + descriptor.uuid + ' for RemoteHost ' + this.id);
 				return newService;
