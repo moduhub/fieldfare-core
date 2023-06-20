@@ -84,6 +84,7 @@ export class Chunk {
 	 * @throws Error if the chunk data is corrupted
 	 */
     async clone(depth=Number.POSITIVE_INFINITY) {
+        console.log('Entered Chunk.clone(): ' + this.id + ' depth: ' + depth + ' ownerID: ' + this.ownerID);
         if(!this.ownerID) {
             throw Error('Owner ID not set');
         }
@@ -91,10 +92,22 @@ export class Chunk {
         	throw Error('Invalid depth: ' + JSON.stringify(depth));
         }
         let numChunksCloned = 0;
-        const {base64data, complete} = await ChunkManager.getLocalChunkContents(this.id);
+        let base64data;
+        let complete;
+        try {
+            const localResult = await ChunkManager.getLocalChunkContents(this.id);
+            base64data = localResult.base64data;
+            complete = localResult.complete;
+        } catch(error) {
+            if(error.name !== 'NOT_FOUND_ERROR') {
+                throw error;
+            }
+        }
+        console.log('local chunk result: ' + this.id + ' complete: ' + complete + ' base64data: ' + base64data);
         if(!complete) {
             if(!base64data) {
                 base64data = await ChunkManager.getRemoteChunkContents(this.id, this.ownerID);
+                console.log('remote chunk result: ' + base64data);
             }
             if(depth > 0) {
                 const childrenIdentifiers = await ChunkingUtils.getChildrenIdentifiers(base64data);
@@ -108,6 +121,7 @@ export class Chunk {
             await ChunkManager.storeChunkContents(base64data);
             numChunksCloned++;
         }
+        console.log('Exiting Chunk.clone(), numChunksCloned: ' + numChunksCloned);
         return numChunksCloned;
     }
 
