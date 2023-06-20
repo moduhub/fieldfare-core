@@ -89,6 +89,13 @@ export class Collection {
 		// || hostIdentifier === LocalHost.getID()) {
 		// 	throw Error('attempt to fetch local collection as remote');
 		// }
+		if(!uuid
+		|| !Utils.isUUID(uuid)) {
+			throw Error('getRemoteCollection invalid UUID');
+		}
+		if(!HostIdentifier.isValid(hostIdentifier)) {
+			throw Error('getRemoteCollection invalid hostIdentifier');
+		}
 		let collection = gRemoteCollections.get(hostIdentifier + ':' + uuid);
 		if(!collection) {
 			collection = new Collection(uuid, hostIdentifier);
@@ -107,6 +114,10 @@ export class Collection {
 	}
 
 	static async getLocalCollection(uuid) {
+		if(!uuid
+		|| !Utils.isUUID(uuid)) {
+			throw Error('getLocalCollection invalid UUID');
+		}
 		let collection = gLocalCollections.get(uuid);
 		if(!collection) {
 			collection = new Collection(uuid);
