@@ -69,7 +69,7 @@ export class ChunkManager {
 				}
 			}
 		}
-		const error = new Error('Chunk not found locally');
+		const error = new Error('Chunk not found locally:' + id);
 		error.name = 'NOT_FOUND_ERROR';
 		throw error;
 	}
