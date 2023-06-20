@@ -180,18 +180,19 @@ export const LocalHost = {
 	},
 
 	dispatchRequest(hash, request) {
+		console.log('test');
 		// logger.debug("Forwarding request to request.destination: " + JSON.stringify(request.destination));
+		if(request.destination == localHost.id) {
+			throw Error('Attempt to send a request to localHost');
+		}
+		const destinationHost = RemoteHost.fromHostIdentifier(request.destination);
 		localHost.requests.set(hash, request);
-		var destinationHost = localHost.selectedHosts.get(request.destination);
-		if(destinationHost != undefined) {
-			if(destinationHost == localHost.id) {
-				throw Error('Attempt to send a request to localHost');
-			}
-			request.source = localHost.id;
+		request.source = localHost.id;
+		try {
 			destinationHost.send(request);
-		} else {
-			throw Error('dispatchRequest failed: destination is unknown');
-			//TODO: routing here
+		} catch(error) {
+			localHost.requests.delete(hash);
+			throw error;
 		}
 	},
 
