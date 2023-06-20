@@ -16,6 +16,7 @@ export const gTypeMap = new Map;
 
 const gListeners = new Map;
 const gLocalCollections = new Map;
+const gPublicCollections = new Map;
 const gRemoteCollections = new Map;
 const gCollectionsByHost = new Map;
 const gCollectionsByUUID = new Map;
@@ -116,11 +117,11 @@ export class Collection {
 	}
 
 	static async getLocalCollectionsStates() {
-		if(gLocalCollections.size === 0) {
+		if(gPublicCollections.size === 0) {
 			return undefined;
 		}
 		const states = {};
-		for(const [uuid, collection] of gLocalCollections) {
+		for(const [uuid, collection] of gPublicCollections) {
 			states[uuid] = await collection.getState();
 		}
 		return states;
@@ -174,13 +175,17 @@ export class Collection {
 	}
 
 	publish() {
+		if(!this.uuid
+		|| Utils.isUUID(this.uuid) === false) {
+			throw Error('attempp to publish a collection without a valid UUID');
+		}
 		if(this.owner) {
 			throw Error('cannot publish a remote collection');
 		}
 		if(!this.uuid) {
 			throw Error('cannot publish a temporary collection');
 		}
-		gLocalCollections.set(this.uuid, this);
+		gPublicCollections.set(this.uuid, this);
 	}
 
 	async getState() {
