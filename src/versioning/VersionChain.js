@@ -87,9 +87,8 @@ export class VersionChain {
 
     async* changesIterator() {
         for await (const {statement} of this.versionsIterator()) {
-            // console.log(version.replace('d:', 'v:'), statement);
             if(statement) {
-                const changes = await Chunk.fromIdentifier(statement.data.changes, this.owner).expand(0);
+                const changes = await Chunk.fromIdentifier(statement.data.changes, statement.source).expand(0);
                 for(const descriptor of changes) {
                     yield {issuer: statement.source, descriptor};
                 }

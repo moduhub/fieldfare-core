@@ -121,8 +121,7 @@ export class RemoteHost {
 		if(numActiveChannels > 0) {
 			if(this.lastMessageTime !== undefined
 			&& this.lastMessageTime !== null) {
-				var timeSinceLastMessage = Date.now() - this.lastMessageTime;
-				logger.debug("time since last message: " + timeSinceLastMessage);
+				const timeSinceLastMessage = Date.now() - this.lastMessageTime;
 				if(timeSinceLastMessage < 10000) {
 					return true;
 				}
@@ -203,7 +202,6 @@ export class RemoteHost {
 	}
 
 	async treatAnnounce(message, channel) {
-		// logger.debug("Received announce message: " + JSON.stringify(message, null, 2));
 		if('id' in message.data === false) {
 			throw Error('malformed announce, missing host id');
 		}
@@ -211,6 +209,7 @@ export class RemoteHost {
 		if(this.pubKey === undefined) {
 			const chunkIdentifier = HostIdentifier.toChunkIdentifier(remoteHostIdentifier);
 			var remotePubKeyChunk = Chunk.fromIdentifier(chunkIdentifier, remoteHostIdentifier);
+			await remotePubKeyChunk.clone(0);
 			const remotePubKeyJWK = await remotePubKeyChunk.expand();
 			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyJWK));
 			this.pubKey = await cryptoManager.importPublicKey(remotePubKeyJWK);
@@ -243,41 +242,6 @@ export class RemoteHost {
 		// logger.log('info', this.id + ' services update:' + JSON.stringify(this.services));
 	}
 
-	async updateEnvironment(uuid, version) {
-
-		const env = LocalHost.getEnvironment(uuid);
-
-		env.updateActiveHost(this, version);
-
-		if(env.version !== version) {
-
-			logger.log('info', "remoteHost: " + this.id + " updated environment to version " + version);
-
-			try {
-
-				await env.update(version, this.id);
-
-				const updatedServicesList = await env.getServicesForHost(this.id);
-
-				await this.updateServices(updatedServicesList);
-
-			} catch (error) {
-				logger.log('error', "Failed to update environment to version " + version
-					+ ": " + error);
-				var iError = error.cause;
-				while(iError) {
-					logger.log('error', "Cause: " + iError.stack);
-					iError = iError.cause;
-				}
-
-				console.warn('Blacklisting version ' + version + ' due to update rejection');
-				env.versionBlacklist.add(version);
-
-			}
-		}
-
-	}
-
 	//Assign callbacks
 	onResponseReceived(response) {
 		var assignedRequest = LocalHost.getPendingRequest(response.data.id);
@@ -290,7 +254,7 @@ export class RemoteHost {
 				assignedRequest.resolve(response);
 			}
 		} else {
-			logger.warning('Received a response without an assigned request');
+			logger.debug('Received a response without an assigned request');
 		}
 	}
 
@@ -309,7 +273,7 @@ export class RemoteHost {
 		} else {
 			var response;
 			try {
-				var base64data = await ChunkManager.getLocalChunkContents(message.data.id);
+				const {base64data} = await ChunkManager.getLocalChunkContents(message.data.id);
 				response = new Message('chunk', {
 					id: message.data.id,
 					data: base64data
@@ -329,13 +293,13 @@ export class RemoteHost {
 		}
 	}
 
-	accessService(descriptor) {
+	async accessService(descriptor) {
 		ServiceDescriptor.validate(descriptor);
 		if(this.implementedServices.has(descriptor.uuid) === false) {
 			try {
 				const newService = RemoteService.fromDescriptor(descriptor);
 				newService.setOwner(this);
-				newService.collection = Collection.track(descriptor.collection);
+				newService.collection = await Collection.getRemoteCollection(descriptor.collection);
 				this.implementedServices.set(descriptor.uuid, newService);
 				logger.debug('Implemented new RemoteService ' + descriptor.uuid + ' for RemoteHost ' + this.id);
 				return newService;

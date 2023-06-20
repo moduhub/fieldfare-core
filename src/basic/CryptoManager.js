@@ -62,9 +62,9 @@ export class CryptoManager {
             var signatureBuffer = Utils.base64ToUint8Array(message.signature);
             var dataBuffer = Utils.strToUtf8Array(JSON.stringify(normalizedMessageData));
             result = await cryptoManager.verifyBuffer(dataBuffer, signatureBuffer, publicKey);
-            logger.log('info', "Signature verify result: " + result);
+            //logger.debug("Signature verify result: " + result);
         } else {
-            logger.log('info', 'missing signature inside message: ' + JSON.stringify(message));
+            logger.debug('missing signature inside message: ' + JSON.stringify(message));
         }
         return result;
     }
