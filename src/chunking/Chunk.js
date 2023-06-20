@@ -88,8 +88,10 @@ export class Chunk {
         if(!this.ownerID) {
             throw Error('Owner ID not set');
         }
-        if(!Number.isInteger(depth) || depth < 0) {
-        	throw Error('Invalid depth: ' + JSON.stringify(depth));
+        if(depth !== Number.POSITIVE_INFINITY) {
+            if(!Number.isInteger(depth) || depth < 0) {
+                throw Error('Invalid depth: ' + JSON.stringify(depth));
+            }
         }
         let numChunksCloned = 0;
         let base64data;
@@ -113,7 +115,7 @@ export class Chunk {
                 const childrenIdentifiers = await ChunkingUtils.getChildrenIdentifiers(base64data);
                 const promises = [];
                 for(const childIdentifier of childrenIdentifiers) {
-                    promises.push(this.clone(childIdentifier, this.ownerID, depth-1));
+                    promises.push(Chunk.fromIdentifier(childIdentifier, this.ownerID).clone(depth-1));
                 }
                 const numClonedChildren = await Promise.all(promises);
                 numChunksCloned += numClonedChildren.reduce((a, b) => a + b, 0);
