@@ -146,7 +146,7 @@ export class Environment extends AdministeredCollection {
 	async establishProvidersOf(serviceUUID, howMany=1) {
         logger.debug('establishProvidersOf: ' + serviceUUID + ' howMany: ' + howMany);
 		var newProviders = [];
-		const providers = await this.getProviders(serviceUUID);
+		const providers = await this.localCopy.getElement(serviceUUID+'.providers');
 		logger.debug("providers: " + providers);
 		for await (const providerID of providers) {
 			logger.debug("providerID: " + providerID);
@@ -287,7 +287,7 @@ export class Environment extends AdministeredCollection {
 	}
 
 	async isProvider(serviceUUID, hostID) {
-		const providers = await this.getProviders(serviceUUID);
+		const providers = await this.localCopy.getElement(serviceUUID+'.providers');
 		if(providers
 		&& providers !== undefined
 		&& providers !== null) {
