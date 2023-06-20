@@ -96,7 +96,8 @@ export class VersionedCollection {
 		for await (const statement of statements) {
 			console.log(statement);
 			const issuer = statement.source;
-			const changes = await Chunk.fromIdentifier(statement.data.changes, issuer).expand(0);
+			const changesChunk = Chunk.fromIdentifier(statement.data.changes, issuer);
+			const changes = await changesChunk.expand(0);
 			console.log('Applying set of ' + changes.length + ' changes from ' + issuer);
 			for (const descriptor of changes) {
 				console.log('>>> descriptor', descriptor);
@@ -111,6 +112,7 @@ export class VersionedCollection {
 					await change.execute(merge);
 				}
 			}
+			await changesChunk.clone();
 			await this.updateVersionStatement(statement);
 		}
 	}
