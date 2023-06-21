@@ -279,7 +279,7 @@ export class RemoteHost {
 					//not found, generate error response
 					response = new Message('chunk', {
 						id: message.data.id,
-						error: 'not found'
+						error: 'NOT_FOUND'
 					});
 				} else {
 					throw Error('treat chunk message failed', {cause: error});

@@ -83,9 +83,8 @@ export class ChunkManager {
 	 */
 	static async getRemoteChunkContents(id, owner) {
 		const retryCount = 3;
-		for(var attempts = 0; attempts<retryCount; attempts++) {
-			//Check if there is already a request for this same identifier
-			var request = LocalHost.getPendingRequest(id);
+		for(let attempts = 0; attempts<retryCount; attempts++) {
+			let request = LocalHost.getPendingRequest(id);
 			if(request === undefined) {
 				if(attempts > 0) {
 					logger.debug('get chunk request retry ' + attempts + ' of ' + retryCount-1);
@@ -94,17 +93,14 @@ export class ChunkManager {
 					id: id
 				});
 				request.setDestinationAddress(owner);
-				//Notify that a new request was created
 				LocalHost.dispatchRequest(id, request);
 			}
 			try {
 				const response = await request.complete();
-				var remoteChunkIdentifier = response.data.id;
-				var remoteChunkData = response.data.data;
-				//logger.log 'info', ("Received remote chunk response:" + JSON.stringify(response.data.data));
+				const remoteChunkIdentifier = response.data.id;
+				const remoteChunkData = response.data.data;
 				const verifyIdentifier = await ChunkingUtils.generateIdentifierForData(remoteChunkData);
 				if(verifyIdentifier !== remoteChunkIdentifier) {
-					//logger.log('info', "[+RES] (" + hash + "):(" + response.data.data + ")");
 					throw Error('corrupted chunk received from remote host');
 				}
 				return remoteChunkData;
