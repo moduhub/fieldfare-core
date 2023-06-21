@@ -88,6 +88,7 @@ class InvalidService {
 beforeAll(async () => {
     logger.disable();
     await init();
+    await gTestEnvironment.init();
     //prepare a mocked up environment
     await gTestEnvironment.commit(
         gTestEnvironment.addService(testServiceDefinition)
