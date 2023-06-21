@@ -122,7 +122,7 @@ export class Collection {
 		if(!collection) {
 			collection = new Collection(uuid);
 			await collection.loadPersistentState();
-			gLocalCollections.set(this.gid, collection);
+			gLocalCollections.set(uuid, collection);
 		}
 		return collection;
 	}
@@ -195,6 +195,9 @@ export class Collection {
 		}
 		if(!this.uuid) {
 			throw Error('cannot publish a temporary collection');
+		}
+		if(!gLocalCollections.has(this.uuid)) {
+			throw Error('cannot publish a collection, improperly initilized, use getLocalCollection()');
 		}
 		gPublicCollections.set(this.uuid, this);
 	}
