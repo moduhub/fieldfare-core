@@ -111,7 +111,7 @@ export class ChunkManager {
 			} catch (error) {
 				logger.error('Get chunk request failed: ' + error.stack);
 			} finally {
-                LocalHost.clearRequest(id);
+                LocalHost.popPendingRequest(id);
 			}
 		}
 		throw Error('Chunk not found remotely: ' + id).name = 'NOT_FOUND_ERROR';

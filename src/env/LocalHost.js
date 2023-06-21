@@ -175,15 +175,17 @@ export const LocalHost = {
 		return localHost.requests.get(hash);
 	},
 
-	clearRequest(hash) {
-		localHost.requests.clear(hash);
+	popPendingRequest(hash) {
+		localHost.requests.delete(hash);
 	},
 
 	dispatchRequest(hash, request) {
-		console.log('test');
 		// logger.debug("Forwarding request to request.destination: " + JSON.stringify(request.destination));
-		if(request.destination == localHost.id) {
+		if(request.destination === localHost.id) {
 			throw Error('Attempt to send a request to localHost');
+		}
+		if(localHost.requests.has(hash)) {
+			throw Error('Duplicate request blocked');
 		}
 		const destinationHost = RemoteHost.fromHostIdentifier(request.destination);
 		localHost.requests.set(hash, request);

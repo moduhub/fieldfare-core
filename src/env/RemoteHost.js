@@ -242,19 +242,15 @@ export class RemoteHost {
 		// logger.log('info', this.id + ' services update:' + JSON.stringify(this.services));
 	}
 
-	//Assign callbacks
 	onResponseReceived(response) {
-		var assignedRequest = LocalHost.getPendingRequest(response.data.id);
-		//logger.log('info', "remoteHost.onResponseReceived(" + JSON.stringify(response));
-		if(assignedRequest) {
-			//logger.log('info', "assignedRequest " + JSON.stringify(assignedRequest));
-			if(response.data.error) {
-				assignedRequest.reject(response.data.error);
-			} else {
-				assignedRequest.resolve(response);
-			}
+		const assignedRequest = LocalHost.getPendingRequest(response.data.id);
+		if(!assignedRequest) {
+			throw Error('Stray response message: ' + JSON.stringify(response.data.id));
+		}
+		if(response.data.error) {
+			assignedRequest.reject(response.data.error);
 		} else {
-			logger.debug('Received a response without an assigned request');
+			assignedRequest.resolve(response);
 		}
 	}
 
