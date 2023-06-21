@@ -38,7 +38,7 @@ export class RemoteService {
                     throw Error('Missing response data');
                 }
                 if(response.data.status === 'error') {
-                    throw Error('Request failed, error:' + response.data.error);
+                    throw Error('Request failed, error:' + JSON.stringify(response.data.error));
                 }
                 if(response.data.status !== 'done') {
                     throw Error('Unexpected response status');
