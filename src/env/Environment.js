@@ -287,11 +287,15 @@ export class Environment extends AdministeredCollection {
 	}
 
 	async isProvider(serviceUUID, hostID) {
+		if(HostIdentifier.isValid(hostID)) {
+			throw Error('Invalid hostID');
+		}
+		const hostChunk = Chunk.fromIdentifier(HostIdentifier.toChunkIdentifier(hostID));
 		const providers = await this.localCopy.getElement(serviceUUID+'.providers');
 		if(providers
 		&& providers !== undefined
 		&& providers !== null) {
-			return await providers.has(hostID);
+			return providers.has(hostChunk);
 		}
 		return false;
 	}
