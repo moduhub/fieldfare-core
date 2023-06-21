@@ -99,7 +99,7 @@ export class VersionChain {
 	async* versionsIterator() {
         if(this.head !== '') {
             const iCollection = new Collection(undefined, this.owner);
-            iCollection.setState(this.head);
+            await iCollection.setState(this.head);
             let iVersionStatement = await iCollection.getElement('version');
             yield {
                 version:this.head,
