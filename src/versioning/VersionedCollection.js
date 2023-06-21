@@ -43,12 +43,6 @@ export class VersionedCollection {
 			'createElement', 'deleteElement'
 		]);
 		/**
-		 * A local copy of the collection, containing the version last checked out.
-		 * @type {Collection}
-		 */
-		this.localCopy = new Collection(uuid);
-		this.localCopy.publish();
-		/**
 		 * The version identifier is a string that identifies the current version of the collection
 		 * using the chunk identifier assigned to the lastest version statement.
 		 * @type {string}
@@ -62,8 +56,13 @@ export class VersionedCollection {
 		this.versionBlacklist = new Set();
 	}
 
-	async init(){
-		await this.localCopy.loadPersistentState();
+	async init() {
+		/**
+		 * A local copy of the collection, containing the version last checked out.
+		 * @type {Collection}
+		 */
+		this.localCopy = await Collection.getLocalCollection(this.uuid);
+		this.localCopy.publish();
 		this.currentVersion = await this.localCopy.getState();
 		Collection.track(this.uuid, async (remoteCollection) => {
 			remoteCollection.getState().then(async (version) => {
