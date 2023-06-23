@@ -159,10 +159,8 @@ export class VersionedCollection {
 	 */
 	async pull(version, source) {
 		ChunkingUtils.validateIdentifier(version);
-		const initialState = await this.localCopy.getState();
 		if(this.updateInProgress === version) {
-			//Already updating to same version, consider success?
-			return;
+			throw Error('update already in progress');
 		}
 		if(this.updateInProgress) {
 			throw Error('another update in progress');
@@ -171,6 +169,7 @@ export class VersionedCollection {
 			throw Error('This version has been blacklisted');
 		}
 		this.updateInProgress = version;
+		const initialState = await this.localCopy.getState();
 		try {
 			logger.debug(">> pull changes to version: " + version);
 			const localChain = new VersionChain(this.currentVersion, LocalHost.getID(), 50);
