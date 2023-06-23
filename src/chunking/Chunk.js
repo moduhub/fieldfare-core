@@ -8,7 +8,7 @@
 import { ChunkManager } from "./ChunkManager.js";
 import { ChunkingUtils } from "./ChunkingUtils.js";
 import { Utils } from "../basic/Utils.js";
-import { logger } from '../basic/Logger.js'
+import { logger } from '../basic/Log.js'
 
 export class Chunk {
 
