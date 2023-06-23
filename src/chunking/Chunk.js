@@ -7,7 +7,7 @@
 
 import { ChunkManager } from "./ChunkManager.js";
 import { ChunkingUtils } from "./ChunkingUtils.js";
-import { Utils } from "../basic/Utils.js";
+import { Utils, logger } from "../basic/Utils.js";
 
 export class Chunk {
 
@@ -84,7 +84,7 @@ export class Chunk {
 	 * @throws Error if the chunk data is corrupted
 	 */
     async clone(depth=Number.POSITIVE_INFINITY) {
-        console.log('Entered Chunk.clone(): ' + this.id + ' depth: ' + depth + ' ownerID: ' + this.ownerID);
+        logger.debug('[CLONE] Evaluating ' + this.id + ' down to depth=' + depth);
         if(!this.ownerID) {
             throw Error('Owner ID not set');
         }
@@ -105,14 +105,17 @@ export class Chunk {
                 throw error;
             }
         }
-        console.log('local chunk result: ' + this.id + ' complete: ' + complete + ' base64data: ' + base64data);
         if(!complete) {
             if(!base64data) {
+                logger.debug('[CLONE] Fetching ' + this.id +' contents from ' + this.ownerID);
                 base64data = await ChunkManager.getRemoteChunkContents(this.id, this.ownerID);
-                console.log('remote chunk result: ' + base64data);
+                logger.debug('[CLONE] Fetch succeeded for ' + this.id +' with ' + base64data.length + ' bytes of data');
+            } else {
+                logger.debug('[CLONE] Got ' + this.id +' contents from incomplete chunks');
             }
             if(depth > 0) {
                 const childrenIdentifiers = await ChunkingUtils.getChildrenIdentifiers(base64data);
+                logger.debug('[CLONE] ' + this.id + ' has ' + childrenIdentifiers.length + ' children');
                 const promises = [];
                 for(const childIdentifier of childrenIdentifiers) {
                     promises.push(Chunk.fromIdentifier(childIdentifier, this.ownerID).clone(depth-1));
@@ -122,8 +125,9 @@ export class Chunk {
             }
             await ChunkManager.storeChunkContents(base64data);
             numChunksCloned++;
+        } else {
+            logger.debug('[CLONE] ' + this.id + ' already complete');
         }
-        console.log('Exiting Chunk.clone(), numChunksCloned: ' + numChunksCloned);
         return numChunksCloned;
     }
 
