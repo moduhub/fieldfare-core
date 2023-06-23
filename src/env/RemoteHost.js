@@ -45,6 +45,10 @@ export class RemoteHost {
 		return gOnlineHosts;
 	}
 
+	static getKnownHostIdentifiers() {
+		return [...gOnlineHosts.keys(), ...gOfflineHosts.keys()];
+	}
+
 	static fromHostIdentifier(hostIdentifier) {
 		let remoteHost = gOnlineHosts.get(hostIdentifier);
 		if(!remoteHost) {
