@@ -176,10 +176,12 @@ export class Environment extends AdministeredCollection {
 				const {uuid} = await keyChunk.expand();
 				const providerListName = uuid + '.providers';
 				const providers = await this.localCopy.getElement(providerListName);
-				const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
-				const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier);
-				if(await providers.has(hostChunk)) {
-					list.push(uuid);
+				if(providers) {
+					const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
+					const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier);
+					if(await providers.has(hostChunk)) {
+						list.push(uuid);
+					}
 				}
 			}
 		}
