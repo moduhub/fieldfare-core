@@ -62,8 +62,11 @@ export class Change {
                     await this.actionCallback();
                 } else {
                     //merge bypassed
-                    logger.debug('[CHANGE] Bypassed.');
+                    logger.debug('[CHANGE] Merge bypassed.');
                 }
+            } else {
+                logger.debug('[CHANGE] Default policy: Merging...');
+                await this.actionCallback();
             }
         } else {
             logger.debug('[CHANGE] Executing...');
