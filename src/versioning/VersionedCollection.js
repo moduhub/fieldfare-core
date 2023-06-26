@@ -184,15 +184,17 @@ export class VersionedCollection {
 			logger.debug(">> pull changes to version: " + version);
 			const localChain = new VersionChain(this.currentVersion, LocalHost.getID(), 50);
 			const remoteChain = new VersionChain(version, source, 50);
-			const commonVersion = await VersionChain.findCommonVersion(localChain, remoteChain);
+			const {
+				version: commonVersion,
+				depthA: localCommitsAhead,
+				depthB: remoteCommitsAhead
+			} = await VersionChain.findCommonVersion(localChain, remoteChain);
+			logger.debug("Common version is " + commonVersion);
+			logger.debug("Local collection is " + localCommitsAhead + " commits ahead");
+			logger.debug("Remote collection is " + remoteCommitsAhead + " commits ahead");
 			//Limit to commonVersion, not including
 			localChain.limit(commonVersion, false);
 			remoteChain.limit(commonVersion, false);
-			logger.debug("Common version is " + commonVersion);
-			const localCommitsAhead = await localChain.length();
-			const remoteCommitsAhead = await remoteChain.length();
-			logger.debug("Local collection is " + localCommitsAhead + " commits ahead");
-			logger.debug("Remote collection is " + remoteCommitsAhead + " commits ahead");
 			if(remoteCommitsAhead > 0
 			&& remoteCommitsAhead >= localCommitsAhead) {
 				if(localCommitsAhead > 0) {

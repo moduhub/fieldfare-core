@@ -28,7 +28,7 @@ export class VersionChain {
                 // logger.log('info', "A("+depthA+"): " + versionA);
                 // logger.log('info', "B("+depthB+"): " + versionB);
                 if(versionA === versionB) {
-                    return versionA;
+                    return {version: versionA, depthA, depthB};
                 }
                 if(++depthB > chainB.maxDepth) throw Error('chain B depth exceeded');
             }
