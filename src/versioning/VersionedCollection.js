@@ -102,23 +102,15 @@ export class VersionedCollection {
 	async applyChain(chain, merge=false) {
 		const statements = await chain.getStatementsArray();
 		for await (const statement of statements) {
-			console.log(statement);
 			const issuer = statement.source;
 			const changesChunk = Chunk.fromIdentifier(statement.data.changes, issuer);
 			const changes = await changesChunk.expand(0);
-			console.log('Applying set of ' + changes.length + ' changes from ' + issuer);
+			logger.debug('[APPLY] Applying set of ' + changes.length + ' changes from ' + issuer);
 			for (const descriptor of changes) {
-				console.log('>>> descriptor', descriptor);
-				if(descriptor.method === 'merge') {
-					const mergeChain = new VersionChain(params.head, chain.owner, chain.maxDepth);
-					mergeChain.limit(params.base);
-					await this.applyChain(mergeChain, true);
-				} else {
-					const change = await this.getChangeFromDescriptor(descriptor);
-					change.setIssuer(issuer);
-					console.log('>>> executing change:', change);
-					await change.execute(merge);
-				}
+				logger.debug('[APPLY] ', descriptor.method);
+				const change = await this.getChangeFromDescriptor(descriptor);
+				change.setIssuer(issuer);
+				await change.execute(merge);
 			}
 			await changesChunk.clone();
 			await this.updateVersionStatement(statement);
@@ -129,6 +121,7 @@ export class VersionedCollection {
 	 * Apply a change to the collection elements.
 	 * @param {Change} change
 	 * @param {boolean} merge
+	 * @returns {Promise<Change>}
 	 */
 	async getChangeFromDescriptor(descriptor) {
 		if(this.allowedChanges.has(descriptor.method) === false) {
@@ -215,15 +208,12 @@ export class VersionedCollection {
 				//now merge local changes at end of remote chain, if any
 				if(localCommitsAhead > 0) {
 					this.applyChain(localChain, true);
-					const descriptorChunk = await Chunk.fromObject(this.elements.descriptor);
+					const currentState = await this.localCopy.getState();
 					//only commit if changes were not redundant
-					if(descriptorChunk.id !== expectedState) {
-						await this.commit({
-							merge: {
-								head: localChain.head,
-								base: localChain.base
-							}
-						});
+					if(currentState !== expectedState) {
+						await this.commit(
+							this.merge(localChain.base, localChain.head)
+						);
 					}
 				}
 				this.versionBlacklist.clear();
@@ -244,6 +234,7 @@ export class VersionedCollection {
 
 	/**
 	 * Execute a set of changes and create a new version.
+	 * @param {Change|Change[]} changes A single change or an array of changes to be executed.
 	 */
 	async commit(changes) {
 		if(changes instanceof Array === false) {
@@ -267,6 +258,15 @@ export class VersionedCollection {
 		await this.updateVersionStatement(versionStatement);
 		this.currentVersion = await this.localCopy.getState();
 		this.events.emit('version', this.currentVersion);
+	}
+
+	merge(base, head) {
+		return new Change('merge', ...arguments)
+		.setAction(async () => {
+			const mergeChain = new VersionChain(head, chain.owner, chain.maxDepth);
+			mergeChain.limit(base);
+			await this.applyChain(mergeChain, true);
+		})
 	}
 
 	createElement(name, descriptor) {
