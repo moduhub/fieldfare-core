@@ -205,16 +205,12 @@ export class VersionedCollection {
 				}
 				this.currentVersion = remoteChain.head;
 				this.events.emit('version', this.currentVersion);
-				//now merge local changes at end of remote chain, if any
 				if(localCommitsAhead > 0) {
-					this.applyChain(localChain, true);
-					const currentState = await this.localCopy.getState();
-					//only commit if changes were not redundant
-					if(currentState !== expectedState) {
+					logger.debug('[PULL] Merging local changes');
 						await this.commit(
 							this.merge(localChain.base, localChain.head)
 						);
-					}
+					//TODO: retract commit if changes were redundant
 				}
 				this.versionBlacklist.clear();
 				logger.debug('Collection ' + this.uuid + ' updated successfully to version ' + this.currentVersion);
