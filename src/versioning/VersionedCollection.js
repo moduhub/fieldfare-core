@@ -107,7 +107,7 @@ export class VersionedCollection {
 			const changes = await changesChunk.expand(0);
 			logger.debug('[APPLY] Applying set of ' + changes.length + ' changes from ' + issuer);
 			for (const descriptor of changes) {
-				logger.debug('[APPLY] ', descriptor.method);
+				logger.debug('[APPLY] ' + descriptor.method);
 				const change = await this.getChangeFromDescriptor(descriptor);
 				change.setIssuer(issuer);
 				await change.execute(merge);
@@ -131,8 +131,6 @@ export class VersionedCollection {
 		if(!classMethod) {
 			throw Error('change is not defined ' + descriptor.method);
 		}
-		//console.log('descriptor.params', descriptor.params);
-		console.log(classMethod);
 		const change = classMethod(...descriptor.params);
 		if(change instanceof Change === false) {
 			throw Error('class method ' + descriptor.method + ' does not return a Change object');
@@ -173,8 +171,9 @@ export class VersionedCollection {
 		}
 		this.updateInProgress = version;
 		const initialState = await this.localCopy.getState();
+		logger.debug('[PULL] Initial state is ' + initialState);
 		try {
-			logger.debug(">> pull changes to version: " + version);
+			logger.debug("[PULL] pull changes to version: " + version);
 			const localChain = new VersionChain(this.currentVersion, LocalHost.getID(), 50);
 			const remoteChain = new VersionChain(version, source, 50);
 			const {
@@ -182,24 +181,23 @@ export class VersionedCollection {
 				depthA: localCommitsAhead,
 				depthB: remoteCommitsAhead
 			} = await VersionChain.findCommonVersion(localChain, remoteChain);
-			logger.debug("Common version is " + commonVersion);
-			logger.debug("Local collection is " + localCommitsAhead + " commits ahead");
-			logger.debug("Remote collection is " + remoteCommitsAhead + " commits ahead");
+			logger.debug("[PULL] Common version is " + commonVersion);
+			logger.debug("[PULL] Local collection is " + localCommitsAhead + " commits ahead");
+			logger.debug("[PULL] Remote collection is " + remoteCommitsAhead + " commits ahead");
 			//Limit to commonVersion, not including
 			localChain.limit(commonVersion, false);
 			remoteChain.limit(commonVersion, false);
 			if(remoteCommitsAhead > 0
 			&& remoteCommitsAhead >= localCommitsAhead) {
 				if(localCommitsAhead > 0) {
-					// logger.log('info', "Stashing local changes");
+					logger.debug('[PULL] Stashing local changes');
 					await this.checkout(commonVersion);
 				}
-				logger.debug("initial state: " + initialState);
 				await this.applyChain(remoteChain);
 				const achievedState = await this.localCopy.getState();
 				const expectedState = await remoteChain.head;
-				logger.debug("state after apply: " + achievedState);
-				logger.debug("expected state: " + expectedState);
+				logger.debug("[PULL] state after apply: " + achievedState);
+				logger.debug("[PULL] expected state: " + expectedState);
 				if(achievedState !== expectedState) {
 					throw Error('state mismatch after remote changes applied');
 				}
@@ -207,15 +205,15 @@ export class VersionedCollection {
 				this.events.emit('version', this.currentVersion);
 				if(localCommitsAhead > 0) {
 					logger.debug('[PULL] Merging local changes');
-						await this.commit(
-							this.merge(localChain.base, localChain.head)
-						);
+					await this.commit(
+						this.merge(localChain.base, localChain.head)
+					);
 					//TODO: retract commit if changes were redundant
 				}
 				this.versionBlacklist.clear();
-				logger.debug('Collection ' + this.uuid + ' updated successfully to version ' + this.currentVersion);
+				logger.debug('[PULL]  Collection ' + this.uuid + ' updated successfully to version ' + this.currentVersion);
 			} else {
-				logger.debug("Local chain is ahead of remote chain, nothing to do");
+				logger.debug("[PULL] Local chain is ahead of remote chain, nothing to do");
 				//Local chain is ahead of remote, wait for remote to merge
 				// Todo: notify him?
 			}
