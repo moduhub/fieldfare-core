@@ -1,4 +1,4 @@
-import { LocalHost } from "../env/LocalHost.js";
+import { logger } from '../basic/Log.js';
 
 export class Change {
 
@@ -44,8 +44,9 @@ export class Change {
 
     async execute(merge=false) {
         if(!this.issuer) {
-            throw Error('issuer not set');
+            throw Error('change issuer not set');
         }
+        logger.debug('[CHANGE] Authorizing...');
         if(this.authCallback) {
             const auth = await this.authCallback(this.issuer);
             if(!auth) {
@@ -53,17 +54,22 @@ export class Change {
             }
         }
         if(merge) {
+            logger.debug('[CHANGE] Checking merge policy...');
             if(!this.mergeCallback) {
                 const mergeAllowed = await this.mergeCallback();
                 if(mergeAllowed) {
+                    logger.debug('[CHANGE] Merging...');
                     await this.actionCallback();
                 } else {
                     //merge bypassed
+                    logger.debug('[CHANGE] Bypassed.');
                 }
             }
         } else {
+            logger.debug('[CHANGE] Executing...');
             await this.actionCallback();
         }
+        logger.debug('[CHANGE] Done.');
     }
 
 }
