@@ -55,7 +55,7 @@ export class Change {
         }
         if(merge) {
             logger.debug('[CHANGE] Checking merge policy...');
-            if(!this.mergeCallback) {
+            if(this.mergeCallback) {
                 const mergeAllowed = await this.mergeCallback();
                 if(mergeAllowed) {
                     logger.debug('[CHANGE] Merging...');
