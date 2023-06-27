@@ -257,7 +257,7 @@ export class VersionedCollection {
 	merge(base, head) {
 		return new Change('merge', ...arguments)
 		.setAction(async () => {
-			const mergeChain = new VersionChain(head, chain.owner, chain.maxDepth);
+			const mergeChain = new VersionChain(head, LocalHost.getID(), 50);
 			mergeChain.limit(base);
 			await this.applyChain(mergeChain, true);
 		})
