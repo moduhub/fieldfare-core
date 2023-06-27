@@ -12,7 +12,7 @@ import { logger } from '../basic/Log.js';
 
 export class VersionChain {
 
-    constructor(head, owner, maxDepth) {
+    constructor(head, owner, maxDepth=100) {
         this.base = '';
         this.head = head;
         this.owner = owner;
