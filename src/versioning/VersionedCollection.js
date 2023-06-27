@@ -103,7 +103,13 @@ export class VersionedCollection {
 		const statements = await chain.getStatementsArray();
 		for await (const statement of statements) {
 			const issuer = statement.source;
-			const changesChunk = Chunk.fromIdentifier(statement.data.changes, issuer);
+			const prevState = statement.data.prev;
+			const currentState = await this.localCopy.getState();
+			if(!merge
+			&& prevState !== currentState) {
+				throw Error('state chain mismatch');
+			}
+			const changesChunk = Chunk.fromIdentifier(statement.data.changes, chain.owner);
 			const changes = await changesChunk.expand(0);
 			logger.debug('[APPLY] Applying set of ' + changes.length + ' changes from ' + issuer);
 			for (const descriptor of changes) {
