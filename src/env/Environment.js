@@ -228,7 +228,7 @@ export class Environment extends AdministeredCollection {
 					});
 				}
 				if(await services.has(keyChunk)) {
-					throw Error('service UUID already assigned');
+					throw Error('service UUID ' + definition.uuid + ' already assigned');
 				}
 				await services.set(keyChunk, definitionChunk);
 				await this.localCopy.updateElement('services', services.descriptor);
