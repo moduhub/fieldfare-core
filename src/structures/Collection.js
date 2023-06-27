@@ -223,6 +223,56 @@ export class Collection {
         }
 	}
 
+	/**
+	 * Enter staging mode, all changes will be staged until wrapUpStaging()
+	 * or abortStaging() is called. During staging, no events are generated
+	 * and no changes are saved to NVD, but any call to getElement or an
+	 * iterator will include the staged changes.
+	 */
+	async startStaging() {
+		this.pendingEvents = [];
+		this.numStagedChanges = 0;
+		this.staging = true;
+		this.initialState = await this.getState();
+		return this.initialState;
+	}
+
+	/**
+	 * Abort staging mode, all staged changes are discarded.
+	 */
+	async abortStaging() {
+		const initialState = this.initialState
+		await this.setState(this.initialState);
+		this.pendingEvents = undefined;
+		this.numStagedChanges = undefined;
+		this.staging = false;
+		this.initialState = undefined;
+		return initialState;
+	}
+
+	/**
+	 * Wrap up staging mode, all staged changes are applied and saved to NVD, and all pending
+	 * events are fired at once in the order they were generated.
+	 * @returns {Promise} a promise that resolves to the current state of the collection.
+	 */
+	async wrapUpStaging() {
+		const currentState = await this.getState();
+		if(this.numStagedChanges > 0
+		|| this.initialState != currentState) {
+			for(const event of this.pendingEvents) {
+				this.events.emit(...event);
+			}
+			if(this.uuid) {
+				await NVD.save(this.gid, currentState);
+			}
+		}
+		this.pendingEvents = undefined;
+		this.numStagedChanges = undefined;
+		this.staging = false;
+		this.initialState = undefined;
+		return currentState;
+	}
+
 	async createElement(name, descriptor) {
 		if(!descriptor) {
 			throw Error('descriptor must be informed');
@@ -238,13 +288,20 @@ export class Collection {
 			throw Error('createElement failed: element already exists');
 		}
         await this.elements.set(nameChunk, descriptorChunk);
-		if(this.uuid) {
-			await NVD.save(this.gid, await this.getState());
-		}
 		const expandedElement = await Collection.expandDescriptor(descriptor);
-		this.events.emit('elementCreated', name);
-		this.events.emit(name + '.created', expandedElement);
-		this.events.emit('change');
+		if(this.staging) {
+			this.pendingEvents.push(['elementCreated', name]);
+			this.pendingEvents.push([name + '.created', expandedElement]);
+			this.pendingEvents.push(['change']);
+			this.numStagedChanges++;
+		} else {
+			if(this.uuid) {
+				await NVD.save(this.gid, await this.getState());
+			}
+			this.events.emit('elementCreated', name);
+			this.events.emit(name + '.created', expandedElement);
+			this.events.emit('change');
+		}
 		return expandedElement;
 	}
 
@@ -254,11 +311,17 @@ export class Collection {
 			throw Error('deleteElement failed: element does not exist');
 		}
         await this.elements.delete(nameChunk);
-		if(this.uuid) {
-			await NVD.save(this.gid, await this.getState());
+		if(this.staging) {
+			this.pendingEvents.push(['elementDeleted', name]);
+			this.pendingEvents.push(['change']);
+			this.numStagedChanges++;
+		} else {
+			if(this.uuid) {
+				await NVD.save(this.gid, await this.getState());
+			}
+			this.events.emit('elementDeleted', name);
+			this.events.emit('change');
 		}
-		this.events.emit('elementDeleted', name);
-		this.events.emit('change');
 	}
 
 	async updateElement(name, descriptor) {
@@ -273,12 +336,21 @@ export class Collection {
 		}
 		const descriptorChunk = await Chunk.fromObject(descriptor);
 		await this.elements.set(nameChunk, descriptorChunk);
-		if(this.uuid) {
-        	await NVD.save(this.gid, await this.getState());
+		const elementInstance = await Collection.expandDescriptor(descriptor);
+		if(this.staging) {
+			this.pendingEvents.push(['elementUpdated', name]);
+			this.pendingEvents.push([name + '.change', elementInstance]);
+			this.pendingEvents.push(['change']);
+			this.numStagedChanges++;
+		} else {
+			if(this.uuid) {
+				await NVD.save(this.gid, await this.getState());
+			}
+			this.events.emit('elementUpdated', name);
+			this.events.emit(name + '.change', elementInstance);
+			this.events.emit('change');
 		}
-		this.events.emit('elementUpdated', name);
-		this.events.emit(name + '.change', await Collection.expandDescriptor(descriptor));
-		this.events.emit('change');
+		return elementInstance;
 	}
 
 	static async expandDescriptor(descriptor) {

@@ -176,8 +176,8 @@ export class VersionedCollection {
 			throw Error('This version has been blacklisted');
 		}
 		this.updateInProgress = version;
-		const initialState = await this.localCopy.getState();
-		logger.debug('[PULL] Initial state is ' + initialState);
+		const initialState = await this.localCopy.startStaging();
+		logger.debug('[PULL] Start staging, intial state: ' + initialState);
 		try {
 			logger.debug("[PULL] pull changes to version: " + version);
 			const localChain = new VersionChain(this.currentVersion, LocalHost.getID(), 50);
@@ -196,7 +196,7 @@ export class VersionedCollection {
 			if(remoteCommitsAhead > 0
 			&& remoteCommitsAhead >= localCommitsAhead) {
 				if(localCommitsAhead > 0) {
-					logger.debug('[PULL] Stashing local changes');
+					logger.debug('[PULL] Stashing local changes for merging later');
 					await this.checkout(commonVersion);
 				}
 				await this.applyChain(remoteChain);
@@ -205,17 +205,18 @@ export class VersionedCollection {
 				logger.debug("[PULL] state after apply: " + achievedState);
 				logger.debug("[PULL] expected state: " + expectedState);
 				if(achievedState !== expectedState) {
-					throw Error('state mismatch after remote changes applied');
+					throw Error('final state mismatch');
 				}
-				this.currentVersion = remoteChain.head;
-				this.events.emit('version', this.currentVersion);
 				if(localCommitsAhead > 0) {
 					logger.debug('[PULL] Merging local changes');
 					await this.commit(
 						this.merge(localChain.base, localChain.head)
 					);
-					//TODO: retract commit if changes were redundant
+					//TOTHINK: retract commit if changes were redundant?
 				}
+				logger.debug('[PULL] Wraping up staging');
+				this.currentVersion = await this.localCopy.wrapUpStaging();
+				this.events.emit('version', this.currentVersion);
 				this.versionBlacklist.clear();
 				logger.debug('[PULL]  Collection ' + this.uuid + ' updated successfully to version ' + this.currentVersion);
 			} else {
@@ -225,7 +226,8 @@ export class VersionedCollection {
 			}
 		} catch (error) {
 			// Recover previous state
-			await this.checkout(initialState);
+			const currentState = await this.localCopy.abortStaging();
+			logger.debug('[PULL] Aborted staging, back to state ' + currentState);
 			throw Error('Pull failed: ' + error, {cause: error});
 		} finally {
 			this.updateInProgress = null;
