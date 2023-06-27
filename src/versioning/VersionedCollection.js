@@ -41,7 +41,7 @@ export class VersionedCollection {
 		 * @type {Set<string, CollectionMethod>}
 		 */
 		this.allowedChanges = new Set([
-			'createElement', 'deleteElement'
+			'createElement', 'deleteElement', 'merge'
 		]);
 		/**
 		 * The version identifier is a string that identifies the current version of the collection

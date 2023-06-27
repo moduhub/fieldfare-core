@@ -25,7 +25,8 @@ export class Environment extends AdministeredCollection {
 			'addAdmin', 'removeAdmin',
 			'addService', 'removeService',
 			'addProvider', 'removeProvider',
-			'addWebport', 'removeWebport'
+			'addWebport', 'removeWebport',
+			'merge'
 		]);
 		//report periodically
 		// setInterval(() => {
