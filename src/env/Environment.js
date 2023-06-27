@@ -195,6 +195,11 @@ export class Environment extends AdministeredCollection {
 				return await this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
+				ServiceDescriptor.validate(definition);
+				const definitionChunk = await Chunk.fromObject(definition);
+				const keyChunk = await Chunk.fromObject({
+					uuid: definition.uuid
+				});
 				const services = await this.localCopy.getElement('services');
 				if(services) {
 					const previousDefinitionChunk = await services.get(keyChunk);
