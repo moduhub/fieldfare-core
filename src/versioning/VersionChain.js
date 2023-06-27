@@ -98,7 +98,7 @@ export class VersionChain {
 
 	async* versionsIterator() {
         let iVersion = this.head;
-            const iCollection = new Collection(undefined, this.owner);
+        const iCollection = new Collection(undefined, this.owner);
         while( iVersion
             && iVersion !== ''
             && iVersion !== this.base) {
@@ -110,10 +110,10 @@ export class VersionChain {
                 statement: iVersionStatement
             };
             iVersion = iVersionStatement?.data.prev;
-            }
-            if(this.includeBase === true
-            && this.base !== ''
-            && this.base !== this.head) {
+        }
+        if(this.includeBase === true
+        && this.base !== ''
+        && this.base !== this.head) {
             iCollection.setState(this.base);
             const iVersionStatement = await iCollection.getElement('version');
             yield {
@@ -124,7 +124,7 @@ export class VersionChain {
         }
     }
 
-    async prettyPrint(mergeDepth=0, callback) {
+    async prettyPrint(callback, mergeDepth=0) {
         if(callback === undefined) {
             callback = console.log;
         }
@@ -132,18 +132,18 @@ export class VersionChain {
             let line;
             let prepend = '';
             for(var i=0; i<mergeDepth; i++) {
-                prepend += ' |';
+                prepend += '| ';
             }
             if(descriptor.method === 'merge') {
-                const mergeChain = new VersionChain(params.head, issuer, 50);
-                mergeChain.limit(params.base);
-                mergeChain.prettyPrint(mergeDepth+1);
+                callback(prepend + 'o Merge from \'' + issuer + '\'');
+                const mergeChain = new VersionChain(descriptor.params[1], issuer, 50);
+                mergeChain.limit(descriptor.params[0], false);
+                await mergeChain.prettyPrint(callback, mergeDepth+1);
             } else {
-                line = ' ' + descriptor.method + ' '
+                line = prepend + descriptor.method + ' '
                     + ' from \'' + issuer
                     + '\'\n'+ JSON.stringify(descriptor.params, null, 2);
-                line.replace('\n', prepend + '\n');
-                callback(line);
+                callback(line.replace(/(?:\r\n|\r|\n)/g, '\n' + prepend));
             }
         }
     }
