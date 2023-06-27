@@ -97,31 +97,30 @@ export class VersionChain {
     }
 
 	async* versionsIterator() {
-        if(this.head !== '') {
+        let iVersion = this.head;
             const iCollection = new Collection(undefined, this.owner);
-            await iCollection.setState(this.head);
-            let iVersionStatement = await iCollection.getElement('version');
+        while( iVersion
+            && iVersion !== ''
+            && iVersion !== this.base) {
+            await iCollection.setState(iVersion);
+            const iVersionStatement = await iCollection.getElement('version');
             yield {
-                version:this.head,
-                collection:iCollection,
+                version: iVersion,
+                collection: iCollection,
                 statement: iVersionStatement
             };
-            let prevVersion = iVersionStatement?.data.prev;
-            while (prevVersion && prevVersion !== this.base) {
-                iCollection.setState(prevVersion);
-                iVersionStatement = await iCollection.getElement('version');
-                yield {
-                    version: prevVersion,
-                    collection: iCollection,
-                    statement: iVersionStatement
-                };
-                prevVersion = iVersionStatement?.data.prev;
+            iVersion = iVersionStatement?.data.prev;
             }
             if(this.includeBase === true
             && this.base !== ''
             && this.base !== this.head) {
-                yield {version: this.base, collection: iCollection};
-            }
+            iCollection.setState(this.base);
+            const iVersionStatement = await iCollection.getElement('version');
+            yield {
+                version: this.base,
+                collection: iCollection,
+                statement: iVersionStatement
+            };
         }
     }
 
