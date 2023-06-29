@@ -110,7 +110,7 @@ export class VersionedCollection {
 				throw Error('state chain mismatch');
 			}
 			const changesChunk = Chunk.fromIdentifier(statement.data.changes, chain.owner);
-			const changes = await changesChunk.expand(0);
+			const changes = await changesChunk.expand(1);
 			logger.debug('[APPLY] Applying set of ' + changes.length + ' changes from ' + issuer);
 			for (const descriptor of changes) {
 				logger.debug('[APPLY] ' + descriptor.method);
