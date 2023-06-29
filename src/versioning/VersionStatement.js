@@ -7,6 +7,7 @@
 
 import { Chunk } from '../chunking/Chunk.js';
 import { logger } from '../basic/Log.js';
+import { Utils } from '../basic/Utils.js';
 
 export class VersionStatement {
 
@@ -36,16 +37,8 @@ export class VersionStatement {
 			}
 			descriptor = await descriptor.expand(0);
 		}
-		if('signature' in descriptor === false
-		|| 'source' in descriptor === false
-		|| 'data' in descriptor === false) {
-			logger.log('info', "Update descriptor validate failed: " + JSON.stringify(descriptor));
-			throw Error('malformed update descriptor');
-		}
-		if('prev' in descriptor.data === false
-		|| 'changes' in descriptor.data === false) {
-			throw Error('malformed update descriptor data');
-		}
+		Utils.validateParameters(descriptor, ['signature', 'source', 'data']);
+		Utils.validateParameters(descriptor.data, ['prev', 'changes'], ['ts']);
 		const newStatement = new VersionStatement;
 		Object.assign(newStatement, descriptor);
 		return newStatement;

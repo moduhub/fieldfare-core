@@ -255,6 +255,7 @@ export class VersionedCollection {
 		}
 		const versionStatement = new VersionStatement(LocalHost.getID(), {
 			prev: prevState,
+			ts: Date.now(),
 			changes: await Chunk.fromObject(changeDescriptors)
 		});
 		await LocalHost.signMessage(versionStatement);
