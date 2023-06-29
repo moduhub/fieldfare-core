@@ -163,7 +163,6 @@ export class TreeBranch {
                         const {id:mergedChildKey} = await Chunk.fromObject(iContainer);
                         const parentNumElements = parentContainer.mergeChildren(leftKey, mergedChildKey);
                         if(parentNumElements == 0) {
-                            debugger;
                             this.containers.shift();
                             this.containerKeys.shift();
                             this.depth--;
@@ -192,7 +191,6 @@ export class TreeBranch {
                         const {id:mergedChildKey} = await Chunk.fromObject(iContainer);
                         const parentNumElements = parentContainer.mergeChildren(rightKey, mergedChildKey);
                         if(parentNumElements == 0) {
-                            debugger;
                             this.containers.shift();
                             this.containerKeys.shift();
                             this.depth--;
@@ -201,7 +199,6 @@ export class TreeBranch {
                     }
                 }
                 depth--;
-                debugger;
             } else {
                 break;
             }

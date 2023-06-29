@@ -49,7 +49,6 @@ export class ChunkTree {
                 // console.log('ownerContainer after key '+key+' was removed: ' + JSON.stringify(ownerContainer, null, 2));
                 if(ownerContainer.numElements < minElements
                 && branch.depth > 0) {
-                    debugger;
                     mergeDepth = await branch.rebalance(minElements);
                 }
             } else {
@@ -73,7 +72,6 @@ export class ChunkTree {
                 ownerContainer.substituteElement(key.id, stolenElement);
                 const branchLeaf = branch.getLastContainer();
                 if(branchLeaf.numElements < minElements) {
-                    debugger;
                     mergeDepth = await branch.rebalance(minElements);
                 }
             }

@@ -228,6 +228,7 @@ export class VersionedCollection {
 			// Recover previous state
 			const currentState = await this.localCopy.abortStaging();
 			logger.debug('[PULL] Aborted staging, back to state ' + currentState);
+			debugger;
 			throw Error('Pull failed: ' + error, {cause: error});
 		} finally {
 			this.updateInProgress = null;
