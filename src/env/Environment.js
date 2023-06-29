@@ -429,6 +429,12 @@ export class Environment extends AdministeredCollection {
 	}
 
     removeWebport(webportChunk) {
+		if(!webportChunk) {
+			throw Error('Invalid webportChunk');
+		}
+		if(!(webportChunk instanceof Chunk)) {
+			throw Error('Invalid webportChunk');
+		}
 		return new Change('removeWebport', ...arguments)
 			.setAuth(async (issuer) => {
 				return await this.isAdmin(issuer);
