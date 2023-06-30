@@ -100,15 +100,15 @@ export class Collection {
 		if(!collection) {
 			collection = new Collection(uuid, hostIdentifier);
 			await collection.loadPersistentState();
-			gRemoteCollections.set(this.gid, this);
+			gRemoteCollections.set(collection.gid, collection);
 			if(!gCollectionsByHost.has(hostIdentifier)) {
 				gCollectionsByHost.set(hostIdentifier, new Map());
 			}
-			gCollectionsByHost.get(hostIdentifier).set(uuid, this);
+			gCollectionsByHost.get(hostIdentifier).set(uuid, collection);
 			if(!gCollectionsByUUID.has(uuid)) {
 				gCollectionsByUUID.set(uuid, new Map());
 			}
-			gCollectionsByUUID.get(uuid).set(hostIdentifier, this);
+			gCollectionsByUUID.get(uuid).set(hostIdentifier, collection);
 		}
 		return collection;
 	}
