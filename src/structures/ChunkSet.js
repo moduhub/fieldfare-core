@@ -80,18 +80,22 @@ export class ChunkSet extends ChunkTree {
 		return this.rootChunk;
 	}
 
-    async* [Symbol.asyncIterator]() {
-		if(this.rootChunk) {
+    async* chunks() {
+        if(this.rootChunk) {
 			var rootContainer = await TreeContainer.fromDescriptor(this.rootChunk);
             for await(const identifier of rootContainer.iterator(this.rootChunk.ownerID)) {
                 yield Chunk.fromIdentifier(identifier, this.owner);
             }
 		}
+    }
+
+    async* [Symbol.asyncIterator]() {
+        yield* this.chunks();
 	}
 
     async toArray() {
         const array = [];
-        for await (const chunk of this) {
+        for await (const chunk of this.chunks()) {
             array.push(chunk);
         }
         return array;

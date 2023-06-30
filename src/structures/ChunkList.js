@@ -190,6 +190,10 @@ export class ChunkList {
 		return array;
 	}
 
+	/**
+	 * Iterate over the chunks in the list, from last to first
+	 * @returns an async iterator over the chunks in the list
+	 */
 	async* chunks() {
 		if(this.last) {
 			var iContainer = await this.last.expand(1);
@@ -224,6 +228,14 @@ export class ChunkList {
 		for (const chunk of this.chunks()) {
 			yield await chunk.expand(depth);
 		}
+	}
+
+	/**
+	 * Default list iterator, return content chunks in reverse order
+	 * @returns an async iterator over the chunks in the list
+	 */
+	async* [Symbol.asyncIterator]() {
+		yield* this.chunks();
 	}
 
 }

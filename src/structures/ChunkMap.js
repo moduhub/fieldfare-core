@@ -111,6 +111,24 @@ export class ChunkMap extends ChunkTree {
         return undefined;
     }
 
+    async* keyChunks() {
+        for await (const [keyChunk, valueChunk] of this) {
+            yield keyChunk;
+        }
+    }
+
+    async* valueChunks() {
+        for await (const [keyChunk, valueChunk] of this) {
+            yield valueChunk;
+        }
+    }
+
+    async* transformedContents(transform=(keyChunk, valueChunk)=>[keyChunk, valueChunk]) {
+        for await (const [keyChunk, valueChunk] of this) {
+            yield await transform(keyChunk, valueChunk);
+        }
+    }
+
     async* [Symbol.asyncIterator]() {
 		if(this.rootChunk) {
 			var rootContainer = await TreeContainer.fromDescriptor(this.rootChunk);
@@ -121,4 +139,5 @@ export class ChunkMap extends ChunkTree {
             }
 		}
 	}
+
 }
