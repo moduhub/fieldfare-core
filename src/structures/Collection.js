@@ -379,7 +379,9 @@ export class Collection {
 		const nameChunk = await Chunk.fromObject({name: name});
 		const descriptorChunk = await this.elements.get(nameChunk);
 		if(descriptorChunk) {
-			return Collection.expandDescriptor(descriptorChunk);
+			const element = Collection.expandDescriptor(descriptorChunk);
+			element.ownerID = this.owner;
+			return element;
 		}
 		return undefined;
 	}
