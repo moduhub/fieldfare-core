@@ -136,8 +136,6 @@ export class LocalService {
             hash: await ChunkingUtils.generateIdentifierForObject(request.data),
             status: 'done'
         };
-        logger.debug('Service UUID: ' + this.descriptor.uuid
-            + ' received payload:' + JSON.stringify(request.data));
         for(const prop in request.data) {
             const methodImplementation = this[prop].bind(this);
             if(methodImplementation
