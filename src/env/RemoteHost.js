@@ -208,14 +208,14 @@ export class RemoteHost {
 		}
 	}
 
-	async treatAnnounce(message, channel) {
+	async treatAnnounce(message, channel, intermediate) {
 		if('id' in message.data === false) {
 			throw Error('malformed announce, missing host id');
 		}
 		const remoteHostIdentifier = message.data.id;
 		if(this.pubKey === undefined) {
 			const chunkIdentifier = HostIdentifier.toChunkIdentifier(remoteHostIdentifier);
-			var remotePubKeyChunk = Chunk.fromIdentifier(chunkIdentifier, remoteHostIdentifier);
+			var remotePubKeyChunk = Chunk.fromIdentifier(chunkIdentifier, intermediate?intermediate:remoteHostIdentifier);
 			await remotePubKeyChunk.clone(0);
 			const remotePubKeyJWK = await remotePubKeyChunk.expand();
 			logger.log('info', "Remote host pubkey: " + JSON.stringify(remotePubKeyJWK));
@@ -230,11 +230,13 @@ export class RemoteHost {
 					throw Error('invalid collection uuid');
 				}
 				const state = message.data.collections[uuid];
-				Collection.updateRemoteCollection(remoteHostIdentifier, uuid, state);
+				Collection.updateRemoteCollection(remoteHostIdentifier, uuid, state, intermediate);
 			}
 		}
-		if(this.timeSinceLastAnnounceSent() > 5000) {
-			await LocalHost.announce(this);
+		if(channel) {
+			if(this.timeSinceLastAnnounceSent() > 5000) {
+				await LocalHost.announce(this);
+			}
 		}
 	}
 
