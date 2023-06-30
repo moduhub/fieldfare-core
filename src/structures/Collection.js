@@ -146,28 +146,27 @@ export class Collection {
 		return gCollectionsByUUID.get(uuid);
 	}
 
-	static async updateRemoteCollection(hostIdentifier, uuid, state) {
-		if(gListeners.has(uuid)) {
+	static async updateRemoteCollection(hostIdentifier, uuid, state, source) {
 			let collection = gRemoteCollections.get(hostIdentifier + ':' + uuid);
 			if(!collection) {
-				collection = new Collection(uuid, hostIdentifier);
-				await collection.loadPersistentState();
-				gRemoteCollections.set(this.gid, this);
-				if(!gCollectionsByHost.has(hostIdentifier)) {
-					gCollectionsByHost.set(hostIdentifier, new Map());
+			if(!gListeners.has(uuid)) {
+				return;
 				}
-				gCollectionsByHost.get(hostIdentifier).set(uuid, this);
-				if(!gCollectionsByUUID.has(uuid)) {
-					gCollectionsByUUID.set(uuid, new Map());
-				}
-				gCollectionsByUUID.get(uuid).set(hostIdentifier, this);
+			collection = await Collection.getRemoteCollection(hostIdentifier, uuid);
 			}
 			const prevState = await collection.getState();
 			if(prevState != state) {
 				await collection.setState(state);
+			if(collection.uuid) {
+				const stateChunk = Chunk.fromIdentifier(state, source?source:hostIdentifier);
+				await stateChunk.clone();
+				await NVD.save(collection.gid, state);
+			}
 				collection.events.emit('change');
 				//TODO: how to trigger specific create/delete events ??
-				for(const callback of gListeners.get(uuid)) {
+			const listeners = gListeners.get(uuid);
+			if(listeners) {
+				for(const callback of listeners) {
 					callback(collection);
 				}
 			}
