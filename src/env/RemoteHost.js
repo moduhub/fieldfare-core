@@ -54,6 +54,9 @@ export class RemoteHost {
 		if(!remoteHost) {
 			remoteHost = gOfflineHosts.get(hostIdentifier);
 			if(!remoteHost) {
+				if(hostIdentifier === LocalHost.getID()) {
+					throw Error('Attempt to create RemoteHost from LocalHost identifier');
+				}
 				remoteHost = new RemoteHost(hostIdentifier);
 				gOfflineHosts.set(hostIdentifier, remoteHost);
 			}
