@@ -18,12 +18,11 @@ export class AdministeredCollection extends VersionedCollection {
     }
 
     async isAdmin(hostIdentifier) {
-		const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
-		const hostChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
+		const makingHostChunk = Chunk.fromObject({id:hostIdentifier});
 		const admins = await this.localCopy.getElement('admins');
 		if(!admins
 		|| await admins.isEmpty()
-		|| await admins.has(hostChunk)) {
+		|| await admins.has(await makingHostChunk)) {
 			return true;
 		}
 		return false;
@@ -50,25 +49,24 @@ export class AdministeredCollection extends VersionedCollection {
 	}
 
 	addAdmin(hostIdentifier) {
+		HostIdentifier.validate(hostIdentifier);
+		const makingKeyChunk = Chunk.fromObject({id:hostIdentifier});
+		const gettingCurrentAdmins = this.localCopy.getElement('admins');
 		return new Change('addAdmin', ...arguments)
 			.setAuth((issuer) => {
 				return this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
-				const admins = await this.localCopy.getElement('admins');
+				const admins = await gettingCurrentAdmins;
 				if(admins) {
-					const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
-					const newAdminChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
-					if(await admins.has(newAdminChunk)) {
+					if(await admins.has(await makingKeyChunk)) {
 						return false; //skip change
 					}
 				}
 				return true;
 			})
 			.setAction(async () => {
-				const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
-				const newAdminChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
-				let admins = await this.localCopy.getElement('admins');
+				let admins = await gettingCurrentAdmins;
 				if(!admins) {
 					admins = await this.localCopy.createElement('admins', {
 						type: 'set',
@@ -76,42 +74,42 @@ export class AdministeredCollection extends VersionedCollection {
 						root: null
 					});
 				}
-				if(await admins.has(newAdminChunk)) {
+				const keyChunk = await makingKeyChunk;
+				if(await admins.has(keyChunk)) {
 					throw Error('applyAddAdmin failed: id already in set');
 				}
-				await admins.add(newAdminChunk);
+				await admins.add(keyChunk);
 				await this.localCopy.updateElement('admins', admins.descriptor);
 			});
 	}
 
 	removeAdmin(hostIdentifier) {
+		const makingKeyChunk = Chunk.fromObject({id:hostIdentifier});
+		const gettingCurrentAdmins = this.localCopy.getElement('admins');
 		return new Change('removeAdmin', ...arguments)
 			.setAuth((issuer) => {
 				return this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
-				const admins = await this.localCopy.getElement('admins');
+				const admins = await gettingCurrentAdmins;
 				if(!admins) {
 					throw Error('applyRemoveAdmin failed: no admins set');
 				}
-				const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
-				const newAdminChunk = Chunk.fromIdentifier(chunkIdentifier, hostIdentifier);
-				if(await admins.has(newAdminChunk) === false) {
+				if(await admins.has(await makingKeyChunk) === false) {
 					return false; //skip change
 				}
 				return true;
 			})
 			.setAction(async () => {
-				const chunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
-				const adminChunk = Chunk.fromIdentifier(chunkIdentifier);
-				const admins = await this.localCopy.getElement('admins');
+				const admins = await gettingCurrentAdmins;
 				if(!admins) {
 					throw Error('applyRemoveAdmin failed: no admins set');
 				}
-				if(await admins.has(adminChunk)===false) {
+				const keyChunk = await makingKeyChunk;
+				if(await admins.has(keyChunk)===false) {
 					throw Error('applyRemoveAdmin failed: id not in set');
 				}
-				await admins.delete(adminChunk);
+				await admins.delete(keyChunk);
 				await this.localCopy.updateElement('admins', admins.descriptor);
 			});
 	}

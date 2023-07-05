@@ -31,23 +31,23 @@ export class Environment extends AdministeredCollection {
 	}
 
 	async getServicesForHost(hostIdentifier) {
-		var list = [];
+		const authorizedUUIDs = [];
+		const hostChunk = await Chunk.fromObject({id:hostIdentifier});
 		const services = await this.localCopy.getElement('services');
-		if(services) {
-			for await(const [keyChunk, valueChunk] of services) {
-				const {uuid} = await keyChunk.expand();
-				const providerListName = uuid + '.providers';
-				const providers = await this.localCopy.getElement(providerListName);
-				if(providers) {
-					const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(hostIdentifier);
-					const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier);
-					if(await providers.has(hostChunk)) {
-						list.push(uuid);
-					}
+		if(!services) {
+			return authorizedUUIDs;
+		}
+		for await(const [keyChunk, valueChunk] of services) {
+			const {uuid} = await keyChunk.expand(0);
+			const providerListName = uuid + '.providers';
+			const providers = await this.localCopy.getElement(providerListName);
+			if(providers) {
+				if(await providers.has(hostChunk)) {
+					authorizedUUIDs.push(uuid);
 				}
 			}
 		}
-		return list;
+		return authorizedUUIDs;
 	}
 
 	addService(definition) {
@@ -159,7 +159,7 @@ export class Environment extends AdministeredCollection {
 		if(!HostIdentifier.isValid(hostID)) {
 			throw Error('Invalid hostID');
 		}
-		const hostChunk = Chunk.fromIdentifier(HostIdentifier.toChunkIdentifier(hostID));
+		const hostChunk = await Chunk.fromObject({id:hostID});
 		const providers = await this.localCopy.getElement(serviceUUID+'.providers');
 		if(providers
 		&& providers !== undefined
@@ -174,15 +174,17 @@ export class Environment extends AdministeredCollection {
 			throw Error('Invalid serviceUUID');
 		}
 		HostIdentifier.validate(providerID);
+		const providerListName = serviceUUID + '.providers';
+		const makingHostChunk = Chunk.fromObject({id:providerID});
+		const gettingProviders = this.localCopy.getElement(providerListName);
 		return new Change('addProvider', ...arguments)
 			.setAuth(async (issuer) => {
 				return await this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
-				const providers = await this.localCopy.getElement(serviceUUID+'.providers');
+				const providers = await gettingProviders;
 				if(providers) {
-					const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
-					const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
+					const hostChunk = await makingHostChunk;
 					if(await providers.has(hostChunk)) {
 						logger.debug('addProvider successfully MERGED');
 						return false;
@@ -191,13 +193,11 @@ export class Environment extends AdministeredCollection {
 				return true;
 			})
 			.setAction(async () => {
-				const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
-				const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
-				const providerListName = serviceUUID + '.providers';
-				const providers = await this.localCopy.getElement(providerListName);
+				const providers = await gettingProviders;
 				if(!providers) {
 					throw Error(serviceUUID + ' providers ChunkSet does not exist');
 				}
+				const hostChunk = await makingHostChunk;
 				if(await providers.has(hostChunk)) {
 					throw Error('provider already in list');
 				}
@@ -207,16 +207,17 @@ export class Environment extends AdministeredCollection {
 	}
 
 	removeProvider(serviceUUID, providerID) {
+		const providerListName = serviceUUID + '.providers';
+		const gettingProviders = this.localCopy.getElement(providerListName);
+		const makingHostChunk = Chunk.fromObject({id:providerID});
 		return new Change('removeProvider', ...arguments)
-			.setAuth(async (issuer) => {
-				return await this.isAdmin(issuer);
+			.setAuth((issuer) => {
+				return this.isAdmin(issuer);
 			})
 			.setMergePolicy(async () => {
-				const providers = await this.localCopy.getElement(serviceUUID+'.providers');
+				const providers = await gettingProviders;
 				if(providers) {
-					const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
-					const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
-					if(await providers.has(hostChunk)) {
+					if(await providers.has(await makingHostChunk)) {
 						return true;
 					}
 				}
@@ -224,13 +225,11 @@ export class Environment extends AdministeredCollection {
 				return true;
 			})
 			.setAction(async () => {
-				const hostChunkIdentifier = HostIdentifier.toChunkIdentifier(providerID);
-				const hostChunk = Chunk.fromIdentifier(hostChunkIdentifier, hostChunkIdentifier);
-				const providerListName = serviceUUID + '.providers';
-				const providers = await this.localCopy.getElement(providerListName);
+				const providers = await gettingProviders;
 				if(!providers) {
 					throw Error(serviceUUID + ' providers ChunkSet does not exist');
 				}
+				const hostChunk = await makingHostChunk;
 				if(await providers.has(hostChunk) === false) {
 					throw Error('provider not in list');
 				}
