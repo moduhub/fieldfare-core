@@ -30,7 +30,6 @@ export class RemoteHost {
 		this.channels = new Set();
 		this.definedServices = new Map();
 		this.implementedServices = new Map();
-		this.pendingRequests = new Map();
 	}
 
 	static on(...args) {
@@ -181,15 +180,7 @@ export class RemoteHost {
 				await this.treatChunkMessage(message, channel);
 			} else
 			if(message.service == 'response') {
-				if('hash' in message.data === false) {
-					throw Error('Malformed reponse data');
-				}
-				if(this.pendingRequests.has(message.data.hash)) {
-					const request = this.pendingRequests.get(message.data.hash);
-					request.resolve(message);
-				} else {
-					throw Error('Response does not have an assigned request');
-				}
+				this.onResponseReceived(message);
 			} else {
 				const localService = LocalHost.getLocalService(message.service);
 				if(localService === undefined
@@ -264,17 +255,12 @@ export class RemoteHost {
 	}
 
 	async treatChunkMessage(message, channel) {
-		if('id' in message.data == false) {
+		if('id' in message.data === false) {
 			throw Error('malformed resouce message');
 		}
 		if('data' in message.data
 		|| 'error' in message.data) {
-			//this is a response to a previous request
-			if(this.onResponseReceived) {
-				this.onResponseReceived(message, channel);
-			} else {
-				throw Error('treatChunkRequest: undefined response callback');
-			}
+			this.onResponseReceived(message);
 		} else {
 			var response;
 			try {
@@ -313,7 +299,6 @@ export class RemoteHost {
 			}
 		}
 		const service = this.implementedServices.get(descriptor.uuid);
-		logger.debug('accessService('+descriptor.uuid+') result: ' + JSON.stringify(service));
 		return service;
 	}
 

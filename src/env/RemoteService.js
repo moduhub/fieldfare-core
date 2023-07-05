@@ -6,10 +6,6 @@
  */
 
 import { LocalHost } from './LocalHost.js';
-import { ServiceDescriptor } from './ServiceDescriptor.js';
-import { ChunkingUtils } from '../chunking/ChunkingUtils.js';
-import { Request } from '../trx/Request.js';
-import { logger } from '../basic/Log.js';
 
 export class RemoteService {
 
@@ -24,15 +20,10 @@ export class RemoteService {
                 if(newService.owner === undefined) {
                     throw Error('RemoteService owner is undefined');
                 }
-                //logger.debug('[Remote Service]' +  methodName + ' called with params: ' + JSON.stringify(params));
-                const request = new Request(newService.descriptor.uuid, 10000, {
-                    [methodName]: params
-                });
-                await LocalHost.signMessage(request);
-                const requestIdentifier = await ChunkingUtils.generateIdentifierForObject(request.data);
-                newService.owner.pendingRequests.set(requestIdentifier, request);
-                console.log('Sending request...', request);
-                newService.owner.send(request);
+                const request = await LocalHost.request(
+                    newService.descriptor.uuid,
+                    newService.owner.id,
+                    {[methodName]: params});
                 const response = await request.complete();
                 if('data' in response === false) {
                     throw Error('Missing response data');

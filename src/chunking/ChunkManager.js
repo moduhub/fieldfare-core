@@ -84,17 +84,12 @@ export class ChunkManager {
 	static async getRemoteChunkContents(id, owner) {
 		const retryCount = 3;
 		for(let attempts = 0; attempts<retryCount; attempts++) {
-			let request = LocalHost.getPendingRequest(id);
-			if(request === undefined) {
-				if(attempts > 0) {
-					logger.debug('get chunk request retry ' + attempts + ' of ' + retryCount-1);
-				}
-				request = new Request('chunk', 3000, {
-					id: id
-				});
-				request.setDestinationAddress(owner);
-				LocalHost.dispatchRequest(id, request);
+			if(attempts > 0) {
+				logger.debug('get chunk request retry ' + attempts + ' of ' + retryCount-1);
 			}
+			const request = await LocalHost.request('chunk', owner, {
+				id: id
+			}, 3000);
 			try {
 				const response = await request.complete();
 				const remoteChunkIdentifier = response.data.id;
@@ -106,8 +101,6 @@ export class ChunkManager {
 				return remoteChunkData;
 			} catch (error) {
 				logger.error('Get chunk request failed: ' + error.stack);
-			} finally {
-                LocalHost.popPendingRequest(id);
 			}
 		}
 		throw Error('Chunk not found remotely: ' + id).name = 'NOT_FOUND_ERROR';

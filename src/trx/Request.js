@@ -10,16 +10,21 @@ import { logger } from '../basic/Log.js';
 
 export class Request extends Message {
 
-	constructor(service, timeout, data) {
+	constructor(service, data, timeout=10000) {
 		super(service, data);
 		this.resolveCallbacks = new Set();
 		this.rejectCallbacks = new Set();
+		this.ts = Date.now();
 		this.timeout = setTimeout(() => {
 			logger.debug('request timeout');
-			const error = Error('Request ' + JSON.stringify(this.data) + ' timed out');
+			const error = Error('Request ' + JSON.stringify(this.data.id) + ' timed out');
 			error.name = 'TIMEOUT_ERROR';
 			this.reject(error);
 		}, timeout);
+	}
+
+	get age() {
+		return Date.now() - this.ts;
 	}
 
 	jsonReplacer(key, value) {
@@ -57,6 +62,10 @@ export class Request extends Message {
 			callback(response);
 		}
 		this.resolveCallbacks.clear();
+	}
+
+	isComplete() {
+		return this.response || this.error;
 	}
 
 	complete() {

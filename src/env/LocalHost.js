@@ -6,6 +6,7 @@
  */
 
 import { Chunk } from '../chunking/Chunk.js';
+import { ChunkingUtils } from '../chunking/ChunkingUtils.js';
 import { HostIdentifier } from './HostIdentifier.js';
 import { Environment } from '../env/Environment.js';
 import { LocalService } from './LocalService.js';
@@ -16,7 +17,7 @@ import { Utils } from '../basic/Utils.js';
 import { logger } from '../basic/Log.js';
 import { cryptoManager } from '../basic/CryptoManager.js';
 import { EventEmitter } from '../basic/EventEmitter.js';
-
+import { Request } from '../trx/Request.js';
 
 const localHost = {
 	bootChannels: new Set(),
@@ -27,7 +28,8 @@ const localHost = {
 	environments: new Set(),
 	webportTransceivers: new Map(),
 	webportChannels: new Map(),
-	events: new EventEmitter()
+	events: new EventEmitter(),
+	requestRate: 0
 };
 
 export const LocalHost = {
@@ -77,6 +79,29 @@ export const LocalHost = {
 				}
 			}
 		}, 3000);
+		localHost.interval = setInterval(() => {
+			if(localHost.requestRate > 0) {
+				logger.debug('Localhost request rate: '
+					+ localHost.requestRate + ' req/s');
+					localHost.requestRate = 0;
+			}
+			const numRequestsCached = localHost.requests.size;
+			let numPendingRequests = 0;
+			for(const [requestID, request] of localHost.requests) {
+				if(request.isComplete()) {
+					if(request.age > 30000
+					|| numRequestsCached > 100) {
+						localHost.requests.delete(requestID);
+					}
+				} else {
+					numPendingRequests++;
+				}
+			}
+			if(numPendingRequests > 0) {
+				logger.debug('Localhost pending requests: '
+					+ numPendingRequests + '/' + numRequestsCached);
+			}
+		}, 1000);
 	},
 
 	terminate() {
@@ -171,31 +196,52 @@ export const LocalHost = {
 		return null;
 	},
 
-	getPendingRequest(hash) {
-		return localHost.requests.get(hash);
+	getPendingRequest(id) {
+		return localHost.requests.get(id);
 	},
 
-	popPendingRequest(hash) {
-		localHost.requests.delete(hash);
-	},
-
-	dispatchRequest(hash, request) {
-		// logger.debug("Forwarding request to request.destination: " + JSON.stringify(request.destination));
-		if(request.destination === localHost.id) {
+	/**
+	 * Send a request to a remote host.
+	 * @param {string} service Service identifier
+	 * @param {HostIdentifier} destination Host Identifier of the destination
+	 * @param {Object} data Payload of the request, that must include an id.
+	 * If the ID is not present, it will be generated from the data object.
+	 * @param {Integer} timeout Timeout in milliseconds for the request to be completed.
+	 * Defaults to 10 seconds.
+	 * @returns {Promise<Request>} Request object
+	 */
+	async request(service, destination, data, timeout=10000) {
+		if(destination === localHost.id) {
 			throw Error('Attempt to send a request to localHost');
 		}
-		if(localHost.requests.has(hash)) {
-			throw Error('Duplicate request blocked');
+		if(HostIdentifier.isValid(destination) === false) {
+			throw Error('Invalid destination host identifier');
 		}
-		const destinationHost = RemoteHost.fromHostIdentifier(request.destination);
-		localHost.requests.set(hash, request);
-		request.source = localHost.id;
-		try {
-			destinationHost.send(request);
-		} catch(error) {
-			localHost.requests.delete(hash);
-			throw error;
+		let requestIdentifier = data.id;
+		if(requestIdentifier) {
+			ChunkingUtils.validateIdentifier(requestIdentifier);
+		} else {
+			requestIdentifier = await ChunkingUtils.generateIdentifierForObject(data);
 		}
+		let request = localHost.requests.get(requestIdentifier);
+		if(!request) {
+			request = new Request(service, data, timeout);
+			request.source = localHost.id;
+			request.destination = destination;
+			if(service!=='chunk') {	//TODO: List of gratuitous services
+				await LocalHost.signMessage(request);
+			}
+			const destinationHost = RemoteHost.fromHostIdentifier(destination);
+			localHost.requests.set(requestIdentifier, request);
+			try {
+				destinationHost.send(request);
+				this.requestRate++;
+			} catch(error) {
+				localHost.requests.delete(requestIdentifier);
+				throw error;
+			}
+		}
+		return request;
 	},
 
 	async bootChannel(channel) {
@@ -344,7 +390,6 @@ export const LocalHost = {
 	},
 
 	signMessage(message) {
-		logger.debug('LocalHost.signMessage -> key='+JSON.stringify(localHost.keypair));
 		return cryptoManager.signMessage(message, localHost.keypair.privateKey);
 	}
 

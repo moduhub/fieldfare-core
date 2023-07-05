@@ -133,7 +133,7 @@ export class LocalService {
             throw Error('request contains no data');
         }
         var responseData = {
-            hash: await ChunkingUtils.generateIdentifierForObject(request.data),
+            id: await ChunkingUtils.generateIdentifierForObject(request.data),
             status: 'done'
         };
         for(const prop in request.data) {
