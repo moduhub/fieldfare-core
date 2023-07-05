@@ -85,7 +85,7 @@ export class Chunk {
 	 * @throws Error if the chunk data is corrupted
 	 */
     async clone(depth=Number.POSITIVE_INFINITY) {
-        logger.debug('[CLONE] Evaluating ' + this.id + ' down to depth=' + depth);
+        //logger.debug('[CLONE] Evaluating ' + this.id + ' down to depth=' + depth);
         if(!this.ownerID) {
             throw Error('Owner ID not set');
         }
@@ -112,11 +112,11 @@ export class Chunk {
                 base64data = await ChunkManager.getRemoteChunkContents(this.id, this.ownerID);
                 logger.debug('[CLONE] Fetch succeeded for ' + this.id +' with ' + base64data.length + ' bytes of data');
             } else {
-                logger.debug('[CLONE] Got ' + this.id +' contents from incomplete chunks');
+                //logger.debug('[CLONE] Got ' + this.id +' contents from incomplete chunks');
             }
             if(depth > 0) {
                 const childrenIdentifiers = await ChunkingUtils.getChildrenIdentifiers(base64data);
-                logger.debug('[CLONE] ' + this.id + ' has ' + childrenIdentifiers.length + ' children');
+                //logger.debug('[CLONE] ' + this.id + ' has ' + childrenIdentifiers.length + ' children');
                 const promises = [];
                 for(const childIdentifier of childrenIdentifiers) {
                     promises.push(Chunk.fromIdentifier(childIdentifier, this.ownerID).clone(depth-1));
@@ -127,7 +127,7 @@ export class Chunk {
             await ChunkManager.storeChunkContents(base64data);
             numChunksCloned++;
         } else {
-            logger.debug('[CLONE] ' + this.id + ' already complete');
+            //logger.debug('[CLONE] ' + this.id + ' already complete');
         }
         return numChunksCloned;
     }
