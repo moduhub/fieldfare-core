@@ -113,20 +113,21 @@ export class ChunkList {
 		if(element instanceof Chunk === false) {
 			throw Error('element not an instance of Chunk');
 		}
-		var iContainer = this.last.expand();
+		let iContainer = this.last;
 		while(iContainer) {
-			if(this.degree == 1) {
-				if(iContainer instanceof Chunk === false) {
+			const {content, prev} = await iContainer.expand(1);
+			if(this.degree === 1) {
+				if(content instanceof Chunk === false) {
 					throw Error('Received a non-chunk element inside a list');
 				}
-				if(iContainer.content.id === element.id) {
+				if(content.id === element.id) {
 					return true;
 				}
 			} else {
-				if(iContainer instanceof Array === false) {
+				if(content instanceof Array === false) {
 					throw Error('list element content must be an array if degree > 1');
 				}
-				for(const entry of iContainer.content) {
+				for(const entry of content) {
 					if(entry instanceof Chunk === false) {
 						throw Error('Received a non-chunk element inside a list');
 					}
@@ -135,7 +136,7 @@ export class ChunkList {
 					}
 				}
 			}
-			iContainer = iContainer.prev.expand();
+			iContainer = prev;
 		}
 		return false;
 	}
