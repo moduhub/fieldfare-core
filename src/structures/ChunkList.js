@@ -149,7 +149,7 @@ export class ChunkList {
 		}
 		const currentNumElements = await this.getNumElements();
 		var newContainer;
-		if(this.degree == 1) {
+		if(this.degree === 1) {
 			newContainer = {
 				prev: this.last,
 				index: currentNumElements,
@@ -159,7 +159,7 @@ export class ChunkList {
 			if(this.last) {
 				const oldContainer = await this.last.expand();
 				//check if element must go into the last
-				if(oldContainer.content.length == this.degree) {
+				if(oldContainer.content.length === this.degree) {
 					newContainer = {
 						prev: this.last,
 						index: currentNumElements,
