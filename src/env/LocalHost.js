@@ -79,7 +79,7 @@ export const LocalHost = {
 				}
 			}
 		}, 3000);
-		localHost.interval = setInterval(() => {
+		localHost.requestinterval = setInterval(() => {
 			if(localHost.requestRate > 0) {
 				logger.debug('Localhost request rate: '
 					+ localHost.requestRate + ' req/s');
@@ -105,6 +105,7 @@ export const LocalHost = {
 	},
 
 	terminate() {
+		clearInterval(localHost.requestinterval);
 		clearInterval(localHost.announceInterval);
 	},
 
