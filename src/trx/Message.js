@@ -10,6 +10,7 @@ export class Message {
 	constructor(service, data) {
 		this.service = service;
 		this.data = data;
+		this.ts = Date.now();
 	}
 
 	setDestinationAddress(address) {

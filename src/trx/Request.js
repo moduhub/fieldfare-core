@@ -14,7 +14,6 @@ export class Request extends Message {
 		super(service, data);
 		this.resolveCallbacks = new Set();
 		this.rejectCallbacks = new Set();
-		this.ts = Date.now();
 		this.timeout = setTimeout(() => {
 			logger.debug('request timeout');
 			const error = Error('Request ' + JSON.stringify(this.data.id) + ' timed out');
