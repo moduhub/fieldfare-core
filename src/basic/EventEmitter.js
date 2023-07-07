@@ -14,7 +14,7 @@ export class EventEmitter {
     on(event, listener) {
         const listeners = this.listeners.get(event);
         if(listeners) {
-            listeners.push(listener);
+            this.listeners.set(event, [...listeners, listener]);
         } else {
             this.listeners.set(event, [listener]);
         }
