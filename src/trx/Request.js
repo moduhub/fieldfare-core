@@ -70,9 +70,9 @@ export class Request extends Message {
 
 	complete() {
 		if(this.error) throw this.error;
-		if(this.response) return this.result;
+		if(this.response) return this.response;
 		return new Promise((resolve, reject) => {
-			this.resolveCallbacks.add( (result) => resolve(result) );
+			this.resolveCallbacks.add( (response) => resolve(response) );
 			this.rejectCallbacks.add( (error) => reject(error) );
 		});
 	}
