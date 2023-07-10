@@ -150,6 +150,7 @@ export class Collection {
 			let collection = gRemoteCollections.get(hostIdentifier + ':' + uuid);
 			if(!collection) {
 			if(!gListeners.has(uuid)) {
+				//console.log('updateRemoteCollection ' +  uuid + 'aborted, no listeners');
 				return;
 				}
 			collection = await Collection.getRemoteCollection(hostIdentifier, uuid);
@@ -187,7 +188,7 @@ export class Collection {
 	publish() {
 		if(!this.uuid
 		|| Utils.isUUID(this.uuid) === false) {
-			throw Error('attempp to publish a collection without a valid UUID');
+			throw Error('attempt to publish a collection without a valid UUID');
 		}
 		if(this.owner) {
 			throw Error('cannot publish a remote collection');

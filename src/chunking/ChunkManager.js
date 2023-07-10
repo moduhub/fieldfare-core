@@ -6,7 +6,6 @@
  */
 
 import { LocalHost } from '../env/LocalHost.js';
-import { Request } from '../trx/Request.js';
 import { ChunkingUtils } from './ChunkingUtils.js';
 import { logger } from '../basic/Log.js';
 import { Utils } from '../basic/Utils.js';
