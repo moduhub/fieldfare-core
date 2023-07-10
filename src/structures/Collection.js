@@ -147,24 +147,26 @@ export class Collection {
 	}
 
 	static async updateRemoteCollection(hostIdentifier, uuid, state, source) {
-			let collection = gRemoteCollections.get(hostIdentifier + ':' + uuid);
-			if(!collection) {
+		let collection = gRemoteCollections.get(hostIdentifier + ':' + uuid);
+		if(!collection) {
 			if(!gListeners.has(uuid)) {
 				//console.log('updateRemoteCollection ' +  uuid + 'aborted, no listeners');
 				return;
-				}
-			collection = await Collection.getRemoteCollection(hostIdentifier, uuid);
 			}
-			const prevState = await collection.getState();
-			if(prevState != state) {
-				await collection.setState(state);
+			collection = await Collection.getRemoteCollection(hostIdentifier, uuid);
+		}
+		const prevState = await collection.getState();
+		if(prevState !== state
+		|| collection.justLoaded) {
+			collection.justLoaded = false;
+			await collection.setState(state);
 			if(collection.uuid) {
 				const stateChunk = Chunk.fromIdentifier(state, source?source:hostIdentifier);
 				await stateChunk.clone();
 				await NVD.save(collection.gid, state);
 			}
-				collection.events.emit('change');
-				//TODO: how to trigger specific create/delete events ??
+			collection.events.emit('change');
+			//TODO: how to trigger specific create/delete events ??
 			const listeners = gListeners.get(uuid);
 			if(listeners) {
 				for(const callback of listeners) {
@@ -221,6 +223,7 @@ export class Collection {
 		if(state) {
             await this.setState(state);
         }
+		this.justLoaded = true;
 	}
 
 	/**
