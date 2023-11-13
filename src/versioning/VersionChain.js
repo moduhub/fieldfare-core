@@ -6,6 +6,7 @@
  */
 
 import { Chunk } from '../chunking/Chunk.js';
+import { ChunkingUtils } from '../chunking/ChunkingUtils.js';
 import { Collection } from '../structures/Collection.js';
 import { VersionStatement } from '../versioning/VersionStatement.js';
 import { logger } from '../basic/Log.js';
@@ -45,6 +46,7 @@ static async findCommonVersion(chainA, chainB) {
 }
 
     limit(base, include) {
+        ChunkingUtils.validateIdentifier(base);
         this.base = base;
         if(include === true
         || include === false)  {
