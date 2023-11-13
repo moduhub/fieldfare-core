@@ -277,6 +277,12 @@ export class VersionedCollection {
 	}
 
 	merge(base, head) {
+		if(base instanceof Chunk) {
+			base = base.id;
+		}
+		if(head instanceof Chunk) {
+			head = head.id;
+		}
 		return new Change('merge', ...arguments)
 		.setAction(async () => {
 			const mergeChain = new VersionChain(head, LocalHost.getID(), 50);
