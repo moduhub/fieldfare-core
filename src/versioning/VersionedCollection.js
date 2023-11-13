@@ -99,6 +99,14 @@ export class VersionedCollection {
 		}
 	}
 
+	/**
+	 * Apply a set of changes to the collection, bringing it to the head state of the chain.
+	 * @async
+	 * @param {VersionChain} chain - The chain of versions containing the changes to be applied.
+	 * @param {boolean} [merge=false] - Whether to merge the changes with the current state of the collection.
+	 * @throws {Error} If the state chain mismatch or if the method to execute is not defined.
+	 * @returns {Promise<void>} A promise that resolves when the changes have been applied.
+	 */
 	async applyChain(chain, merge=false) {
 		const statements = await chain.getStatementsArray();
 		for await (const statement of statements) {
@@ -124,10 +132,14 @@ export class VersionedCollection {
 	}
 
 	/**
-	 * Apply a change to the collection elements.
-	 * @param {Change} change
-	 * @param {boolean} merge
-	 * @returns {Promise<Change>}
+	 * Returns a change object based on a descriptor object.
+	 * @async
+	 * @param {Object} descriptor - The descriptor object that represents the change to be applied.
+	 * @param {string} descriptor.method - The name of the method to be called on the collection.
+	 * @param {Array} descriptor.params - An array of parameters to be passed to the method.
+	 * @param {string} [descriptor.issuer] - The ID of the user who initiated the change.
+	 * @throws {Error} If the change is not allowed, the method is not defined, or the method does not return a Change object.
+	 * @returns {Promise<Change>} A change object that represents the change to be applied.
 	 */
 	async getChangeFromDescriptor(descriptor) {
 		if(this.allowedChanges.has(descriptor.method) === false) {

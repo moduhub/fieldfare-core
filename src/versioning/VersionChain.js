@@ -20,22 +20,29 @@ export class VersionChain {
         this.includeBase = true;
     }
 
-    static async findCommonVersion(chainA, chainB) {
-        var depthA = 0;
-        for await (const {version:versionA} of chainA.versionsIterator()) {
-            var depthB = 0;
-            for await (const {version:versionB} of chainB.versionsIterator()) {
-                // logger.log('info', "A("+depthA+"): " + versionA);
-                // logger.log('info', "B("+depthB+"): " + versionB);
-                if(versionA === versionB) {
-                    return {version: versionA, depthA, depthB};
-                }
-                if(++depthB > chainB.maxDepth) throw Error('chain B depth exceeded');
+/**
+ * Finds the common version between two chains of versions.
+ * @static
+ * @async
+ * @param {VersionChain} chainA - The first chain of versions.
+ * @param {VersionChain} chainB - The second chain of versions.
+ * @throws {Error} If the depth of either chain exceeds the maximum depth allowed or if the chains are not coincident.
+ * @returns {Promise<{version: string, depthA: number, depthB: number}>} An object containing the common version and the depth of the version in each chain.
+ */
+static async findCommonVersion(chainA, chainB) {
+    var depthA = 0;
+    for await (const {version:versionA} of chainA.versionsIterator()) {
+        var depthB = 0;
+        for await (const {version:versionB} of chainB.versionsIterator()) {
+            if(versionA === versionB) {
+                return {version: versionA, depthA, depthB};
             }
-            if(++depthA > chainA.maxDepth) throw Error('chain A depth exceeded');
+            if(++depthB > chainB.maxDepth) throw Error('chain B depth exceeded');
         }
-        throw Error('chains not coincident');
+        if(++depthA > chainA.maxDepth) throw Error('chain A depth exceeded');
     }
+    throw Error('chains not coincident');
+}
 
     limit(base, include) {
         this.base = base;
