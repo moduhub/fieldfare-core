@@ -220,7 +220,7 @@ export class VersionedCollection {
 					throw Error('final state mismatch');
 				}
 				if(localCommitsAhead > 0) {
-					logger.debug('[PULL] Merging local changes');
+					logger.debug('[PULL] Merging local changes from ' + localChain.base + " to " + localChain.head);
 					await this.commit(
 						this.merge(localChain.base, localChain.head)
 					);
