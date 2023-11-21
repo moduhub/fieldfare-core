@@ -27,9 +27,11 @@ export class EventEmitter {
             const index = listeners.indexOf(handle.listener);
             if(index >= 0) {
                 listeners.splice(index, 1);
-            }
+            } else 
             if(listeners.size == 0) {
                 this.listeners.delete(handle.event);
+            } else {
+                throw Error('listener not found');
             }
         }
     }
