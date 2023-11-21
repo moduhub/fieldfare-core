@@ -5,16 +5,13 @@
  * ISC LICENSE
  */
 
-import { LocalHost } from './LocalHost.js';
 import { Chunk } from '../chunking/Chunk.js';
 import { AdministeredCollection } from '../versioning/AdministeredCollection.js';
 import { Change } from '../versioning/Change.js';
 import { ServiceDescriptor } from './ServiceDescriptor.js';
-import { NVD } from '../basic/NVD.js';
 import { Utils } from '../basic/Utils.js';
 import { logger } from '../basic/Log.js';
 import { HostIdentifier } from './HostIdentifier.js';
-import { Collection } from '../structures/Collection.js';
 
 export class Environment extends AdministeredCollection {
 

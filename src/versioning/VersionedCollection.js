@@ -8,10 +8,8 @@
 import { LocalHost } from '../env/LocalHost.js';
 import { Chunk } from '../chunking/Chunk.js';
 import { ChunkingUtils } from '../chunking/ChunkingUtils.js';
-import { ChunkMap } from '../structures/ChunkMap.js';
 import { VersionStatement } from './VersionStatement.js';
 import { VersionChain } from './VersionChain.js';
-import { NVD } from '../basic/NVD.js';
 import { Utils } from '../basic/Utils.js';
 import { logger } from '../basic/Log.js';
 import { Collection } from '../structures/Collection.js';
