@@ -233,6 +233,9 @@ export class Collection {
 	 * iterator will include the staged changes.
 	 */
 	async startStaging() {
+		if(this.staging) {
+			throw Error('Duplicate staging mode');
+		}
 		this.pendingEvents = [];
 		this.numStagedChanges = 0;
 		this.staging = true;
