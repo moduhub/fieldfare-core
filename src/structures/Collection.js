@@ -150,7 +150,6 @@ export class Collection {
 		let collection = gRemoteCollections.get(hostIdentifier + ':' + uuid);
 		if(!collection) {
 			if(!gListeners.has(uuid)) {
-				//console.log('updateRemoteCollection ' +  uuid + 'aborted, no listeners');
 				return;
 			}
 			collection = await Collection.getRemoteCollection(hostIdentifier, uuid);

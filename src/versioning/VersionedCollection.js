@@ -20,8 +20,8 @@ import { EventEmitter } from '../basic/EventEmitter.js';
  * Represents a group of elements that can be altered
  * by a group of hosts in a collaborative manner. Any changes made to
  * the data must be commited by creating VersionStatements and sharing
- * them with all other hosts in the admin group, that may accept or
- * reject the changes based on a shared set of rules.
+ * them with all other hosts that use the same collection UUID,
+ * that may accept or reject the changes based on a shared set of rules.
  */
 export class VersionedCollection {
 
