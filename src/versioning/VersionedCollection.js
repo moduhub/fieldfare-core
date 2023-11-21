@@ -235,6 +235,7 @@ export class VersionedCollection {
 				logger.debug("[PULL] Local chain is ahead of remote chain, nothing to do");
 				//Local chain is ahead of remote, wait for remote to merge
 				// Todo: notify him?
+				await this.localCopy.abortStaging();
 			}
 		} catch (error) {
 			// Recover previous state
