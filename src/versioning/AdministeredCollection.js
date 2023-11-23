@@ -14,7 +14,8 @@ export class AdministeredCollection extends VersionedCollection {
 
     constructor(uuid) {
         super(uuid);
-        this.allowedChanges.add(['addAdmin', 'removeAdmin']);
+        this.allowedChanges.add('addAdmin');
+		this.allowedChanges.add('removeAdmin');
     }
 
     async isAdmin(hostIdentifier) {
