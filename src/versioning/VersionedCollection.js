@@ -61,6 +61,15 @@ export class VersionedCollection {
 		 * @property
 		 */
 		this.events = new EventEmitter();
+		/**
+		 * The current action being executed by the collection.
+		 */
+		this.currentAction = null;
+		/**
+		 * A queue of actions to be executed by the collection.
+		 * This is used to avoid concurrent changes.
+		 */
+		this.waiters = [];
 	}
 
 	async init() {
@@ -83,6 +92,29 @@ export class VersionedCollection {
 				}
 			});
 		});
+	}
+
+	startAction(...args) {
+		if(this.currentAction) {
+			console.log('SEMAPHORE> queuing action', args);
+			return new Promise((resolve, reject) => {
+				this.waiters.push({action: args, resolve, reject});
+			});
+		}
+		console.log('SEMAPHORE> start action directly', args);
+		this.currentAction = args;
+	}
+
+	completeAction() {
+		const nextWaiter = this.waiters.shift();
+		if(nextWaiter) {
+			console.log('SEMAPHORE> pop action from queue', nextWaiter);
+			this.currentAction = nextWaiter.action;
+			nextWaiter.resolve();
+		} else {
+			console.log('SEMAPHORE> no more actions in queue');
+			this.currentAction = null;
+		}
 	}
 
 	async updateVersionStatement(statement) {
@@ -176,16 +208,10 @@ export class VersionedCollection {
 	 */
 	async pull(version, source) {
 		ChunkingUtils.validateIdentifier(version);
-		if(this.updateInProgress === version) {
-			throw Error('update already in progress');
-		}
-		if(this.updateInProgress) {
-			throw Error('another update in progress');
-		}
 		if(this.versionBlacklist.has(version)) {
 			throw Error('This version has been blacklisted');
 		}
-		this.updateInProgress = version;
+		await this.startAction('update', version);
 		const initialState = await this.localCopy.startStaging();
 		logger.debug('[PULL] Start staging, intial state: ' + initialState);
 		try {
@@ -236,13 +262,11 @@ export class VersionedCollection {
 				await this.localCopy.abortStaging();
 			}
 		} catch (error) {
-			// Recover previous state
 			const currentState = await this.localCopy.abortStaging();
 			logger.debug('[PULL] Aborted staging, back to state ' + currentState);
-			debugger;
 			throw Error('Pull failed: ' + error, {cause: error});
 		} finally {
-			this.updateInProgress = null;
+			this.completeAction();
 		}
 	}
 
