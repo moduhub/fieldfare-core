@@ -96,23 +96,19 @@ export class VersionedCollection {
 
 	startAction(...args) {
 		if(this.currentAction) {
-			console.log('SEMAPHORE> queuing action', args);
 			return new Promise((resolve, reject) => {
 				this.waiters.push({action: args, resolve, reject});
 			});
 		}
-		console.log('SEMAPHORE> start action directly', args);
 		this.currentAction = args;
 	}
 
 	completeAction() {
 		const nextWaiter = this.waiters.shift();
 		if(nextWaiter) {
-			console.log('SEMAPHORE> pop action from queue', nextWaiter);
 			this.currentAction = nextWaiter.action;
 			nextWaiter.resolve();
 		} else {
-			console.log('SEMAPHORE> no more actions in queue');
 			this.currentAction = null;
 		}
 	}
