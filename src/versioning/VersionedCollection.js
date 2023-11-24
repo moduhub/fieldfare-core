@@ -245,9 +245,7 @@ export class VersionedCollection {
 				}
 				if(localCommitsAhead > 0) {
 					logger.debug('[PULL] Merging local changes from ' + localChain.base + " to " + localChain.head);
-					await this.commit(
-						this.merge(localChain.base, localChain.head)
-					);
+					await this.commit(this.merge(localChain.base, localChain.head), true);
 					//TOTHINK: retract commit if changes were redundant?
 				}
 				logger.debug('[PULL] Wraping up staging');
@@ -274,29 +272,40 @@ export class VersionedCollection {
 	 * Execute a set of changes and create a new version.
 	 * @param {Change|Change[]} changes A single change or an array of changes to be executed.
 	 */
-	async commit(changes) {
-		if(changes instanceof Array === false) {
-			changes = [changes];
+	async commit(changes, now=false) {
+		if(!now) {
+			await this.startAction('commit', changes);
 		}
-		const prevState = await this.localCopy.getState();
-		const changeDescriptors = [];
-		for(const change of changes) {
-			if(change instanceof Change === false) {
-				throw Error('Invalid change');
+		try {
+			if(changes instanceof Array === false) {
+				changes = [changes];
 			}
-			change.setIssuer(LocalHost.getID());
-			await change.execute();
-			changeDescriptors.push(change.descriptor);
+			const prevState = await this.localCopy.getState();
+			const changeDescriptors = [];
+			for(const change of changes) {
+				if(change instanceof Change === false) {
+					throw Error('Invalid change');
+				}
+				change.setIssuer(LocalHost.getID());
+				await change.execute();
+				changeDescriptors.push(change.descriptor);
+			}
+			const versionStatement = new VersionStatement(LocalHost.getID(), {
+				prev: prevState,
+				ts: Date.now(),
+				changes: await Chunk.fromObject(changeDescriptors)
+			});
+			await LocalHost.signMessage(versionStatement);
+			await this.updateVersionStatement(versionStatement);
+			this.currentVersion = await this.localCopy.getState();
+			this.events.emit('version', this.currentVersion);
+		} catch (error) {
+			throw Error('Commit failed: ' + error, {cause: error});
+		} finally {
+			if(!now) {
+				this.completeAction();
+			}
 		}
-		const versionStatement = new VersionStatement(LocalHost.getID(), {
-			prev: prevState,
-			ts: Date.now(),
-			changes: await Chunk.fromObject(changeDescriptors)
-		});
-		await LocalHost.signMessage(versionStatement);
-		await this.updateVersionStatement(versionStatement);
-		this.currentVersion = await this.localCopy.getState();
-		this.events.emit('version', this.currentVersion);
 	}
 
 	merge(base, head) {
