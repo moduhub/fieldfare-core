@@ -212,6 +212,15 @@ export class Collection {
 		const stateChunk = Chunk.fromIdentifier(state, this.owner);
 		const descriptor = await stateChunk.expand(0);
 		this.elements.descriptor = descriptor;
+		if(this.staging) {
+			this.pendingEvents.push(['change']);
+			this.numStagedChanges++;
+		} else {
+			if(this.uuid) {
+				await NVD.save(this.gid, state);
+			}
+			this.events.emit('change');
+		}
 	}
 
     async loadPersistentState() {
