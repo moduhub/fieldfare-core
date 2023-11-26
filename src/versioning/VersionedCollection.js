@@ -94,6 +94,18 @@ export class VersionedCollection {
 		});
 	}
 
+	async getVersionHistoryCache() {
+		if(!this.versionHistoryCache) {
+			this.versionHistoryCache = new Map();
+		}
+		const versionChain = new VersionChain(this.currentVersion, LocalHost.getID(), 50);
+		let depth=0;
+		for await(const {version, statement} of versionChain.versionsIterator()) {
+			this.versionHistoryCache.set(version, depth++);
+		}
+		return this.versionHistoryCache;
+	}
+
 	startAction(...args) {
 		if(this.currentAction) {
 			return new Promise((resolve, reject) => {
@@ -206,6 +218,12 @@ export class VersionedCollection {
 		ChunkingUtils.validateIdentifier(version);
 		if(this.versionBlacklist.has(version)) {
 			throw Error('This version has been blacklisted');
+		}
+		const versionHistory = await this.getVersionHistoryCache();
+		if(versionHistory.has(version)) {
+			const depth = versionHistory.get(version);
+			logger.debug('[PULL] Version ' + version + ' found in history at depth ' + depth + ', skipping');
+			return;
 		}
 		await this.startAction('update', version);
 		const initialState = await this.localCopy.startStaging();
