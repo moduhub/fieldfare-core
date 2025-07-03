@@ -225,7 +225,7 @@ export const LocalHost = {
 			requestIdentifier = await ChunkingUtils.generateIdentifierForObject(data);
 		}
 		let request = localHost.requests.get(requestIdentifier);
-		if(!request) {
+		if(!request || request?.error) {
 			request = new Request(service, data, timeout);
 			request.source = localHost.id;
 			request.destination = destination;
@@ -241,6 +241,8 @@ export const LocalHost = {
 				localHost.requests.delete(requestIdentifier);
 				throw error;
 			}
+		} else {
+			logger.warn('Ignoring repeated request for ' + requestIdentifier);
 		}
 		return request;
 	},
