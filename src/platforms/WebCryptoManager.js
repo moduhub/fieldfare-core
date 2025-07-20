@@ -6,6 +6,7 @@
  */
 
 import { CryptoManager } from "../basic/CryptoManager.js";
+import { logger } from "../basic/Log.js";
 
 /**
  * The WebCryptoManager implements basic cryptographic functions
@@ -19,6 +20,12 @@ export class WebCryptoManager extends CryptoManager {
     }
 
     async importPublicKey(keyData) {
+        if(keyData.x.length !== 43
+        || keyData.y.length !== 43) {
+            keyData.x = keyData.x.substr(0, 43);
+            keyData.y = keyData.y.substr(0, 43);
+            logger.warn('WebCryptoManager.importPublicKey: keyData.x or keyData.y cointained padding, truncated to 43 characters');
+        }
         const plaformPublicKey = await crypto.subtle.importKey(
             'jwk',
             keyData,
