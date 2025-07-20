@@ -34,7 +34,7 @@ export class Environment extends AdministeredCollection {
 		if(!services) {
 			return authorizedUUIDs;
 		}
-		for await(const [keyChunk, valueChunk] of services) {
+		for await(const keyChunk of services.keyChunks()) {
 			const {uuid} = await keyChunk.expand(0);
 			const providerListName = uuid + '.providers';
 			const providers = await this.localCopy.getElement(providerListName);
@@ -239,7 +239,7 @@ export class Environment extends AdministeredCollection {
 		var hostWebports = [];
 		const envWebports = await this.localCopy.getElement('webports');
 		if(envWebports) {
-			for await(const chunk of envWebports) {
+			for await(const chunk of envWebports.chunks()) {
 				//logger.debug('[ENV] getWebports>chunk.key: '+ chunk.key);
 				const webport = await chunk.expand();
 				// logger.log('info', 'webport info: ' + JSON.stringify(webport));

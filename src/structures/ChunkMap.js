@@ -112,25 +112,25 @@ export class ChunkMap extends ChunkTree {
     }
 
     async* keyChunks() {
-        for await (const [keyChunk, valueChunk] of this) {
-            yield keyChunk;
-        }
+        if(this.rootChunk) {
+			var rootContainer = await TreeContainer.fromDescriptor(this.rootChunk);
+   			for await(const [keyIdentifier, valueIdentifier] of rootContainer.iterator(this.rootChunk.ownerID)) {
+                yield Chunk.fromIdentifier(keyIdentifier, this.owner);
+            }
+		}
     }
 
     async* valueChunks() {
-        for await (const [keyChunk, valueChunk] of this) {
-            yield valueChunk;
-        }
+        if(this.rootChunk) {
+			var rootContainer = await TreeContainer.fromDescriptor(this.rootChunk);
+   			for await(const [keyIdentifier, valueIdentifier] of rootContainer.iterator(this.rootChunk.ownerID)) {
+                yield Chunk.fromIdentifier(valueIdentifier, this.owner);
+            }
+		}
     }
 
-    async* transformedContents(transform=(keyChunk, valueChunk)=>[keyChunk, valueChunk]) {
-        for await (const [keyChunk, valueChunk] of this) {
-            yield await transform(keyChunk, valueChunk);
-        }
-    }
-
-    async* [Symbol.asyncIterator]() {
-		if(this.rootChunk) {
+    async* contents() {
+        if(this.rootChunk) {
 			var rootContainer = await TreeContainer.fromDescriptor(this.rootChunk);
    			for await(const [keyIdentifier, valueIdentifier] of rootContainer.iterator(this.rootChunk.ownerID)) {
                 const key = Chunk.fromIdentifier(keyIdentifier, this.owner);
@@ -138,6 +138,16 @@ export class ChunkMap extends ChunkTree {
                 yield [key, value];
             }
 		}
+    }
+
+    async* transformedContents(transform=(keyChunk, valueChunk)=>[keyChunk, valueChunk]) {
+        for await (const [keyChunk, valueChunk] of this.contents()) {
+            yield await transform(keyChunk, valueChunk);
+        }
+    }
+
+    async* [Symbol.asyncIterator]() {
+		yield* this.contents();
 	}
 
 }
